@@ -1,0 +1,59 @@
+{
+  "schema_version": "exitdrill/export/v0.1",
+  "drill_id": "synthetic-crm-exit-001",
+  "source_system": "Invented CommunityCase CRM",
+  "exported_at": "2026-07-22T19:00:00Z",
+  "entities": [
+    {
+      "type": "person",
+      "id": "person-001",
+      "fields": {
+        "display_name": "Synthetic Person",
+        "active": true
+      }
+    },
+    {
+      "type": "case",
+      "id": "case-001",
+      "fields": {
+        "status": "open",
+        "priority": 2
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "type": "case_subject",
+      "from_type": "case",
+      "from_id": "case-001",
+      "to_type": "person",
+      "to_id": "person-001"
+    }
+  ],
+  "attachments": [
+    {
+      "id": "attachment-001",
+      "owner_type": "case",
+      "owner_id": "case-001",
+      "relative_path": "attachments/intake.txt",
+      "content_sha256": "7ce2def217449e05524692f48a7699ef551f5f7d79f2d5abe6ff2bc37b010110"
+    }
+  ],
+  "permissions": [
+    {
+      "principal_id": "worker-001",
+      "scope_type": "case",
+      "scope_id": "case-001",
+      "role": "case_manager"
+    }
+  ],
+  "audit_events": [
+    {
+      "event_id": "event-001",
+      "object_type": "case",
+      "object_id": "case-001",
+      "action": "status_changed",
+      "occurred_at": "2026-07-21T12:00:00Z"
+    }
+  ]
+}

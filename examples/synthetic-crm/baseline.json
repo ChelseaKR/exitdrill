@@ -1,0 +1,65 @@
+{
+  "schema_version": "exitdrill/baseline/v0.2",
+  "drill_id": "synthetic-crm-exit-001",
+  "source_system": "Invented CommunityCase CRM",
+  "captured_at": "2026-07-22T18:00:00Z",
+  "coverage": {
+    "entities": "complete",
+    "relationships": "complete",
+    "attachments": "complete",
+    "permissions": "complete",
+    "audit_events": "complete"
+  },
+  "entities": [
+    {
+      "type": "person",
+      "id": "person-001",
+      "required_fields": [
+        {"name": "display_name", "type": "string"},
+        {"name": "active", "type": "boolean"}
+      ]
+    },
+    {
+      "type": "case",
+      "id": "case-001",
+      "required_fields": [
+        {"name": "status", "type": "string"},
+        {"name": "priority", "type": "number"}
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "type": "case_subject",
+      "from_type": "case",
+      "from_id": "case-001",
+      "to_type": "person",
+      "to_id": "person-001"
+    }
+  ],
+  "attachments": [
+    {
+      "id": "attachment-001",
+      "owner_type": "case",
+      "owner_id": "case-001",
+      "content_sha256": "7ce2def217449e05524692f48a7699ef551f5f7d79f2d5abe6ff2bc37b010110"
+    }
+  ],
+  "permissions": [
+    {
+      "principal_id": "worker-001",
+      "scope_type": "case",
+      "scope_id": "case-001",
+      "role": "case_manager"
+    }
+  ],
+  "audit_events": [
+    {
+      "event_id": "event-001",
+      "object_type": "case",
+      "object_id": "case-001",
+      "action": "status_changed",
+      "occurred_at": "2026-07-21T12:00:00Z"
+    }
+  ]
+}

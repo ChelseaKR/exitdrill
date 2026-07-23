@@ -1,0 +1,52 @@
+name: release-candidate
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
+        with:
+          version: "0.11.29"
+          python-version: "3.12"
+          enable-cache: false
+      - name: Require tag and package versions to match
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          python - <<'PY'
+          import os
+          import pathlib
+          import tomllib
+
+          version = tomllib.loads(pathlib.Path("pyproject.toml").read_text())["project"]["version"]
+          if os.environ["RELEASE_TAG"] != f"v{version}":
+              raise SystemExit("tag and package versions do not match")
+          PY
+      - name: Verify and build candidate
+        run: |
+          uv sync --frozen
+          make verify
+          make demo
+          make demo-lossy
+          make package
+          sha256sum dist/* > dist/SHA256SUMS
+      - name: Upload immutable candidate inputs
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: exitdrill-${{ github.ref_name }}
+          path: dist/
+          if-no-files-found: error
+
+# This workflow builds a candidate only. Public/package publication, signed tags,
+# SBOM/signature/provenance issuance, and a hosted tag ruleset remain blocked
+# until the repository and release governance are explicitly established.

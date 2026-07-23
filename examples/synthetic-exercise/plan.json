@@ -1,0 +1,47 @@
+{
+  "schema_version": "exitdrill/exercise-plan/v0.1",
+  "exercise_id": "invented-crm-target-preflight-001",
+  "data_mode": "synthetic_only",
+  "source": {
+    "system": "Invented CommunityCase CRM",
+    "version": "invented-1.0",
+    "export_mechanism": "invented customer ZIP export",
+    "customer_obtainable": true
+  },
+  "baseline": {
+    "captured_before_export": true,
+    "coverage": {
+      "entities": "complete",
+      "relationships": "complete",
+      "attachments": "complete",
+      "permissions": "complete",
+      "audit_events": "complete"
+    },
+    "source_descriptions": [
+      "invented pre-export count report",
+      "invented role assignment report"
+    ]
+  },
+  "target_sandbox": {
+    "system": "Invented AlternateCase Sandbox",
+    "version": "invented-2.0",
+    "empty": true,
+    "isolated": true,
+    "egress_blocked": true,
+    "automations_disabled": true,
+    "production_data_allowed": false
+  },
+  "workflow_probes": [
+    {"id": "find_record", "kind": "lookup", "required": true},
+    {"id": "traverse_relationships", "kind": "relationship", "required": true},
+    {"id": "retrieve_attachment", "kind": "attachment", "required": true},
+    {"id": "authorized_access", "kind": "permission_allow", "required": true},
+    {"id": "unauthorized_denial", "kind": "permission_deny", "required": true}
+  ],
+  "evidence_controls": {
+    "target_readback_required": true,
+    "raw_disposition_matrix_required": true,
+    "raw_remediation_matrix_required": true,
+    "human_attestation_required": true
+  }
+}

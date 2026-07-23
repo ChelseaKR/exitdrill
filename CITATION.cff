@@ -1,0 +1,9 @@
+cff-version: 1.2.0
+title: ExitDrill
+message: If you use this technical alpha, please cite it using this metadata.
+type: software
+authors:
+  - family-names: Kelly-Reif
+    given-names: Chelsea
+version: 0.1.0
+license: Apache-2.0
