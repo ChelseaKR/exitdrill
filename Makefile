@@ -1,4 +1,4 @@
-.PHONY: install format lint type test verify package demo demo-lossy
+.PHONY: install format lint type test verify package demo demo-lossy demo-compare demo-compare-policy
 
 install:
 	uv sync --frozen
@@ -37,3 +37,11 @@ demo-lossy:
 	test $$status -eq 2; \
 	uv run python -c 'import json, sys; receipt = json.load(open(sys.argv[1], encoding="utf-8")); assert receipt["payload"]["overall_status"] == "not_structurally_restorable"' "$$receipt"; \
 	mv "$$receipt" examples/synthetic-crm-lossy/out/receipt.json
+
+demo-compare: demo demo-lossy
+	uv run exitdrill compare examples/synthetic-crm/out/receipt.json examples/synthetic-crm-lossy/out/receipt.json
+
+demo-compare-policy: demo-compare
+	@status=0; \
+	uv run exitdrill compare examples/synthetic-crm/out/receipt.json examples/synthetic-crm-lossy/out/receipt.json --fail-on-loss-signal-increase || status=$$?; \
+	test $$status -eq 3

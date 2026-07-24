@@ -29,10 +29,8 @@ jobs:
         run: uv sync --frozen
       - name: Verify
         run: make verify
-      - name: Exercise both declared outcomes
-        run: |
-          make demo
-          make demo-lossy
+      - name: Exercise both declared outcomes and comparison policy
+        run: make demo-compare-policy
 
   package:
     runs-on: ubuntu-latest
