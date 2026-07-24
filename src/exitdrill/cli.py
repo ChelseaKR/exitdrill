@@ -8,6 +8,10 @@ import sys
 from pathlib import Path
 
 from exitdrill.canonical import canonical_json_bytes
+from exitdrill.comparison import (
+    _comparison_has_observed_loss_signal_increase,
+    compare_receipt_files,
+)
 from exitdrill.evaluator import DrillError, run_drill
 from exitdrill.exercise import ExercisePlanError, load_exercise_plan
 from exitdrill.loader import PackageError, load_baseline, load_export
@@ -46,6 +50,17 @@ def _parser() -> argparse.ArgumentParser:
     verify.add_argument("--baseline", type=Path)
     verify.add_argument("--export", type=Path)
     verify.add_argument("--attachment-root", type=Path)
+    compare = commands.add_parser(
+        "compare",
+        help="compare aggregate evidence in two verified receipts",
+    )
+    compare.add_argument("reference", type=Path)
+    compare.add_argument("candidate", type=Path)
+    compare.add_argument(
+        "--fail-on-loss-signal-increase",
+        action="store_true",
+        help="return 3 for a comparable observed aggregate missing/invalid increase",
+    )
     return parser
 
 
@@ -149,6 +164,21 @@ def _verify(
     return 0
 
 
+def _compare(
+    reference_path: Path,
+    candidate_path: Path,
+    *,
+    fail_on_loss_signal_increase: bool,
+) -> int:
+    result = compare_receipt_files(reference_path, candidate_path)
+    _print_json(result)
+    if result["comparability"] != "comparable":
+        return 2
+    if fail_on_loss_signal_increase and _comparison_has_observed_loss_signal_increase(result):
+        return 3
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     """Run the CLI with bounded failures."""
     args = _parser().parse_args(argv)
@@ -171,6 +201,12 @@ def main(argv: list[str] | None = None) -> int:
                 args.baseline,
                 args.export,
                 args.attachment_root,
+            )
+        if args.command == "compare":
+            return _compare(
+                args.reference,
+                args.candidate,
+                fail_on_loss_signal_increase=args.fail_on_loss_signal_increase,
             )
     except (
         DrillError,
