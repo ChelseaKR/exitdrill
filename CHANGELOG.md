@@ -15,6 +15,8 @@ All notable changes will be documented here.
 
 ### Added
 
+- Canonical `docs/adr/` decision index linking the two existing accepted ADRs
+  without moving or rewriting their history; new decisions continue there.
 - Strict independent baseline and normalized-export contracts.
 - Structural comparison across entities, relationships, attachments,
   permissions, and audit history.
