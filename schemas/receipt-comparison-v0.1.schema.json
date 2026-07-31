@@ -1,0 +1,840 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ChelseaKR/exitdrill/blob/main/schemas/receipt-comparison-v0.1.schema.json",
+  "title": "ExitDrill aggregate receipt comparison",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "decision_scope",
+    "comparability",
+    "ordering_basis",
+    "measurement_relationship",
+    "reference",
+    "candidate",
+    "scope_checks",
+    "incomparable_reasons",
+    "limitations",
+    "dimensions",
+    "summary"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "exitdrill/receipt-comparison/v0.1"
+    },
+    "decision_scope": {
+      "const": "offline_aggregate_receipt_change_only"
+    },
+    "comparability": {
+      "enum": ["comparable", "incomparable"]
+    },
+    "ordering_basis": {
+      "const": "caller_supplied_unverified"
+    },
+    "measurement_relationship": {
+      "enum": ["duplicate_payload", "distinct_payloads"]
+    },
+    "reference": {
+      "$ref": "#/$defs/input"
+    },
+    "candidate": {
+      "$ref": "#/$defs/input"
+    },
+    "scope_checks": {
+      "$ref": "#/$defs/scope_checks"
+    },
+    "incomparable_reasons": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "baseline_sha256_changed",
+          "drill_id_changed",
+          "source_system_changed",
+          "receipt_schema_version_changed",
+          "result_schema_version_changed",
+          "decision_scope_changed",
+          "dimension_coverage_changed",
+          "dimension_expected_counts_changed",
+          "trust_limitations_changed"
+        ]
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "prefixItems": [
+        {"const": "inputs_are_unsigned_and_unauthenticated"},
+        {"const": "comparison_output_is_unsigned_and_unauthenticated"},
+        {"const": "aggregate_only_cannot_observe_record_identity_churn"},
+        {"const": "operand_order_is_caller_supplied_unverified"},
+        {"const": "does_not_bind_export_generation_or_evaluator_version"},
+        {"const": "does_not_prove_operational_equivalence"}
+      ],
+      "items": false
+    },
+    "dimensions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/dimension"
+      }
+    },
+    "summary": {
+      "$ref": "#/$defs/summary"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "comparability": {"const": "comparable"}
+        }
+      },
+      "then": {
+        "properties": {
+          "incomparable_reasons": {"maxItems": 0},
+          "scope_checks": {
+            "properties": {
+              "baseline_sha256_equal": {"const": true},
+              "drill_id_equal": {"const": true},
+              "source_system_equal": {"const": true},
+              "receipt_schema_version_equal": {"const": true},
+              "result_schema_version_equal": {"const": true},
+              "decision_scope_equal": {"const": true},
+              "dimension_coverage_equal": {"const": true},
+              "dimension_expected_counts_equal": {"const": true},
+              "trust_limitations_equal": {"const": true}
+            }
+          },
+          "dimensions": {
+            "minItems": 5,
+            "maxItems": 5,
+            "allOf": [
+              {
+                "contains": {
+                  "properties": {"name": {"const": "entities"}},
+                  "required": ["name"]
+                },
+                "minContains": 1,
+                "maxContains": 1
+              },
+              {
+                "contains": {
+                  "properties": {"name": {"const": "relationships"}},
+                  "required": ["name"]
+                },
+                "minContains": 1,
+                "maxContains": 1
+              },
+              {
+                "contains": {
+                  "properties": {"name": {"const": "attachments"}},
+                  "required": ["name"]
+                },
+                "minContains": 1,
+                "maxContains": 1
+              },
+              {
+                "contains": {
+                  "properties": {"name": {"const": "permissions"}},
+                  "required": ["name"]
+                },
+                "minContains": 1,
+                "maxContains": 1
+              },
+              {
+                "contains": {
+                  "properties": {"name": {"const": "audit_events"}},
+                  "required": ["name"]
+                },
+                "minContains": 1,
+                "maxContains": 1
+              }
+            ]
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "incomparable_reasons": {"minItems": 1},
+          "dimensions": {"maxItems": 0},
+          "scope_checks": {
+            "not": {
+              "properties": {
+                "baseline_sha256_equal": {"const": true},
+                "drill_id_equal": {"const": true},
+                "source_system_equal": {"const": true},
+                "receipt_schema_version_equal": {"const": true},
+                "result_schema_version_equal": {"const": true},
+                "decision_scope_equal": {"const": true},
+                "dimension_coverage_equal": {"const": true},
+                "dimension_expected_counts_equal": {"const": true},
+                "trust_limitations_equal": {"const": true}
+              },
+              "required": [
+                "baseline_sha256_equal",
+                "drill_id_equal",
+                "source_system_equal",
+                "receipt_schema_version_equal",
+                "result_schema_version_equal",
+                "decision_scope_equal",
+                "dimension_coverage_equal",
+                "dimension_expected_counts_equal",
+                "trust_limitations_equal"
+              ]
+            }
+          },
+          "summary": {
+            "properties": {
+              "observed_loss_signal_increases": {"maxItems": 0},
+              "observed_loss_signal_decreases": {"maxItems": 0},
+              "mixed_loss_signal_changes": {"maxItems": 0},
+              "uncertain": {"maxItems": 0},
+              "no_observed_loss_signal_change": {"maxItems": 0}
+            }
+          }
+        }
+      }
+    },
+    {
+      "$ref": "#/$defs/baseline_reason_consistency"
+    },
+    {
+      "$ref": "#/$defs/drill_reason_consistency"
+    },
+    {
+      "$ref": "#/$defs/source_reason_consistency"
+    },
+    {
+      "$ref": "#/$defs/receipt_schema_reason_consistency"
+    },
+    {
+      "$ref": "#/$defs/result_schema_reason_consistency"
+    },
+    {
+      "$ref": "#/$defs/decision_scope_reason_consistency"
+    },
+    {
+      "$ref": "#/$defs/coverage_reason_consistency"
+    },
+    {
+      "$ref": "#/$defs/expected_reason_consistency"
+    },
+    {
+      "$ref": "#/$defs/limitations_reason_consistency"
+    }
+  ],
+  "$defs": {
+    "baseline_reason_consistency": {
+      "oneOf": [
+        {
+          "properties": {
+            "scope_checks": {
+              "properties": {"baseline_sha256_equal": {"const": true}}
+            },
+            "incomparable_reasons": {
+              "not": {"contains": {"const": "baseline_sha256_changed"}}
+            }
+          }
+        },
+        {
+          "properties": {
+            "scope_checks": {
+              "properties": {"baseline_sha256_equal": {"const": false}}
+            },
+            "incomparable_reasons": {
+              "contains": {"const": "baseline_sha256_changed"}
+            }
+          }
+        }
+      ]
+    },
+    "drill_reason_consistency": {
+      "oneOf": [
+        {
+          "properties": {
+            "scope_checks": {"properties": {"drill_id_equal": {"const": true}}},
+            "incomparable_reasons": {
+              "not": {"contains": {"const": "drill_id_changed"}}
+            }
+          }
+        },
+        {
+          "properties": {
+            "scope_checks": {"properties": {"drill_id_equal": {"const": false}}},
+            "incomparable_reasons": {"contains": {"const": "drill_id_changed"}}
+          }
+        }
+      ]
+    },
+    "source_reason_consistency": {
+      "oneOf": [
+        {
+          "properties": {
+            "scope_checks": {"properties": {"source_system_equal": {"const": true}}},
+            "incomparable_reasons": {
+              "not": {"contains": {"const": "source_system_changed"}}
+            }
+          }
+        },
+        {
+          "properties": {
+            "scope_checks": {"properties": {"source_system_equal": {"const": false}}},
+            "incomparable_reasons": {"contains": {"const": "source_system_changed"}}
+          }
+        }
+      ]
+    },
+    "receipt_schema_reason_consistency": {
+      "oneOf": [
+        {
+          "properties": {
+            "scope_checks": {
+              "properties": {"receipt_schema_version_equal": {"const": true}}
+            },
+            "incomparable_reasons": {
+              "not": {"contains": {"const": "receipt_schema_version_changed"}}
+            }
+          }
+        },
+        {
+          "properties": {
+            "scope_checks": {
+              "properties": {"receipt_schema_version_equal": {"const": false}}
+            },
+            "incomparable_reasons": {
+              "contains": {"const": "receipt_schema_version_changed"}
+            }
+          }
+        }
+      ]
+    },
+    "result_schema_reason_consistency": {
+      "oneOf": [
+        {
+          "properties": {
+            "scope_checks": {
+              "properties": {"result_schema_version_equal": {"const": true}}
+            },
+            "incomparable_reasons": {
+              "not": {"contains": {"const": "result_schema_version_changed"}}
+            }
+          }
+        },
+        {
+          "properties": {
+            "scope_checks": {
+              "properties": {"result_schema_version_equal": {"const": false}}
+            },
+            "incomparable_reasons": {
+              "contains": {"const": "result_schema_version_changed"}
+            }
+          }
+        }
+      ]
+    },
+    "decision_scope_reason_consistency": {
+      "oneOf": [
+        {
+          "properties": {
+            "scope_checks": {"properties": {"decision_scope_equal": {"const": true}}},
+            "incomparable_reasons": {
+              "not": {"contains": {"const": "decision_scope_changed"}}
+            }
+          }
+        },
+        {
+          "properties": {
+            "scope_checks": {"properties": {"decision_scope_equal": {"const": false}}},
+            "incomparable_reasons": {"contains": {"const": "decision_scope_changed"}}
+          }
+        }
+      ]
+    },
+    "coverage_reason_consistency": {
+      "oneOf": [
+        {
+          "properties": {
+            "scope_checks": {
+              "properties": {"dimension_coverage_equal": {"const": true}}
+            },
+            "incomparable_reasons": {
+              "not": {"contains": {"const": "dimension_coverage_changed"}}
+            }
+          }
+        },
+        {
+          "properties": {
+            "scope_checks": {
+              "properties": {"dimension_coverage_equal": {"const": false}}
+            },
+            "incomparable_reasons": {
+              "contains": {"const": "dimension_coverage_changed"}
+            }
+          }
+        }
+      ]
+    },
+    "expected_reason_consistency": {
+      "oneOf": [
+        {
+          "properties": {
+            "scope_checks": {
+              "properties": {"dimension_expected_counts_equal": {"const": true}}
+            },
+            "incomparable_reasons": {
+              "not": {"contains": {"const": "dimension_expected_counts_changed"}}
+            }
+          }
+        },
+        {
+          "properties": {
+            "scope_checks": {
+              "properties": {"dimension_expected_counts_equal": {"const": false}}
+            },
+            "incomparable_reasons": {
+              "contains": {"const": "dimension_expected_counts_changed"}
+            }
+          }
+        }
+      ]
+    },
+    "limitations_reason_consistency": {
+      "oneOf": [
+        {
+          "properties": {
+            "scope_checks": {
+              "properties": {"trust_limitations_equal": {"const": true}}
+            },
+            "incomparable_reasons": {
+              "not": {"contains": {"const": "trust_limitations_changed"}}
+            }
+          }
+        },
+        {
+          "properties": {
+            "scope_checks": {
+              "properties": {"trust_limitations_equal": {"const": false}}
+            },
+            "incomparable_reasons": {
+              "contains": {"const": "trust_limitations_changed"}
+            }
+          }
+        }
+      ]
+    },
+    "input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "baseline_sha256",
+        "drill_id",
+        "export_sha256",
+        "payload_sha256",
+        "receipt_schema_version",
+        "result_schema_version",
+        "source_system"
+      ],
+      "properties": {
+        "baseline_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "drill_id": {"type": "string", "minLength": 1},
+        "export_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "payload_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "receipt_schema_version": {"type": "string", "minLength": 1},
+        "result_schema_version": {"type": "string", "minLength": 1},
+        "source_system": {"type": "string", "minLength": 1}
+      }
+    },
+    "scope_checks": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "baseline_sha256_equal",
+        "drill_id_equal",
+        "source_system_equal",
+        "receipt_schema_version_equal",
+        "result_schema_version_equal",
+        "decision_scope_equal",
+        "dimension_coverage_equal",
+        "dimension_expected_counts_equal",
+        "trust_limitations_equal"
+      ],
+      "properties": {
+        "baseline_sha256_equal": {"type": "boolean"},
+        "drill_id_equal": {"type": "boolean"},
+        "source_system_equal": {"type": "boolean"},
+        "receipt_schema_version_equal": {"type": "boolean"},
+        "result_schema_version_equal": {"type": "boolean"},
+        "decision_scope_equal": {"type": "boolean"},
+        "dimension_coverage_equal": {"type": "boolean"},
+        "dimension_expected_counts_equal": {"type": "boolean"},
+        "trust_limitations_equal": {"type": "boolean"}
+      }
+    },
+    "count_deltas": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "expected_count",
+        "exported_count",
+        "restored_count",
+        "missing_count",
+        "extra_count",
+        "invalid_count"
+      ],
+      "properties": {
+        "expected_count": {"type": "integer"},
+        "exported_count": {"type": "integer"},
+        "restored_count": {"type": "integer"},
+        "missing_count": {"type": "integer"},
+        "extra_count": {"type": "integer"},
+        "invalid_count": {"type": "integer"}
+      }
+    },
+    "loss_signal_increases": {
+      "type": "array",
+      "uniqueItems": true,
+      "maxItems": 2,
+      "items": {
+        "enum": ["missing_count_increased", "invalid_count_increased"]
+      }
+    },
+    "loss_signal_decreases": {
+      "type": "array",
+      "uniqueItems": true,
+      "maxItems": 2,
+      "items": {
+        "enum": ["missing_count_decreased", "invalid_count_decreased"]
+      }
+    },
+    "dimension": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "coverage",
+        "reference_status",
+        "candidate_status",
+        "status_transition",
+        "extra_count_transition",
+        "count_deltas",
+        "observed_loss_signal_increases",
+        "observed_loss_signal_decreases",
+        "assessment"
+      ],
+      "properties": {
+        "name": {
+          "enum": ["entities", "relationships", "attachments", "permissions", "audit_events"]
+        },
+        "coverage": {
+          "enum": ["complete", "partial", "unavailable"]
+        },
+        "reference_status": {
+          "enum": ["pass", "fail", "finding", "indeterminate"]
+        },
+        "candidate_status": {
+          "enum": ["pass", "fail", "finding", "indeterminate"]
+        },
+        "status_transition": {
+          "enum": ["unchanged", "changed"]
+        },
+        "extra_count_transition": {
+          "enum": [
+            "unchanged",
+            "changed_from_zero",
+            "returned_to_zero",
+            "increased",
+            "decreased"
+          ]
+        },
+        "count_deltas": {
+          "$ref": "#/$defs/count_deltas"
+        },
+        "observed_loss_signal_increases": {
+          "$ref": "#/$defs/loss_signal_increases"
+        },
+        "observed_loss_signal_decreases": {
+          "$ref": "#/$defs/loss_signal_decreases"
+        },
+        "assessment": {
+          "enum": [
+            "observed_loss_signals_increased",
+            "observed_loss_signals_decreased",
+            "mixed_loss_signal_change",
+            "no_observed_loss_signal_change",
+            "uncertain"
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "assessment": {"const": "observed_loss_signals_increased"}
+            }
+          },
+          "then": {
+            "properties": {
+              "observed_loss_signal_increases": {"minItems": 1},
+              "observed_loss_signal_decreases": {"maxItems": 0}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "assessment": {"const": "observed_loss_signals_decreased"}
+            }
+          },
+          "then": {
+            "properties": {
+              "observed_loss_signal_increases": {"maxItems": 0},
+              "observed_loss_signal_decreases": {"minItems": 1}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {"assessment": {"const": "mixed_loss_signal_change"}}
+          },
+          "then": {
+            "properties": {
+              "observed_loss_signal_increases": {"minItems": 1},
+              "observed_loss_signal_decreases": {"minItems": 1}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "assessment": {"const": "no_observed_loss_signal_change"}
+            }
+          },
+          "then": {
+            "properties": {
+              "observed_loss_signal_increases": {"maxItems": 0},
+              "observed_loss_signal_decreases": {"maxItems": 0}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "count_deltas": {
+                "properties": {"missing_count": {"minimum": 1}}
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "observed_loss_signal_increases": {
+                "contains": {"const": "missing_count_increased"}
+              },
+              "observed_loss_signal_decreases": {
+                "not": {"contains": {"const": "missing_count_decreased"}}
+              }
+            }
+          },
+          "else": {
+            "if": {
+              "properties": {
+                "count_deltas": {
+                  "properties": {"missing_count": {"maximum": -1}}
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "observed_loss_signal_increases": {
+                  "not": {"contains": {"const": "missing_count_increased"}}
+                },
+                "observed_loss_signal_decreases": {
+                  "contains": {"const": "missing_count_decreased"}
+                }
+              }
+            },
+            "else": {
+              "properties": {
+                "observed_loss_signal_increases": {
+                  "not": {"contains": {"const": "missing_count_increased"}}
+                },
+                "observed_loss_signal_decreases": {
+                  "not": {"contains": {"const": "missing_count_decreased"}}
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "count_deltas": {
+                "properties": {"invalid_count": {"minimum": 1}}
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "observed_loss_signal_increases": {
+                "contains": {"const": "invalid_count_increased"}
+              },
+              "observed_loss_signal_decreases": {
+                "not": {"contains": {"const": "invalid_count_decreased"}}
+              }
+            }
+          },
+          "else": {
+            "if": {
+              "properties": {
+                "count_deltas": {
+                  "properties": {"invalid_count": {"maximum": -1}}
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "observed_loss_signal_increases": {
+                  "not": {"contains": {"const": "invalid_count_increased"}}
+                },
+                "observed_loss_signal_decreases": {
+                  "contains": {"const": "invalid_count_decreased"}
+                }
+              }
+            },
+            "else": {
+              "properties": {
+                "observed_loss_signal_increases": {
+                  "not": {"contains": {"const": "invalid_count_increased"}}
+                },
+                "observed_loss_signal_decreases": {
+                  "not": {"contains": {"const": "invalid_count_decreased"}}
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {"status_transition": {"const": "unchanged"}}
+          },
+          "then": {
+            "oneOf": [
+              {
+                "properties": {
+                  "reference_status": {"const": "pass"},
+                  "candidate_status": {"const": "pass"}
+                }
+              },
+              {
+                "properties": {
+                  "reference_status": {"const": "fail"},
+                  "candidate_status": {"const": "fail"}
+                }
+              },
+              {
+                "properties": {
+                  "reference_status": {"const": "finding"},
+                  "candidate_status": {"const": "finding"}
+                }
+              },
+              {
+                "properties": {
+                  "reference_status": {"const": "indeterminate"},
+                  "candidate_status": {"const": "indeterminate"}
+                }
+              }
+            ]
+          },
+          "else": {
+            "not": {
+              "oneOf": [
+                {
+                  "properties": {
+                    "reference_status": {"const": "pass"},
+                    "candidate_status": {"const": "pass"}
+                  }
+                },
+                {
+                  "properties": {
+                    "reference_status": {"const": "fail"},
+                    "candidate_status": {"const": "fail"}
+                  }
+                },
+                {
+                  "properties": {
+                    "reference_status": {"const": "finding"},
+                    "candidate_status": {"const": "finding"}
+                  }
+                },
+                {
+                  "properties": {
+                    "reference_status": {"const": "indeterminate"},
+                    "candidate_status": {"const": "indeterminate"}
+                  }
+                }
+              ]
+            }
+          }
+        },
+        {
+          "oneOf": [
+            {
+              "properties": {
+                "count_deltas": {
+                  "properties": {"extra_count": {"const": 0}}
+                },
+                "extra_count_transition": {"const": "unchanged"}
+              }
+            },
+            {
+              "properties": {
+                "count_deltas": {
+                  "properties": {"extra_count": {"minimum": 1}}
+                },
+                "extra_count_transition": {
+                  "enum": ["changed_from_zero", "increased"]
+                }
+              }
+            },
+            {
+              "properties": {
+                "count_deltas": {
+                  "properties": {"extra_count": {"maximum": -1}}
+                },
+                "extra_count_transition": {
+                  "enum": ["returned_to_zero", "decreased"]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "dimension_names": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": ["entities", "relationships", "attachments", "permissions", "audit_events"]
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "observed_loss_signal_increases",
+        "observed_loss_signal_decreases",
+        "mixed_loss_signal_changes",
+        "uncertain",
+        "no_observed_loss_signal_change"
+      ],
+      "properties": {
+        "observed_loss_signal_increases": {"$ref": "#/$defs/dimension_names"},
+        "observed_loss_signal_decreases": {"$ref": "#/$defs/dimension_names"},
+        "mixed_loss_signal_changes": {"$ref": "#/$defs/dimension_names"},
+        "uncertain": {"$ref": "#/$defs/dimension_names"},
+        "no_observed_loss_signal_change": {"$ref": "#/$defs/dimension_names"}
+      }
+    }
+  }
+}

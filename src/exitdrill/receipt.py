@@ -15,6 +15,7 @@ from exitdrill.strict_json import StrictJsonError, load_strict_json, validate_js
 
 _RECEIPT_KEYS = {"envelope", "payload", "payload_sha256", "schema_version"}
 _ENVELOPE_KEYS = {"claimed_generated_at", "signature_status", "trusted_time"}
+_MAX_RECEIPT_BYTES = 2 * 1024 * 1024
 
 
 class ReceiptError(ValueError):
@@ -43,8 +44,11 @@ def build_receipt(
 
 def write_receipt(path: Path, receipt: dict[str, JsonValue]) -> None:
     """Atomically write a receipt."""
-    path.parent.mkdir(parents=True, exist_ok=True)
+    verify_receipt(receipt)
     document = canonical_json_bytes(receipt) + b"\n"
+    if len(document) > _MAX_RECEIPT_BYTES:
+        raise ReceiptError("receipt exceeds the 2 MiB limit")
+    path.parent.mkdir(parents=True, exist_ok=True)
     descriptor, temporary_name = tempfile.mkstemp(
         dir=path.parent,
         prefix=f".{path.name}.",
@@ -66,7 +70,7 @@ def load_receipt(path: Path) -> dict[str, JsonValue]:
     try:
         raw, _source_sha256 = load_strict_json(
             path,
-            max_bytes=2 * 1024 * 1024,
+            max_bytes=_MAX_RECEIPT_BYTES,
             size_label="2 MiB",
         )
     except StrictJsonError as exc:

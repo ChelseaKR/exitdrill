@@ -40,7 +40,9 @@ permission model.
   receipt/envelope shapes plus their self-contained checksums.
 - `receipt_validation.py` closes nested result fields and verifies dimension
   presence, counts, arithmetic, limitations, and shared result algebra.
-- `cli.py` exposes validation, drill, and verification/replay.
+- `comparison.py` reduces two verified receipts to aggregate snapshots, gates
+  exact input-scope comparability, and emits deterministic per-dimension deltas.
+- `cli.py` exposes validation, drill, verification/replay, and comparison.
 
 ## Architecture decision
 
@@ -88,6 +90,50 @@ Overall:
 4. every dimension passes → `structurally_restorable`.
 
 These are structural states only.
+
+## Receipt comparison
+
+Comparison treats its first and second operands as caller-supplied reference
+and candidate inputs. It never reads envelope timestamps and never serializes
+input paths. Before producing deltas it requires equality of:
+
+- drill ID and source system;
+- baseline SHA-256;
+- receipt and result schema versions;
+- decision scope and trust limitations; and
+- coverage and expected count for every dimension.
+
+A failed check produces a closed `incomparable` result with reason codes and no
+dimension comparison. Comparable dimensions report every signed count delta,
+but only missing/invalid movement feeds observed loss-signal direction. Extras
+and status transitions remain factual context. Statuses are not ordinal, and
+partial or unavailable coverage makes assessment uncertain.
+
+The output has no aggregate score. `duplicate_payload` means the deterministic
+payloads are identical; `no_observed_loss_signal_change` means only that the
+available aggregate missing/invalid signals did not move. Neither can detect
+same-count record substitution. The receipt contract does not bind the
+export-generation method or evaluator version, so comparison cannot causally
+attribute a change.
+
+The optional CLI policy `--fail-on-loss-signal-increase` is applied after the
+comparison document is complete and does not modify it. Invalid receipts,
+incomparable inputs, or command-usage errors exit 2. A comparable result exits 3
+only when a dimension's explicit missing/invalid increase array is nonempty;
+otherwise it exits 0. Without the flag every comparable result exits 0. This
+includes mixed movement and directly observed increases under partial coverage,
+although partial coverage keeps the document's assessment `uncertain`. Status
+transitions, extras, and other count deltas never feed the policy. Exit 3 names
+only this observed aggregate condition; it does not classify overall direction,
+certainty, or readiness.
+
+The public JSON Schema validates closed structure and every locally expressible
+invariant. Cross-object equality is not expressible in standard Draft 2020-12.
+`verify_comparison_document` therefore verifies both original receipts,
+recomputes the complete deterministic comparison, and requires canonical byte
+equality. This is the source-bound semantic verification path for summaries,
+measurement relationship, scope checks and reasons, deltas, transitions,
+signals, and assessments.
 
 ## Trust claims
 

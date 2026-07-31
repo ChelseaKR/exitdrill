@@ -75,6 +75,74 @@ under test: “100% of the rows exported” can still conceal an unsafe exit.
 The receipt reports `observed_remediation_signals`, not a cost, task count, or
 minimum remediation estimate.
 
+## Compare recurring receipts
+
+After creating two receipts, compare their aggregate evidence offline:
+
+```sh
+exitdrill compare reference-receipt.json candidate-receipt.json
+```
+
+The operand order is supplied by the caller and is not inferred from either
+receipt's untrusted envelope time. The command first performs full bounded
+receipt and payload validation. Comparison is allowed only when the drill ID,
+source system, exact baseline digest, contract versions, decision scope,
+dimension coverage and expected counts, and trust limitations match.
+Otherwise it emits `comparability: incomparable`, fixed reason codes, no
+dimension deltas, and exits with status 2.
+
+For comparable inputs, each dimension reports signed candidate-minus-reference
+count deltas. Only increases or decreases in observed `missing_count` and
+`invalid_count` become loss-signal assessments. Extra-record and status changes
+remain separate factual transitions; statuses are never ranked. Partial or
+unavailable coverage forces an `uncertain` assessment. Identical payload hashes
+are labeled `duplicate_payload`, while unchanged aggregates from distinct
+payloads mean only `no_observed_loss_signal_change`.
+
+CI can opt into a policy exit without changing the JSON evidence:
+
+```sh
+exitdrill compare reference-receipt.json candidate-receipt.json \
+  --fail-on-loss-signal-increase
+```
+
+Exit status 0 means the inputs are comparable and no directly observed
+`missing_count` or `invalid_count` increase triggered the requested policy.
+Status 3 means at least one comparable dimension directly observed such an
+increase, including mixed increase/decrease movement. Status 2 retains
+precedence for invalid receipts, incomparable inputs, and command-usage errors.
+Without the flag, every comparable result exits 0. Status 3 says only that the
+opt-in condition matched observed aggregate evidence; it is not a label for
+overall direction, certainty, operational readiness, or any status rank.
+
+The policy checks only each dimension's explicit missing/invalid increase
+signals. It never ranks statuses, extras, restored/exported totals, or a
+composite value. With partial or unavailable coverage, a directly observed
+increase can therefore produce status 3 while the JSON assessment correctly
+remains `uncertain`; the exit policy does not convert uncertainty into a
+structural conclusion.
+
+The comparison has no score and makes no claim about record identity churn,
+chronology, authenticity, causal attribution, or operational exit readiness.
+It does not bind the export-generation method or evaluator version, so even
+same-scope movement cannot prove why a signal changed. Inputs and comparison
+output remain unsigned and unauthenticated. Its closed machine-readable contract is
+[receipt-comparison-v0.1.schema.json](schemas/receipt-comparison-v0.1.schema.json).
+The JSON Schema closes structure and locally expressible invariants. Standard
+Draft 2020-12 cannot compare arbitrary sibling values, so source-bound semantics
+must also be verified against the two original receipts:
+
+```python
+from exitdrill import verify_comparison_document
+
+verify_comparison_document(comparison, reference_receipt, candidate_receipt)
+```
+
+That verifier fully validates both receipts, recomputes the deterministic
+comparison, and requires byte-exact canonical equality. It detects forged
+summaries, scope checks/reasons, payload relationships, deltas, transitions,
+signals, and assessments.
+
 ## Synthetic target-exercise preflight
 
 The future target-exercise protocol can be checked without connecting to a
@@ -119,10 +187,15 @@ compliant.
 - Required field values beyond shape and permission-principal identity remain
   explicitly outside the current evaluator's denominator.
 - No raw record fields or attachment content in receipts.
+- No receipt comparison based on paths, claimed timestamps, or a composite
+  portability score.
+- No CI comparison policy based on statuses, extra records, aggregate totals,
+  or uncertain coverage being treated as a structural conclusion.
 - No signature or trusted-time claim; the self-contained hash is a checksum, not
   authentication.
-- No ambiguous JSON: duplicate keys, non-finite numbers, excessive nesting, and
-  undeclared receipt/envelope fields fail closed.
+- No ambiguous or unbounded JSON: duplicate keys, non-finite numbers, excessive
+  nesting or node count, non-regular document paths, and undeclared
+  receipt/envelope fields fail closed.
 - No single portability score that can hide a failed dimension.
 
 ## Why the baseline is separate

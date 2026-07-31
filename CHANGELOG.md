@@ -37,3 +37,22 @@ All notable changes will be documented here.
 - Collision-resistant atomic receipt writing.
 - Synthetic-only target-exercise preflight plan and five-probe validator.
 - PEP 561 typing marker and local wheel-content gate.
+- Deterministic offline comparison of two validated receipts with exact scope
+  comparability gates, per-dimension signed count deltas, nonordinal status and
+  extra-record transitions, and separate observed loss-signal directions.
+- Closed JSON Schema for receipt-comparison output and explicit duplicate,
+  incomparable, uncertain, mixed, and no-observed-loss-signal states.
+- Wheel-packaged comparison schema with Draft 2020-12 semantic consistency
+  tests and explicit export-generation/evaluator-version limitation.
+- Opt-in comparison CI policy exit 3 for directly observed missing/invalid
+  increases, without changing JSON or ranking statuses, extras, or totals.
+- JSON regular-file and 200,000-node bounds, attachment size-change detection,
+  and descriptor-relative parent traversal on supported platforms.
+- Stronger comparison-schema consistency for scope reasons, observed signal
+  direction, assessments, status transitions, and extra-count transitions.
+- CI demonstration of ordinary comparison and the expected opt-in policy exit.
+- Pre-write semantic verification and encoded 2 MiB receipt bound before any
+  output-directory or temporary-file mutation.
+- Installed source-bound comparison verifier that recomputes every derived field
+  from two fully verified receipts; JSON Schema remains the structural and
+  locally expressible contract.

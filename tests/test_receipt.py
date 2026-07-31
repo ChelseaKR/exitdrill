@@ -1,4 +1,5 @@
 import json
+import os
 from collections.abc import Callable
 from pathlib import Path
 from typing import cast
@@ -114,6 +115,35 @@ def test_write_and_load_receipt(tmp_path: Path, example_root: Path) -> None:
     assert load_receipt(path) == receipt
 
 
+def test_write_rejects_invalid_receipt_before_filesystem_mutation(tmp_path: Path) -> None:
+    parent = tmp_path / "not-created"
+    path = parent / "receipt.json"
+    forged = {"schema_version": "exitdrill/receipt/v0.2"}
+
+    with pytest.raises(ReceiptError, match="missing field"):
+        write_receipt(path, forged)  # type: ignore[arg-type]
+    assert not parent.exists()
+    assert not path.exists()
+
+
+def test_write_rejects_oversized_valid_receipt_before_filesystem_mutation(
+    tmp_path: Path,
+    example_root: Path,
+) -> None:
+    receipt = _receipt(example_root)
+    envelope = receipt["envelope"]
+    assert isinstance(envelope, dict)
+    envelope["claimed_generated_at"] = "x" * (2 * 1024 * 1024)
+    assert verify_receipt(receipt) == receipt["payload_sha256"]  # type: ignore[arg-type]
+    parent = tmp_path / "not-created"
+    path = parent / "receipt.json"
+
+    with pytest.raises(ReceiptError, match="2 MiB"):
+        write_receipt(path, receipt)  # type: ignore[arg-type]
+    assert not parent.exists()
+    assert not path.exists()
+
+
 def test_write_replaces_output_symlink_without_following_it(
     tmp_path: Path,
     example_root: Path,
@@ -155,6 +185,76 @@ def test_load_rejects_nonobject_and_oversized(tmp_path: Path) -> None:
         load_receipt(path)
 
 
+def test_load_accepts_valid_receipt_at_exact_byte_limit(
+    tmp_path: Path,
+    example_root: Path,
+) -> None:
+    receipt = _receipt(example_root)
+    envelope = receipt["envelope"]
+    assert isinstance(envelope, dict)
+    envelope["claimed_generated_at"] = ""
+    max_bytes = 2 * 1024 * 1024
+    padding = max_bytes - len(canonical_json_bytes(receipt))
+    assert padding > 0
+    envelope["claimed_generated_at"] = "x" * padding
+    document = canonical_json_bytes(receipt)
+    assert len(document) == max_bytes
+    path = tmp_path / "exact-limit-receipt.json"
+    path.write_bytes(document)
+
+    loaded = load_receipt(path)
+    assert verify_receipt(loaded) == receipt["payload_sha256"]
+
+
+def test_load_rejects_non_regular_document_without_blocking(tmp_path: Path) -> None:
+    if not hasattr(os, "mkfifo"):
+        pytest.skip("FIFO creation is unavailable on this platform")
+    path = tmp_path / "receipt.fifo"
+    os.mkfifo(path)
+    with pytest.raises(ReceiptError, match="not a regular file"):
+        load_receipt(path)
+
+
+@pytest.mark.parametrize("wrapper", ["trailing_document", "utf8_bom"])
+def test_load_rejects_ambiguous_document_wrappers(
+    tmp_path: Path,
+    example_root: Path,
+    wrapper: str,
+) -> None:
+    document = canonical_json_bytes(_receipt(example_root))
+    if wrapper == "trailing_document":
+        document += b"{}"
+    else:
+        document = b"\xef\xbb\xbf" + document
+    path = tmp_path / "wrapped-receipt.json"
+    path.write_bytes(document)
+    with pytest.raises(ReceiptError, match="not valid JSON"):
+        load_receipt(path)
+
+
+def test_load_rejects_integer_beyond_parser_digit_budget(
+    tmp_path: Path,
+    example_root: Path,
+) -> None:
+    document = canonical_json_bytes(_receipt(example_root)).replace(
+        b'"observed_remediation_signals":0',
+        b'"observed_remediation_signals":' + b"9" * 5000,
+    )
+    path = tmp_path / "huge-integer-receipt.json"
+    path.write_bytes(document)
+    with pytest.raises(ReceiptError, match="not valid JSON"):
+        load_receipt(path)
+
+
+def test_load_rejects_maximally_wide_json_before_semantic_validation(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "wide-receipt.json"
+    path.write_text("[" + ",".join("0" for _ in range(200_000)) + "]", encoding="utf-8")
+    with pytest.raises(ReceiptError, match="node limit"):
+        load_receipt(path)
+
+
 def test_load_rejects_duplicate_receipt_key(tmp_path: Path, example_root: Path) -> None:
     receipt = _receipt(example_root)
     content = json.dumps(receipt)
@@ -167,6 +267,17 @@ def test_load_rejects_duplicate_receipt_key(tmp_path: Path, example_root: Path) 
     path.write_text(content, encoding="utf-8")
     with pytest.raises(ReceiptError, match="duplicate object key"):
         load_receipt(path)
+
+
+def test_duplicate_key_error_does_not_echo_attacker_key(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "receipt.json"
+    path.write_text('{"invented-sensitive-key": 1, "invented-sensitive-key": 2}', encoding="utf-8")
+    with pytest.raises(ReceiptError) as raised:
+        load_receipt(path)
+    assert "duplicate object key" in str(raised.value)
+    assert "invented-sensitive-key" not in str(raised.value)
 
 
 @pytest.mark.parametrize("token", ["NaN", "Infinity", "-Infinity", "1e400"])
