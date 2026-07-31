@@ -25,11 +25,12 @@ Existing accepted records:
 
 1. [ADR 0001: Structural evaluation before a target adapter](../decisions/0001-structural-evaluation-before-target-adapter.md)
 2. [ADR 0002: Validate synthetic exercise preflight without a connector seam](../decisions/0002-synthetic-exercise-preflight.md)
+3. [ADR 0003: Compare only same-scope aggregate receipts](../decisions/0003-compare-only-same-scope-aggregates.md)
 
 ## Consequences
 
 - The standard discovery path now resolves without breaking existing links.
 - Old records remain where their history was established.
-- Decision numbering continues from 0003 in this directory.
+- Decision numbering continues from 0004 in this directory.
 - A future consolidation may add redirects, but must not silently move or
   rewrite accepted decisions.
