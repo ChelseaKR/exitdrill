@@ -15,13 +15,31 @@ bytes collected from a real local process, but it is not customer, employer,
 client, or production-derived data. Re-capture is permitted only in an isolated
 synthetic sandbox.
 
+It also includes the closed CiviCRM Standalone 6.16.2 target-roundtrip canary.
+The target contacts, users, roles, groups, cases, relationships, ACL probes,
+files, and attachment bytes are invented solely for the local run-owned lab.
+The committed native target bundle contains record-level synthetic API response
+projections and attachment content so the offline verifier can replay the
+observation. It contains identity IDs and authentication-flow labels, but no
+passwords, tokens, site keys, database credentials, signed download URLs, host
+paths, or production identifiers. The aggregate target result contains none of
+the native values or HTTP bodies.
+
 Receipts contain aggregates and input digests, not record fields or attachment
 content. Normalized exports necessarily contain the synthetic record fields and
 attachment bytes; the normalizer's stdout and manifest contain only fixed labels,
 hashes, and aggregates. The acceptance command creates adversarial bundles,
 normalized outputs, receipts, and reports only in a disposable temporary
-directory. The documented root normalization directory and generated example
+directory. The documented root normalization directories and generated example
 `out/` directories are ignored by version control.
+
+Live CiviCRM re-capture is permitted only with the reviewed digest-pinned
+Compose topology, a fresh random project name, its run-owned volumes, no host
+port, an internal network, disabled outbound mail and scheduled jobs, an empty
+external-password-lookup URL, synthetic credentials generated for that run, and
+the exact verified Directus source-normalization binding recorded in the target
+manifest. Cleanup may remove only those exact disposable project resources. The
+live harness is not a production-data ingestion path.
 
 ## Production gate
 

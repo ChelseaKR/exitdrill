@@ -27,10 +27,14 @@ jobs:
           cache-dependency-glob: uv.lock
       - name: Install locked environment
         run: uv sync --frozen
+      - name: Check CiviCRM lab harness syntax
+        run: node --check scripts/civicrm_target_roundtrip_lab.mjs
       - name: Verify
         run: make verify
       - name: Exercise both declared outcomes and comparison policy
         run: make demo-compare-policy
+      - name: Verify the offline CiviCRM target-roundtrip canary
+        run: make demo-civicrm-target-canary
 
   package:
     runs-on: ubuntu-latest
@@ -86,7 +90,9 @@ jobs:
           version: "0.11.29"
           python-version: "3.12"
       - name: Semgrep
-        run: uvx --from semgrep==1.168.0 semgrep scan --error --metrics off --config p/python src tests
+        run: >-
+          uvx --from semgrep==1.168.0 semgrep scan --error --metrics off
+          --config p/python --config p/nodejs src tests scripts
 
   zizmor:
     runs-on: ubuntu-latest

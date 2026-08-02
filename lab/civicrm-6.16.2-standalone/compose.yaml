@@ -1,0 +1,57 @@
+services:
+  database:
+    image: mariadb:10.11.18@sha256:be981e4113326ada8d6004174dd09eeaefc03094037f811182a52d4f2e737350
+    pull_policy: never
+    restart: "no"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${CIVICRM_DB_ROOT_PASSWORD:?required}
+      MYSQL_DATABASE: ${CIVICRM_DB_NAME:?required}
+      MYSQL_USER: ${CIVICRM_DB_USER:?required}
+      MYSQL_PASSWORD: ${CIVICRM_DB_PASSWORD:?required}
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 2s
+      timeout: 3s
+      retries: 60
+      start_period: 10s
+    init: true
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - lab
+    volumes:
+      - database:/var/lib/mysql
+
+  application:
+    image: civicrm/civicrm:6.16.2-php8.5@sha256:cdf062708b054670cc0f9b452e0b883840af71ce6db21615304f9e7ffe44b93f
+    pull_policy: never
+    restart: "no"
+    depends_on:
+      database:
+        condition: service_healthy
+    environment:
+      CIVICRM_DB_HOST: database
+      CIVICRM_DB_PORT: "3306"
+      CIVICRM_DB_NAME: ${CIVICRM_DB_NAME:?required}
+      CIVICRM_DB_USER: ${CIVICRM_DB_USER:?required}
+      CIVICRM_DB_PASSWORD: ${CIVICRM_DB_PASSWORD:?required}
+      CIVICRM_UF_BASEURL: http://application
+    init: true
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - lab
+    volumes:
+      - private-files:/var/www/html/private
+      - public-files:/var/www/html/public
+      - extensions:/var/www/html/ext
+
+networks:
+  lab:
+    internal: true
+
+volumes:
+  database:
+  private-files:
+  public-files:
+  extensions:

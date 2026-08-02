@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-01
 
-**Scope:** current synthetic structural evaluator and Directus API-response canary
+**Scope:** synthetic structural evaluator, Directus source canary, and one CiviCRM target-roundtrip canary
 
 ## Public-interest value
 
@@ -31,6 +31,12 @@ normalized bundles do contain record-level values, so the committed Directus
 canary remains invented-only and the one-command acceptance checks that raw
 fixture sentinels do not enter receipts, reports, or CLI evidence.
 
+The CiviCRM native capture likewise contains only invented record-level API
+envelopes and attachment bytes. Its aggregate target result excludes identities,
+values, content, credentials, paths, and HTTP bodies. The live target harness is
+restricted to a fresh no-egress local sandbox and remains prohibited for real,
+customer, employer, client, or production-derived data.
+
 ## Equity
 
 Organizations with the weakest budgets often have the most harmful lock-in.
@@ -47,9 +53,22 @@ capture surfaces, schema, license posture, manifest, and mapping decisions. It
 is labeled one synthetic source-process lab, not a production migration,
 Directus-wide result, or nonprofit-domain validation.
 
+The CiviCRM evidence is independently bounded: five target-interface probes are
+reported separately from the unchanged five-dimension evaluator. All five can
+pass while the structural result fails with six missing signals. Target-created
+roles, fields, users, ACL groups, ACL group memberships, ACL roles and rules,
+helper records, and activities are counted as scaffolding, not relabeled as
+preserved source data. Attachment-byte retrieval is explicitly not presented as
+case-level attachment authorization.
+
 ## Accountability
 
 The current evaluator authenticates no operator, baseline owner, vendor, or
 timestamp. A future signature can establish issuer and integrity, not truth or
 completeness. Payer, adapter version, target build, assurance tier, and any
 human review must be disclosed in production.
+
+The target manifest's image, isolation, automation, and identity statements are
+also unsigned operator assertions. Hashes make the frozen bundle internally
+checkable; they do not authenticate who executed the lab or whether the stated
+pre-write conditions were true.

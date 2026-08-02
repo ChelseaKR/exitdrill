@@ -4,8 +4,8 @@
 
 Run structural recovery drills for leaving SaaS systems.
 
-**Status:** technical alpha · synthetic data only · offline CLI · zero runtime
-dependencies
+**Status:** technical alpha · synthetic data only · offline verifier with an
+optional isolated local capture lab · zero runtime dependencies
 
 ExitDrill asks a question that ordinary backup and native export checks do not:
 
@@ -20,9 +20,11 @@ emits an aggregate receipt that can be checked and replayed offline.
 
 This is a structural normalization experiment, not yet the complete product.
 A neutral SQLite restore does **not** prove that people can operate in an
-alternate production system. A future operational exercise must restore through
-a supported interface into one production-capable target, read it back, and run
-declared workflows before using a stronger restoration label.
+alternate production system. The repository now also exercises one closed,
+synthetic Directus-to-CiviCRM target profile through supported target interfaces,
+independent read-back, and five target-interface probes. That canary
+intentionally retains a failing structural result and does not establish
+operational equivalence, production readiness, or a stronger restoration label.
 
 ## Five-minute synthetic drill
 
@@ -137,9 +139,64 @@ capture bundle or proves that the capture includes everything Directus held.
 
 The defensible claim is limited to the exact synthetic lab configuration: a
 pinned Directus 11.17.4 API-response capture bundle can be reproducibly
-normalized and the declared equal-count losses are detected. This is not evidence of a
-production migration, operational equivalence, vendor deletion, general CRM
-portability, or nonprofit case-management behavior.
+normalized and the declared equal-count losses are detected. This is not
+evidence of a production migration, operational equivalence, vendor deletion,
+general CRM portability, or nonprofit case-management behavior.
+
+## CiviCRM target-roundtrip canary
+
+One additional closed profile maps the same frozen Directus source fixture into
+a fresh, local CiviCRM Standalone 6.16.2 sandbox. The reviewed lab pins the
+application and database images by digest, exposes no host port, blocks target
+egress, disables outbound mail, scheduled jobs, and the external password
+lookup, and creates four distinct synthetic principals. A writer loads only the
+fixed profile; an independent reader reconstructs target state through APIv4 and
+authenticated private-file read-back.
+
+The implementation follows CiviCRM's official documentation for
+[Standalone](https://docs.civicrm.org/installation/en/latest/standalone/),
+[APIv4 REST](https://docs.civicrm.org/dev/en/latest/api/v4/rest/), and
+[AuthX](https://docs.civicrm.org/dev/en/latest/framework/authx/). The upstream
+[Docker project](https://github.com/civicrm/civicrm-docker) describes its
+quickstart as a local testing environment, so this repository does not present
+the container lab as a production deployment.
+
+Run the committed target evidence and all offline negative controls without
+Docker or network access:
+
+```sh
+make demo-civicrm-target-canary
+```
+
+Or invoke the closed verifier directly:
+
+```sh
+exitdrill normalize-civicrm-target-canary \
+  examples/civicrm-6.16.2-target-roundtrip/native/capture-manifest.json \
+  --out-dir normalized-civicrm-target-canary
+```
+
+The five observed target-interface probes cover record lookup, relationship
+traversal, private attachment-byte retrieval, authorized access, and
+authenticated denial over the same protected record. All five pass in the clean
+frozen capture. The separate structural evaluation still reports
+`not_structurally_restorable` with six known gaps: two Directus collection-scope
+entities, two source permission grants, and two source audit events have no
+semantics-preserving representation in this profile. Target scaffolding is
+counted separately and never relabeled as source data.
+
+The live capture harness first verifies the exact Directus normalization and
+binds its adapter profile, normalization schema, source-bundle,
+normalized-export, and normalized-attachment digests in the target manifest.
+That live Docker capture gate is separate from the offline command above. The
+offline command checks the frozen bundle, its unsigned execution assertions,
+deterministic normalization, structural result, and negative controls; it does
+not rerun or authenticate the historical sandbox.
+
+The target result is aggregate, unsigned, and profile-specific. Successful
+target-interface probes do not override the five-dimension structural result,
+prove UI usability, preserve source principals or history, establish a completed
+migration, or support a general Directus/CiviCRM connector claim.
 
 ## Compare recurring receipts
 
@@ -220,8 +277,8 @@ exitdrill validate-exercise examples/synthetic-exercise/plan.json
 
 This validates only a synthetic plan: separate baseline coverage, an empty and
 isolated egress-blocked target, disabled automations, read-back evidence, and
-the five required workflow probes. It executes nothing and cannot produce a
-restoration result.
+the five required target-interface probes. It executes nothing and cannot
+produce a restoration result.
 
 ## Result semantics
 
@@ -250,6 +307,9 @@ compliant.
 - The profile-specific Directus normalizer accepts only the committed 11.17.4
   synthetic canary profile; it is not a generic connector or
   permission-equivalence engine.
+- The profile-specific CiviCRM verifier accepts only the committed 6.16.2
+  synthetic target read-back; its five target-interface probes are not a
+  migration, UI, or source-permission-equivalence claim.
 - No claim that an export proves its own completeness.
 - No claim that file presence proves semantic usability.
 - No claim that a successful neutral import proves operational recovery.
@@ -284,10 +344,12 @@ field values never enter the receipt.
 ## Product direction
 
 The intended wedge is recurring CRM/case-management exit drills for nonprofits
-and local government. The Directus canary is the first real source-process lab,
-not domain validation. The strongest next slice remains one lawful native export
-from a nonprofit-relevant system such as an isolated CiviCRM sandbox, one real
-alternate target, target read-back, and operational scenario probes.
+and local government. The Directus canary exercises one real source process, and
+the CiviCRM canary exercises one real target process; neither is domain
+validation. A second real source-target exercise is required before extracting a
+connector SDK. Any production-derived design-partner work remains blocked on the
+documented data-governance gate and would need user-visible operational scenarios
+beyond these target-interface probes.
 
 ## Project documents
 
@@ -295,6 +357,7 @@ alternate target, target read-back, and operational scenario probes.
 - [Architecture decision](docs/decisions/0001-structural-evaluation-before-target-adapter.md)
 - [Synthetic preflight decision](docs/decisions/0002-synthetic-exercise-preflight.md)
 - [Directus canary boundary decision](docs/decisions/0004-normalize-one-directus-canary-outside-evaluator.md)
+- [CiviCRM target-roundtrip decision](docs/decisions/0005-exercise-one-civicrm-target-roundtrip-canary.md)
 - [Threat model](docs/THREAT-MODEL.md)
 - [Responsible-technology audit](docs/RESPONSIBLE-TECH-AUDITS.md)
 - [Data governance](docs/DATA-GOVERNANCE.md)

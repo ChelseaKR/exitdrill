@@ -3,20 +3,22 @@
 ## Claims boundary
 
 ```text
-API-response capture  ── profile verifier/normalizer ── normalized export ─┐
-independent baseline ──────────────────────────────────────────────────────┼─ neutral graph
-normalized attachment bytes ───────────────────────────────────────────────┘       │
-                                                                                    ▼
-                                                                              SQLite restore
-                                                                                    │
-                                                                                    ▼
-                                            structural reconciliation
-                                                        │
-                                                        ▼
-                                        aggregate receipt + offline replay
-
-Future operational exercise:
-neutral graph → real target load → target read-back → workflow probes
+Directus API capture ── closed source normalizer ── source export ── fixed load ─┐
+                                                                               ▼
+independent baseline ──────────────────────────────────────────────── CiviCRM sandbox
+        │                                                                      │
+        │                                             independent API/file read-back
+        │                                                                      │
+        │                                                                      ▼
+        └────────────── closed target verifier ◀── target capture bundle ───────┘
+                               │                         │
+                     target normalized export           └── five-probe target result
+                               │                                  (separate evidence)
+                               ▼
+                    unchanged structural evaluator
+                               │
+                               ▼
+                    failing structural result
 ```
 
 The current evaluator establishes structural representability and reference
@@ -37,6 +39,12 @@ permission model.
   verifies the capture manifest and declared bytes before mapping them into the
   existing normalized contract and atomically creating a new output directory.
   It is not a connector registry, arbitrary transform runner, or evaluator.
+- `civicrm_target_canary.py` is a separate target-specific, fail-closed verifier
+  for exactly one Directus-to-CiviCRM Standalone 6.16.2 read-back profile. It
+  checks a closed native inventory, sandbox and identity assertions, target API
+  envelopes, private attachment bytes, and allow/deny outcomes before atomically
+  emitting the existing export contract plus a separate aggregate target result.
+  It does not load a target, execute a mapping, or alter evaluator result algebra.
 - `paths.py` is the single attachment-root boundary. Attachment size checks and
   hashing share one open descriptor, so a path replacement after open cannot
   change the bytes being measured.
@@ -54,8 +62,8 @@ permission model.
 - `report.py` renders one semantically verified aggregate receipt as a
   deterministic, accessible, script-free offline HTML report with the complete
   claims boundary intact.
-- `cli.py` exposes the bounded Directus canary normalizer plus validation,
-  drill, verification/replay, comparison, and offline reporting.
+- `cli.py` exposes the bounded Directus source and CiviCRM target normalizers
+  plus validation, drill, verification/replay, comparison, and offline reporting.
 
 ## Architecture decision
 
@@ -97,6 +105,68 @@ semantics. That detects changes in the declared record; it does not prove user
 identity, effective authorization, deny precedence, or cross-product permission
 equivalence.
 
+## CiviCRM target-roundtrip boundary
+
+The target exercise is a second closed profile, not a generic adapter. A reviewed
+Node.js harness creates a fresh run-owned CiviCRM Standalone 6.16.2 and MariaDB
+10.11.18 sandbox from digest-pinned images. Before loading it, the harness runs
+the closed Directus normalizer and binds the exact adapter profile,
+normalization schema, source-bundle, normalized-export, and
+normalized-attachment digests into the target manifest. The Compose topology
+publishes no host port and uses an internal network. Before fixture writes, the
+harness checks the pinned versions and fixed seed state, absent source-identity
+collisions, private attachment posture, blocked egress, disabled scheduled jobs,
+outbound mail set to CiviCRM's disabled value, and an empty
+external-password-lookup URL.
+
+Four distinct synthetic identities separate write, independent read-back,
+authorized access, and denied access. Writer mutation responses and in-memory
+IDs are not business-state read-back evidence. A separate AuthX writer envelope
+records identity separation without serving as business-state evidence. The
+reader reconstructs three source contacts, two cases, two case-scoped
+relationships, two private file associations, and both attachment byte streams
+through authenticated target surfaces. The allow and deny identities run the
+same permission-enforced Contact query over the same protected record. The
+expected denial is an authenticated APIv4 response with zero values, not an
+invented HTTP error.
+
+The native bundle contains synthetic API response projections and attachment
+bytes, so it is local fixture evidence rather than a public receipt. The harness
+preserves selected response values but removes unrelated APIv4 transport metadata
+into a closed `{values, count, countFetched[, countMatched]}` envelope. Its
+manifest binds an exact file inventory, source normalization, and aggregate
+execution assertions but remains unsigned and operator asserted.
+The offline verifier `normalize-civicrm-target-canary` checks that closed bundle,
+creates a five-entity normalized target export, and emits a separate aggregate
+`target-result.json` with the five target-interface probe observations.
+
+The live capture and offline acceptance gates are separate. The live harness may
+publish only after the source binding, fresh sandbox, target load, independent
+business-state read-back, and five target-interface probes succeed. The offline
+`make demo-civicrm-target-canary` command verifies the frozen unsigned bundle,
+deterministic outputs, structural result, and adversarial controls; it does not
+rerun or authenticate the historical Docker execution.
+
+The target result has no composite restoration state. CiviCRM-generated case
+activities, case contacts, application roles, custom fields, ACL groups, ACL
+group memberships, ACL roles, ACL entity-role assignments, ACL rules, helper
+contact, and principals are counted as target scaffolding, not source
+restoration. Source collection scopes, permission grants, and audit events
+remain unmapped. The unchanged structural evaluator therefore reports six
+missing signals and `not_structurally_restorable` even though all five clean
+target-interface probes pass.
+
+The fixed scaffolding counts are two case activities, two case contacts, one
+case type, two custom-field groups, seven custom fields, three ACL groups, four
+ACL group memberships, two ACL roles, two ACL entity-role assignments, two ACL
+rules, one helper contact, four principals, four application roles, zero
+created relationship types, and one referenced built-in relationship type.
+
+CiviCRM's broad uploaded-file permission does not establish that a private file
+inherits the attached case's row-level ACL. Attachment retrieval proves only byte
+fidelity in this profile; the Contact ACL query supplies the separate allow/deny
+observation. Neither probe proves UI usability or source-permission equivalence.
+
 ## Data contracts
 
 The baseline records expected identities, exact scalar values for its declared
@@ -113,6 +183,13 @@ The receipt emits none of those record-level identifiers or values. It emits
 aggregate counts, dimension statuses, source-document hashes, and limitations.
 `observed_remediation_signals` sums observed missing and invalid conditions; it
 is deliberately not called a minimum task count, cost, or RTO estimate.
+
+The CiviCRM target result is a different public contract. It records the pinned
+source and target profiles, five bounded target-interface probe states,
+represented/unmapped counts, target-generated counts, and fixed limitations. It
+contains no record IDs, field values, attachment bytes, credentials, paths, HTTP
+bodies, score, or structural-restoration label. It never replaces or overrides
+a receipt.
 
 Entity value comparison is exact and bounded to the baseline's required-field
 assertions. Each entity contributes at most one invalid count even if several
@@ -191,6 +268,11 @@ The current evaluator records:
 - dimension numerators and denominators;
 - reference restore success; and
 - deterministic replay equivalence.
+
+For the one target canary, separate evidence additionally records that the
+closed captured API and file responses satisfied the five pinned
+target-interface probes. That evidence is an unsigned observation of one
+synthetic lab, not an evaluator claim or a general connector guarantee.
 
 It does not prove:
 
