@@ -35,6 +35,7 @@ BROWSER_RESULT_NAME = "browser-workflow-result.json"
 ACCESSIBILITY_RESULT_NAME = "accessibility-result.json"
 KEYBOARD_RESULT_NAME = "keyboard-result.json"
 ACTIVITY_VIEW_RESULT_NAME = "activity-view-result.json"
+EVIDENCE_INDEX_NAME = "evidence-index.json"
 PROBE_IDS = (
     "record_lookup",
     "relationship_traversal",
@@ -488,6 +489,45 @@ def _assert_clean_activity_view_result(document: Mapping[str, object]) -> None:
     )
 
 
+def _assert_clean_evidence_index(document: Mapping[str, object]) -> None:
+    entries = document.get("entries")
+    _require(isinstance(entries, list), "clean evidence index entries were not an array")
+    _require(
+        [item.get("artifact_id") for item in entries if isinstance(item, dict)]
+        == [
+            "normalized_target_readback",
+            "target_interface",
+            "ui_surface",
+            "browser_workflow",
+            "automated_accessibility",
+            "keyboard_interaction",
+            "activity_view",
+        ],
+        "clean evidence index artifact order was not exact",
+    )
+    _require(
+        document.get("decision_scope") == "separate_non_composite_evidence_families",
+        "clean evidence index scope was not exact",
+    )
+    _require(
+        document.get("limitations")
+        == [
+            "index_is_unsigned_and_unauthenticated",
+            "index_is_not_a_composite_assessment",
+            "entries_have_independent_decision_scopes",
+            "normalized_export_requires_separate_baseline_evaluation",
+            "each_result_must_be_interpreted_with_its_own_limitations",
+            "target_version_and_execution_context_are_operator_asserted",
+        ],
+        "clean evidence index limitations were not exact",
+    )
+    _require(
+        document.get("schema_version") == "exitdrill/civicrm-evidence-index/v0.1"
+        and document.get("target_profile") == TARGET_PROFILE,
+        "clean evidence index profile was not exact",
+    )
+
+
 def _assert_aggregate_privacy(value: object, roots: tuple[Path, ...]) -> None:
     def walk(item: object) -> None:
         if isinstance(item, dict):
@@ -593,6 +633,8 @@ def main() -> None:
         _assert_clean_keyboard_result(clean_keyboard_result)
         clean_activity_view_result = _json_object(clean_a / ACTIVITY_VIEW_RESULT_NAME)
         _assert_clean_activity_view_result(clean_activity_view_result)
+        clean_evidence_index = _json_object(clean_a / EVIDENCE_INDEX_NAME)
+        _assert_clean_evidence_index(clean_evidence_index)
 
         committed_target_digest = _tree_digest(TARGET_NATIVE)
         builder_stderr = _build_adversaries(TARGET_NATIVE, adversaries)
@@ -693,6 +735,7 @@ def main() -> None:
             "clean_accessibility": clean_accessibility_result,
             "clean_keyboard": clean_keyboard_result,
             "clean_activity_view": clean_activity_view_result,
+            "clean_evidence_index": clean_evidence_index,
             "directus_normalization": directus_result,
             "permission_escalation_target": permission_result,
         }
@@ -709,6 +752,7 @@ def main() -> None:
                     "clean_accessibility_serious_violations": 2,
                     "clean_keyboard_tab_steps_to_roles_summary": 69,
                     "clean_activity_view_observations": 1,
+                    "clean_evidence_index_entries": 7,
                     "clean_ui_surface_observations": 1,
                     "source_profile": SOURCE_PROFILE,
                     "status": "civicrm_target_roundtrip_canary_verified",

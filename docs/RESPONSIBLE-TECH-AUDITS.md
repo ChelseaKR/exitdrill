@@ -73,6 +73,10 @@ pass or general keyboard-accessibility result.
 A sixth result verifies that one target-generated `Open Case` activity can be
 viewed read-only, while keeping that scaffolding separate from the two missing
 source audit-history records.
+The accompanying `evidence-index.json` catalogs the normalized export and all
+six result families without adding a status, score, pass count, or composite
+assessment. Its entries retain independent decision scopes, so proximity in the
+index cannot be read as combined evidence.
 
 ## Accountability
 

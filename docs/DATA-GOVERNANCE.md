@@ -45,6 +45,10 @@ The native activity-view projection contains only fixed semantic step keys, an
 engine label, an empty artifact list, and a sanitized known-error key/count. It
 excludes the synthetic subject, route parameters, activity/contact/case IDs,
 HTML, screenshots, traces, and credentials.
+The generated evidence index contains only fixed artifact identifiers,
+filenames, schema identifiers, decision scopes, the pinned profile, and fixed
+limitations. It contains no raw record fields, identifiers, credentials,
+browser content, paths, probe states, findings, scores, or conclusions.
 
 Receipts contain aggregates and input digests, not record fields or attachment
 content. Normalized exports necessarily contain the synthetic record fields and

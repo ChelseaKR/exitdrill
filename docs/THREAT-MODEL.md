@@ -54,6 +54,7 @@
 | Accessibility scan leaks rendered record data | retained scan data is limited to rule IDs, impacts, and aggregate node/rule counts; selectors, HTML snippets, help URLs, screenshots, and traces are discarded and fixture sentinels are rejected from aggregate evidence | the committed native counts can reveal that a small number of affected nodes exist |
 | One keyboard-operable disclosure is presented as general keyboard accessibility | separate evidence names one control, programmatic events, the exact 69-step path, and fixed limitations excluding complete focus order, visible focus, screen readers, and conformance | the observed control may work while other controls remain unreachable or confusing |
 | Viewing target-generated activity scaffolding is presented as restored source history | activity-view evidence is a separate result, labels one generated `Open Case` activity, and leaves the two source audit events missing in the structural evaluator | readers may still conflate operationally useful target scaffolding with preserved history |
+| The evidence index is presented as a composite score or verdict | the closed index contains only artifact identity, filename, schema, and independent decision scope; it has no status, score, pass count, priority, or inferred outcome | readers may still treat a catalog as a hierarchy or combined assessment |
 | Target capture is presented as authenticated execution evidence | exact inventory and bundle hashes plus fixed unsigned/operator-asserted limitations | a fabricator can recompute every hash and assertion |
 | Local CiviCRM Docker lab is presented as production-ready | docs identify the upstream quickstart as local testing and prohibit production data | readers can ignore deployment context |
 | Production target receives messages/payments | the only target path is a fixed synthetic, egress-blocked local profile with no payment mapping | production-derived use remains prohibited until the governance gate is accepted |
@@ -75,6 +76,8 @@
   portability, or nonprofit case-management behavior.
 - Calling five CiviCRM target-interface probe passes proof of UI usability,
   source-permission equivalence, a successful cutover, or structural restoration.
+- Treating the CiviCRM evidence index as a composite score, verdict, or ordering
+  of the independently bounded artifacts it catalogs.
 - Calling the Contact Summary marker observation proof of Manage Case, or
   calling the separate single-case browser observation proof of accessibility,
   general CiviCRM usability, or another case-management workflow.

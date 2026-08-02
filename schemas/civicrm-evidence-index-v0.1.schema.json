@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://exitdrill.example/schemas/civicrm-evidence-index-v0.1.schema.json",
+  "title": "ExitDrill CiviCRM evidence index v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["decision_scope", "entries", "limitations", "schema_version", "target_profile"],
+  "properties": {
+    "decision_scope": {"const": "separate_non_composite_evidence_families"},
+    "entries": {
+      "const": [
+        {
+          "artifact_id": "normalized_target_readback",
+          "decision_scope": "normalized_target_readback_for_structural_evaluation",
+          "filename": "export.json",
+          "schema_version": "exitdrill/export/v0.1"
+        },
+        {
+          "artifact_id": "target_interface",
+          "decision_scope": "pinned_synthetic_target_roundtrip_only",
+          "filename": "target-result.json",
+          "schema_version": "exitdrill/civicrm-target-roundtrip-result/v0.1"
+        },
+        {
+          "artifact_id": "ui_surface",
+          "decision_scope": "pinned_synthetic_ui_surface_only",
+          "filename": "ui-surface-result.json",
+          "schema_version": "exitdrill/civicrm-ui-surface-result/v0.1"
+        },
+        {
+          "artifact_id": "browser_workflow",
+          "decision_scope": "pinned_synthetic_browser_workflow_only",
+          "filename": "browser-workflow-result.json",
+          "schema_version": "exitdrill/civicrm-browser-workflow-result/v0.1"
+        },
+        {
+          "artifact_id": "automated_accessibility",
+          "decision_scope": "pinned_synthetic_manage_case_automated_scan_only",
+          "filename": "accessibility-result.json",
+          "schema_version": "exitdrill/civicrm-accessibility-result/v0.1"
+        },
+        {
+          "artifact_id": "keyboard_interaction",
+          "decision_scope": "pinned_synthetic_manage_case_keyboard_interaction_only",
+          "filename": "keyboard-result.json",
+          "schema_version": "exitdrill/civicrm-keyboard-result/v0.1"
+        },
+        {
+          "artifact_id": "activity_view",
+          "decision_scope": "pinned_synthetic_generated_activity_view_only",
+          "filename": "activity-view-result.json",
+          "schema_version": "exitdrill/civicrm-activity-view-result/v0.1"
+        }
+      ]
+    },
+    "limitations": {
+      "const": [
+        "index_is_unsigned_and_unauthenticated",
+        "index_is_not_a_composite_assessment",
+        "entries_have_independent_decision_scopes",
+        "normalized_export_requires_separate_baseline_evaluation",
+        "each_result_must_be_interpreted_with_its_own_limitations",
+        "target_version_and_execution_context_are_operator_asserted"
+      ]
+    },
+    "schema_version": {"const": "exitdrill/civicrm-evidence-index/v0.1"},
+    "target_profile": {
+      "const": "directus-11.17.4-civic-case-to-civicrm-standalone-6.16.2/v0.1"
+    }
+  }
+}

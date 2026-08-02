@@ -227,6 +227,13 @@ subject, `Open Case` type, and `Completed` status. It reports one additional
 exact `jquery_notify_unavailable` error and makes no claim about activity
 editing, creation, source-history equivalence, or other activity types.
 
+The normalizer also emits `evidence-index.json`, a machine-readable catalog of
+the normalized export and six separate result artifacts. Each entry names its
+own schema and decision scope. The index deliberately contains no status,
+score, pass count, or inferred outcome; every artifact must be interpreted with
+its own limitations, and the normalized export still requires the separate
+structural evaluator.
+
 ## Compare recurring receipts
 
 After creating two receipts, compare their aggregate evidence offline:
@@ -392,6 +399,7 @@ beyond these target-interface probes.
 - [CiviCRM automated-accessibility decision](docs/decisions/0008-record-one-automated-accessibility-observation.md)
 - [CiviCRM keyboard-interaction decision](docs/decisions/0009-record-one-keyboard-interaction-observation.md)
 - [CiviCRM activity-view decision](docs/decisions/0010-observe-one-civicrm-activity-view-workflow.md)
+- [CiviCRM non-composite evidence-index decision](docs/decisions/0011-index-civicrm-evidence-without-composing-it.md)
 - [Threat model](docs/THREAT-MODEL.md)
 - [Responsible-technology audit](docs/RESPONSIBLE-TECH-AUDITS.md)
 - [Data governance](docs/DATA-GOVERNANCE.md)
