@@ -3,7 +3,7 @@
 ## Claims boundary
 
 ```text
-bounded native canary ── profile verifier/normalizer ── normalized export ─┐
+API-response capture  ── profile verifier/normalizer ── normalized export ─┐
 independent baseline ──────────────────────────────────────────────────────┼─ neutral graph
 normalized attachment bytes ───────────────────────────────────────────────┘       │
                                                                                     ▼
@@ -34,7 +34,7 @@ permission model.
   execution path.
 - `directus_canary.py` is a source-specific, fail-closed verifier and normalizer
   for exactly the Directus 11.17.4 synthetic civic-case canary profile. It
-  verifies the native manifest and declared bytes before mapping them into the
+  verifies the capture manifest and declared bytes before mapping them into the
   existing normalized contract and atomically creating a new output directory.
   It is not a connector registry, arbitrary transform runner, or evaluator.
 - `paths.py` is the single attachment-root boundary. Attachment size checks and
@@ -65,20 +65,21 @@ Three options were considered:
 |---|---|---|
 | General connector platform | Reject for the current scope | Tests abstractions before customer value; high treadmill risk |
 | Export-to-neutral-model only | Implement with restricted label | Cheapest way to test denominator, loss algebra, privacy, and replay |
-| One native source → real target → read-back → workflows | Required for an operational claim | Smallest credible operational exit claim |
+| One real source capture → real target → read-back → workflows | Required for an operational claim | Smallest credible operational exit claim |
 
 The canonical model is an adapter boundary, not proof of successful exit.
 
-## Native canary boundary
+## API-response capture boundary
 
-The committed Directus bundle was captured from a pinned local Directus 11.17.4
-process using documented first-party API surfaces and invented data. Capture and
-normalization are separate phases:
+The custom ExitDrill bundle was assembled from API responses and attachment
+bytes captured from a pinned local Directus 11.17.4 process using documented
+first-party surfaces and invented data. Capture and normalization are separate
+phases:
 
 1. the reviewed lab script creates and captures a fixed synthetic profile;
 2. the committed manifest declares an exact file set, byte sizes, SHA-256 values,
    aggregate bundle digest, source version, profile, and limitations;
-3. `normalize-directus-canary` verifies the closed profile and native bytes,
+3. `normalize-directus-canary` verifies the closed profile and captured bytes,
    then writes the normal export and attachment contracts; and
 4. the unchanged evaluator consumes only those normal contracts.
 
@@ -90,7 +91,8 @@ also means the receipt does not bind or authenticate the acquisition process.
 
 Directus permission records are represented as grants to policy principals over
 explicit collection-scope entities. The role value binds a SHA-256 digest of the
-canonical native `action`, `fields`, `permissions`, `presets`, and `validation`
+canonical captured Directus `action`, `fields`, `permissions`, `presets`, and
+`validation`
 semantics. That detects changes in the declared record; it does not prove user
 identity, effective authorization, deny precedence, or cross-product permission
 equivalence.
@@ -193,7 +195,7 @@ The current evaluator records:
 It does not prove:
 
 - the baseline or export is authentic or complete;
-- the native capture manifest authenticates its author or acquisition context;
+- the capture manifest authenticates its author or acquisition context;
 - a vendor exported everything it holds;
 - semantic or operational equivalence;
 - successful cutover into another product;

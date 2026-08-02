@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 _PROFILE = "directus-11.17.4-civic-case/v0.1"
 _SOURCE_VERSION = "11.17.4"
 _SOURCE_SYSTEM = "Directus 11.17.4 synthetic civic-case sandbox"
-_BUNDLE_SCHEMA = "exitdrill/directus-native-bundle/v0.1"
+_BUNDLE_SCHEMA = "exitdrill/directus-api-capture-bundle/v0.1"
 _NORMALIZATION_SCHEMA = "exitdrill/directus-normalization/v0.1"
 _ACQUISITION_SURFACE = "documented_first_party_rest_api"
 _LIMITATIONS = (
@@ -960,7 +960,7 @@ def normalize_directus_canary(manifest_path: Path, out_dir: Path) -> dict[str, J
     except OSError as exc:
         raise _fail("bundle or output location could not be resolved") from exc
     if resolved_out == resolved_root or resolved_out.is_relative_to(resolved_root):
-        raise _fail("output directory must be outside the native bundle")
+        raise _fail("output directory must be outside the capture bundle")
     if resolved_out.exists() or resolved_out.is_symlink():
         raise _fail("output directory already exists")
     manifest_document = _read_regular_file(

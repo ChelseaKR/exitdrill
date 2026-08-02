@@ -1,10 +1,13 @@
 # Directus 11.17.4 synthetic civic-case canary
 
-This directory is one frozen, synthetic-only native capture from a fresh
-Directus 11.17.4 sandbox. It is evidence for one exact adapter profile, not a
-general Directus export claim. The native bundle has not been hand-normalized
-into an ExitDrill export; a profile-specific normalizer must do that outside the
-evaluator.
+This directory is one frozen, synthetic-only custom API-response capture from a
+fresh Directus 11.17.4 sandbox. It is evidence for one exact adapter profile,
+not a general Directus export claim. The custom capture bundle has not been
+hand-normalized into an ExitDrill export; a profile-specific normalizer must do
+that outside the evaluator.
+
+The `native/` path is an internal source-side label for bytes before ExitDrill
+normalization; it does not identify a vendor-native Directus export format.
 
 ## Capture boundary
 
@@ -51,7 +54,7 @@ Official references:
 - [Directus v11.17.4 release](https://github.com/directus/directus/releases/tag/v11.17.4)
 - [Directus v11.17.4 license text](https://github.com/directus/directus/blob/v11.17.4/license)
 
-## Native evidence
+## API-response capture evidence
 
 `native/capture-manifest.json` records each captured response or attachment by
 relative path, exact byte count, and SHA-256. `bundle_sha256` is the SHA-256 of
@@ -74,7 +77,7 @@ The bundle contains:
 The adjacent `baseline.json` is a separately authored assertion for this
 controlled scenario. It declares complete coverage across all five ExitDrill
 dimensions. Its synthetic `captured_at` is after both captured audit timestamps
-and before the native manifest's `exported_at`; none of those timestamps are
+and before the capture manifest's `exported_at`; none of those timestamps are
 authenticated.
 
 ## Profile normalization contract
@@ -133,7 +136,7 @@ This fixture can support a bounded claim that one pinned, synthetic Directus
 profile was captured through documented APIs and has a declared normalization
 contract. It does **not** prove:
 
-- that the source export or separately authored baseline is authentic or
+- that the API-response capture or separately authored baseline is authentic or
   complete;
 - support for another Directus release, database, storage adapter, schema,
   permission shape, or activity shape;

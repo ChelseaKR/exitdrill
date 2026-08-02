@@ -14,7 +14,7 @@ engineering case study—not a client engagement, employer deliverable, corporat
 past-performance claim, or proof of an operational migration.
 
 The next evidence slice uses a pinned, local Directus 11.17.4 process with an
-invented civic-case schema. A reviewed capture script produced native
+invented civic-case schema. A reviewed capture script collected documented
 first-party API responses and attachment bytes; a closed source-specific
 normalizer verifies that manifest and maps it into the existing evaluator
 contract. A deterministic equal-row-and-file-count derivative introduces six
@@ -34,7 +34,7 @@ nonprofit-CRM validation.
 - The real-process synthetic source fixture, independent baseline, capture
   boundary, and claim limits are documented in
   [`examples/directus-11.17.4-civic-case/`](../examples/directus-11.17.4-civic-case/).
-- The closed native normalization seam is implemented in
+- The closed Directus capture normalization seam is implemented in
   [`src/exitdrill/directus_canary.py`](../src/exitdrill/directus_canary.py). The
   one-command clean-vs-lossy acceptance demonstration is
   [`scripts/check_directus_canary_demo.py`](../scripts/check_directus_canary_demo.py)
@@ -69,9 +69,9 @@ workflow read-back.
 
 - Built ExitDrill, an offline Python technical alpha that tests synthetic SaaS
   exports across five structural dimensions; added a pinned Directus 11.17.4
-  synthetic native canary that reproducibly detects six declared adversarial
-  losses hidden by unchanged row and file counts, with replayable aggregate
-  receipts and standalone evidence reports.
+  synthetic API-response capture canary that reproducibly detects six declared
+  adversarial losses hidden by unchanged row and file counts, with replayable
+  aggregate receipts and standalone evidence reports.
 
 ## 60-second interview version
 
@@ -90,10 +90,10 @@ collapsing a permission, and replacing an audit event; the drill surfaces the
 losses. I also added a deterministic, script-free HTML evidence report and strict
 quality gates. The boundary matters: this demonstrates a synthetic structural
 test, not a production migration or operational exit readiness. I then moved one
-seam closer to a real source: a pinned local Directus 11.17.4 sandbox emitted the
-committed native-format canary through documented first-party APIs. A closed
-normalizer verifies those bytes and an equal-count derivative creates six exact
-loss signals without changing the evaluator. That evidence is limited to the
-frozen synthetic profile. The next credible milestone is a nonprofit-relevant
-source such as an isolated CiviCRM lab, followed by target read-back and workflow
-probes.
+seam closer to a real source: a capture program collected documented first-party
+API responses and attachment bytes from a pinned local Directus 11.17.4 sandbox
+and assembled the committed custom capture bundle. A closed normalizer verifies
+those bytes and an equal-count derivative creates six exact loss signals without
+changing the evaluator. That evidence is limited to the frozen synthetic
+profile. The next credible milestone is a nonprofit-relevant source such as an
+isolated CiviCRM lab, followed by target read-back and workflow probes.

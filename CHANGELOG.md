@@ -20,16 +20,16 @@ All notable changes will be documented here.
 
 ### Added
 
-- A real-process, synthetic-only Directus 11.17.4 native canary captured from a
-  pinned local sandbox, with schema, content, relationships, attachment bytes,
-  permissions, activity, and a closed hash manifest.
-- A bounded source-specific Directus normalizer that verifies the native bundle
-  and atomically emits the existing normalized export and attachment contracts
-  without entering the evaluator's trust algebra.
-- A one-command native-canary acceptance demonstration: deterministic normalization,
-  clean replay, an equal-row-and-file-count six-mutation derivative, exact
-  five-dimension loss assertions, aggregate-only reports, receipt comparison,
-  and comparison-policy exit verification.
+- A real-process, synthetic-only Directus 11.17.4 API-response canary captured
+  from a pinned local sandbox, with schema, content, relationships, attachment
+  bytes, permissions, activity, and a closed hash manifest.
+- A bounded source-specific Directus normalizer that verifies the custom capture
+  bundle and atomically emits the existing normalized export and attachment
+  contracts without entering the evaluator's trust algebra.
+- A one-command Directus-canary acceptance demonstration: deterministic
+  normalization, clean replay, an equal-row-and-file-count six-mutation
+  derivative, exact five-dimension loss assertions, aggregate-only reports,
+  receipt comparison, and comparison-policy exit verification.
 - Fail-closed detection and replay evidence for same-type critical-field value
   loss without placing raw field values in aggregate receipts.
 - Strict independent baseline and normalized-export contracts.

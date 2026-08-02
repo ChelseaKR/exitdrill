@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-01
 
-**Scope:** current synthetic structural evaluator and Directus native canary
+**Scope:** current synthetic structural evaluator and Directus API-response canary
 
 ## Public-interest value
 
@@ -26,7 +26,7 @@ project needs:
 - a documented data-processing basis.
 
 Raw values, IDs, narratives, and attachment bytes never enter receipts. Aggregate
-counts and hashes can still be identifying in small populations. Native and
+counts and hashes can still be identifying in small populations. Capture and
 normalized bundles do contain record-level values, so the committed Directus
 canary remains invented-only and the one-command acceptance checks that raw
 fixture sentinels do not enter receipts, reports, or CLI evidence.

@@ -14,11 +14,11 @@ evidence from a documented, customer-obtainable source surface. At the same
 time, the evaluator's trust boundary prohibits dynamic mappings, arbitrary
 commands, URLs, and vendor-specific behavior.
 
-One fresh, no-egress Directus 11.17.4 SQLite sandbox now supplies a frozen native
-bundle. It contains invented records only and is pinned to one official image
-digest, schema, set of REST responses, and permission shape. This evidence is
-too narrow to justify either a generic connector SDK or a claim of Directus-wide
-portability.
+One fresh, no-egress Directus 11.17.4 SQLite sandbox now supplies a frozen
+custom API-response capture bundle. It contains invented records only and is
+pinned to one official image digest, schema, set of REST responses, and
+permission shape. This evidence is too narrow to justify either a generic
+connector SDK or a claim of Directus-wide portability.
 
 ## Decision
 
@@ -82,21 +82,22 @@ the evaluator, and makes a single canary look like a supported connector model.
 **Pros:** Cheap and directly consumable by the current evaluator.
 
 **Cons:** Repeats the existing synthetic evidence gap because no executable,
-source-bound transformation connects native bytes to the normalized contract.
+source-bound transformation connects captured source bytes to the normalized
+contract.
 
 ## Trade-off Analysis
 
 Option A adds the smallest code seam that can falsify assumptions about an
-actual vendor-shaped capture. Its deliberate lack of configurability is a
-feature at this stage: malformed or changed native input fails closed instead
-of being interpreted through operator-supplied logic. The cost is explicit
+actual documented API-response capture. Its deliberate lack of configurability
+is a feature at this stage: malformed or changed captured input fails closed
+instead of being interpreted through operator-supplied logic. The cost is explicit
 profile churn and duplicated code if later evidence reveals no stable
 abstraction. That cost is preferable to freezing a generic connector API after
 one source.
 
 ## Consequences
 
-- Native manifest integrity and profile semantics become independently
+- Capture manifest integrity and profile semantics become independently
   testable before evaluation.
 - The evaluator remains vendor-neutral and retains its existing input contract.
 - Permission changes can fail the permission dimension without also changing
@@ -110,7 +111,8 @@ one source.
 
 ## Action Items
 
-1. [x] Freeze the synthetic native bundle, independent baseline, capture notes,
+1. [x] Freeze the synthetic API-response capture bundle, independent baseline,
+   capture notes,
    and permission canonicalization for this profile.
 2. [x] Implement a bounded, closed profile normalizer outside the evaluator.
 3. [x] Add negative tests for manifest tampering, traversal, unknown fields,
@@ -118,5 +120,5 @@ one source.
    and audit changes.
 4. [x] Run the normalized good fixture through the existing five-dimension
    evaluator and preserve aggregate-only receipts.
-5. [ ] Revisit the architecture only after evidence from another real native
-   profile or a production-capable target exercise.
+5. [ ] Revisit the architecture only after evidence from another real
+   source capture profile or a production-capable target exercise.

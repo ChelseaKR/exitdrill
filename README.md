@@ -84,15 +84,16 @@ under test: “100% of the rows exported” can still conceal an unsafe exit.
 The receipt reports `observed_remediation_signals`, not a cost, task count, or
 minimum remediation estimate.
 
-## Directus native-format canary
+## Directus API-response capture canary
 
 The repository also contains a source-specific canary captured from a real,
 local Directus 11.17.4 process. The sandbox used SQLite, an invented civic-case
 schema, fixed synthetic records, local attachment bytes, and documented
 first-party API surfaces for content, file metadata and bytes, permissions, and
-activity. The committed bundle contains no production or customer data. Directus
-is Business Source License software; this local nonproduction experiment does
-not describe it as open source.
+activity. The artifact is a custom ExitDrill capture bundle assembled from those
+responses, not a vendor-native Directus export format. It contains no production
+or customer data. Directus is Business Source License software; this local
+nonproduction experiment does not describe it as open source.
 
 The capture boundary follows Directus's official documentation for
 [self-hosting](https://directus.com/docs/self-hosting/deploying),
@@ -105,10 +106,10 @@ Run the complete synthetic acceptance demonstration without Docker or network
 access:
 
 ```sh
-make demo-native-canary
+make demo-directus-canary
 ```
 
-The command verifies the native capture manifest, checks byte-identical
+The command verifies the capture manifest, checks byte-identical
 normalization output across two runs, runs and replays a clean drill, builds an
 equal-row-and-file-count adversarial derivative, runs and replays its failing
 drill, renders both aggregate-only reports, compares the receipts, and checks
@@ -127,16 +128,16 @@ exitdrill normalize-directus-canary \
 ```
 
 The normalizer accepts only this bounded canary profile, verifies every declared
-native file before semantically parsing it, and atomically writes the existing
-ExitDrill `export.json` plus attachment layout. Its aggregate normalization
-manifest is out of band. The receipt continues to bind the normalized export, not the
-operator-asserted acquisition process. Neither the manifest hash nor the receipt
-checksum authenticates who produced the native bundle or proves that Directus
-exported everything.
+captured response or attachment before semantically parsing it, and atomically
+writes the existing ExitDrill `export.json` plus attachment layout. Its aggregate
+normalization manifest is out of band. The receipt continues to bind the
+normalized export, not the operator-asserted acquisition process. Neither the
+manifest hash nor the receipt checksum authenticates who produced the custom
+capture bundle or proves that the capture includes everything Directus held.
 
 The defensible claim is limited to the exact synthetic lab configuration: a
-pinned Directus 11.17.4 native-format bundle can be reproducibly normalized and
-the declared equal-count losses are detected. This is not evidence of a
+pinned Directus 11.17.4 API-response capture bundle can be reproducibly
+normalized and the declared equal-count losses are detected. This is not evidence of a
 production migration, operational equivalence, vendor deletion, general CRM
 portability, or nonprofit case-management behavior.
 
@@ -246,8 +247,9 @@ compliant.
 - Synthetic data only.
 - No live vendor credentials, APIs, destructive operations, or production writes.
 - No arbitrary transforms, commands, plugins, SQL, JQ, or model-generated mapping.
-- The one native adapter accepts only the committed Directus 11.17.4 synthetic
-  canary profile; it is not a generic connector or permission-equivalence engine.
+- The profile-specific Directus normalizer accepts only the committed 11.17.4
+  synthetic canary profile; it is not a generic connector or
+  permission-equivalence engine.
 - No claim that an export proves its own completeness.
 - No claim that file presence proves semantic usability.
 - No claim that a successful neutral import proves operational recovery.

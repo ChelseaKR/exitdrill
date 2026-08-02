@@ -28,7 +28,7 @@ carry the receipt's complete limitations. They remain unsigned summaries of
 unauthenticated aggregate evidence.
 
 The Directus canary normalizer accepts only the closed 11.17.4 synthetic
-civic-case profile. It verifies the manifest, fixed native file set, sizes, and
+civic-case profile. It verifies the manifest, fixed captured file set, sizes, and
 hashes before reading mapped records; pins the exact captured schema digest;
 rejects links, unsafe paths, and output nesting beneath the source; applies
 strict resource bounds and shapes; and creates output through a fresh temporary
@@ -41,7 +41,7 @@ The repository's adversarial builder accepts only a bundle that already passes
 that normalizer and matches the committed clean manifest and bundle hashes,
 validates a no-symlink copied snapshot, checks each of its six mutation
 preconditions, validates the derivative again, and requires disjoint sibling
-output paths. It publishes the aggregate derivative statement before the native
+output paths. It publishes the aggregate derivative statement before the capture
 directory so a normal runtime failure cannot leave an unlabeled derivative.
 
 Use GitHub's

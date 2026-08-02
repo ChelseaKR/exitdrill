@@ -16,7 +16,7 @@ from exitdrill.directus_canary import DirectusCanaryError, normalize_directus_ca
 
 _MANIFEST_NAME = "capture-manifest.json"
 _CLEAN_BUNDLE_SHA256 = "a67048bf25c07b73aa0bff26372090c0a7e5ce77871b49259d0a96110998be49"
-_CLEAN_MANIFEST_SHA256 = "14f947b81e1baf301da75bf56a5f11438d3336b106b383de404de2eea94794c8"
+_CLEAN_MANIFEST_SHA256 = "b480d003ca7f90aac34c7bb506b67507bfbc32a6832e0b4f5b45b6d1c02ccb20"
 
 
 def _canonical_bytes(value: object) -> bytes:

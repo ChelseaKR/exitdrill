@@ -10,9 +10,10 @@ is permitted.
 
 This includes the committed Directus 11.17.4 civic-case canary. Its people,
 cases, policy, activity, file metadata, and text attachments were invented for
-the lab. The native bundle is a capture from a real local process, but it is not
-customer, employer, client, or production-derived data. Re-capture is permitted
-only in an isolated synthetic sandbox.
+the lab. The custom capture bundle was assembled from responses and attachment
+bytes collected from a real local process, but it is not customer, employer,
+client, or production-derived data. Re-capture is permitted only in an isolated
+synthetic sandbox.
 
 Receipts contain aggregates and input digests, not record fields or attachment
 content. Normalized exports necessarily contain the synthetic record fields and

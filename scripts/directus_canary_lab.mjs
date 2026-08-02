@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { lstat, mkdir, readFile, writeFile } from "node:fs/promises";
 
 const baseUrl = "http://127.0.0.1:8055";
-const captureDir = "/tmp/exitdrill-directus-native";
+const captureDir = "/tmp/exitdrill-directus-api-capture";
 const policyId = "33333333-3333-4333-8333-333333333333";
 const firstFileId = "11111111-1111-4111-8111-111111111111";
 const secondFileId = "22222222-2222-4222-8222-222222222222";
@@ -366,7 +366,7 @@ for (const [collection, field, relatedCollection] of expectedRelations) {
 }
 const bundleSha256 = sha256(Buffer.from(canonical(files), "utf8"));
 const manifest = {
-  schema_version: "exitdrill/directus-native-bundle/v0.1",
+  schema_version: "exitdrill/directus-api-capture-bundle/v0.1",
   adapter_profile: "directus-11.17.4-civic-case/v0.1",
   acquisition_surface: "documented_first_party_rest_api",
   data_mode: "synthetic_only",
@@ -389,7 +389,7 @@ const manifestBytes = Buffer.from(`${canonical(manifest)}\n`, "utf8");
 await writeFile(`${captureDir}/capture-manifest.json`, manifestBytes, { flag: "wx" });
 console.log(
   JSON.stringify({
-    status: "synthetic_native_bundle_captured",
+    status: "synthetic_api_capture_bundle_captured",
     source_version: schema.data.directus,
     files: files.length,
     bundle_sha256: bundleSha256,

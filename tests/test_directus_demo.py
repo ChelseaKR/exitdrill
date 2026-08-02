@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 
-def test_directus_native_canary_acceptance() -> None:
+def test_directus_api_capture_canary_acceptance() -> None:
     project = Path(__file__).parents[1]
     completed = subprocess.run(  # noqa: S603 - fixed interpreter and repository script
         [sys.executable, str(project / "scripts" / "check_directus_canary_demo.py")],
@@ -24,7 +24,7 @@ def test_directus_native_canary_acceptance() -> None:
         "lossy_overall_status": "not_structurally_restorable",
         "row_and_file_counts_preserved": True,
         "source_profile": "directus-11.17.4-civic-case/v0.1",
-        "status": "native_canary_verified",
+        "status": "directus_api_capture_canary_verified",
     }
 
 

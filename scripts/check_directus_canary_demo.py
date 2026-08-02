@@ -308,7 +308,7 @@ def main() -> None:
                     "lossy_overall_status": lossy_payload["overall_status"],
                     "row_and_file_counts_preserved": True,
                     "source_profile": "directus-11.17.4-civic-case/v0.1",
-                    "status": "native_canary_verified",
+                    "status": "directus_api_capture_canary_verified",
                 },
                 allow_nan=False,
                 sort_keys=True,

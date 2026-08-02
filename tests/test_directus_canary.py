@@ -329,7 +329,7 @@ def _base_manifest(files: list[dict[str, object]]) -> dict[str, object]:
             "does_not_prove_operational_equivalence",
         ],
         "production_data_allowed": False,
-        "schema_version": "exitdrill/directus-native-bundle/v0.1",
+        "schema_version": "exitdrill/directus-api-capture-bundle/v0.1",
         "source_system": "Directus 11.17.4 synthetic civic-case sandbox",
         "source_version": "11.17.4",
     }
@@ -584,7 +584,7 @@ def test_printable_result_and_written_manifest_are_aggregate_hash_only(tmp_path:
         ("isolated_sandbox", False),
         ("limitations", ["does_not_prove_operational_equivalence"]),
         ("production_data_allowed", True),
-        ("schema_version", "exitdrill/directus-native-bundle/v0.2"),
+        ("schema_version", "exitdrill/directus-api-capture-bundle/v0.2"),
         ("source_system", "Another source"),
         ("source_version", "11.17.5"),
     ],
@@ -862,11 +862,11 @@ def test_existing_destination_is_never_modified(tmp_path: Path) -> None:
     assert list(out_dir.iterdir()) == [sentinel]
 
 
-def test_output_must_not_be_nested_inside_native_bundle(tmp_path: Path) -> None:
+def test_output_must_not_be_nested_inside_capture_bundle(tmp_path: Path) -> None:
     manifest = _create_bundle(tmp_path / "native")
     out_dir = manifest.parent / "normalized"
 
-    with pytest.raises(DirectusCanaryError, match="outside the native bundle"):
+    with pytest.raises(DirectusCanaryError, match="outside the capture bundle"):
         normalize_directus_canary(manifest, out_dir)
 
     assert not out_dir.exists()
