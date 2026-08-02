@@ -55,7 +55,8 @@ The evidence verifier reads only the fixed indexed JSON files and normalized
 attachment paths under the generated output root. Its stdout contains fixed
 profile and scope labels plus artifact and attachment counts; validation errors
 do not disclose record values, attachment content, credentials, or filesystem
-paths.
+paths. The closed verification result adds only schema identifiers, a fixed
+status, and fixed limitations; it contains no per-artifact state or finding.
 
 Receipts contain aggregates and input digests, not record fields or attachment
 content. Normalized exports necessarily contain the synthetic record fields and

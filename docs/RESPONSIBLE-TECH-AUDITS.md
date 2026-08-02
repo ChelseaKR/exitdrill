@@ -83,6 +83,9 @@ The companion CLI verifier checks those bindings, the packaged index and result
 schemas, the normalized export contract, and its declared attachment bytes. It
 returns no composite result and cannot substitute for the artifact-specific
 limitations, structural evaluation, or evidence authentication.
+Its closed verification-result contract repeats those boundaries in ordered
+machine-readable limitations rather than leaving them only in surrounding
+prose.
 
 ## Accountability
 

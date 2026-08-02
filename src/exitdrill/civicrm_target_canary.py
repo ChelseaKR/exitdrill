@@ -40,6 +40,7 @@ _ACCESSIBILITY_RESULT_SCHEMA = "exitdrill/civicrm-accessibility-result/v0.1"
 _KEYBOARD_RESULT_SCHEMA = "exitdrill/civicrm-keyboard-result/v0.1"
 _ACTIVITY_VIEW_RESULT_SCHEMA = "exitdrill/civicrm-activity-view-result/v0.1"
 _EVIDENCE_INDEX_SCHEMA = "exitdrill/civicrm-evidence-index/v0.2"
+_EVIDENCE_VERIFICATION_SCHEMA = "exitdrill/civicrm-evidence-verification/v0.1"
 _SOURCE_SYSTEM = "Directus 11.17.4 synthetic civic-case sandbox"
 _TARGET_SYSTEM = "CiviCRM Standalone"
 _TARGET_VERSION = "6.16.2"
@@ -269,6 +270,13 @@ _EVIDENCE_INDEX_LIMITATIONS = (
     "each_result_must_be_interpreted_with_its_own_limitations",
     "digests_prove_internal_consistency_not_authenticity",
     "target_version_and_execution_context_are_operator_asserted",
+)
+_EVIDENCE_VERIFICATION_LIMITATIONS = (
+    "verification_is_unsigned_and_unauthenticated",
+    "does_not_interpret_or_compose_artifact_results",
+    "does_not_run_structural_evaluator",
+    "does_not_prove_live_execution_or_completeness",
+    "digests_prove_internal_consistency_not_authenticity",
 )
 _EVIDENCE_INDEX_ARTIFACTS = (
     (
@@ -1190,7 +1198,9 @@ def verify_civicrm_evidence_index(index_path: Path) -> dict[str, JsonValue]:
         "artifact_count": len(bindings),
         "attachment_count": attachment_count,
         "decision_scope": "catalog_bindings_artifact_schemas_and_export_attachments_only",
-        "schema_version": _EVIDENCE_INDEX_SCHEMA,
+        "index_schema_version": _EVIDENCE_INDEX_SCHEMA,
+        "limitations": list(_EVIDENCE_VERIFICATION_LIMITATIONS),
+        "schema_version": _EVIDENCE_VERIFICATION_SCHEMA,
         "status": "evidence_artifact_contracts_verified",
         "target_profile": _PROFILE,
     }
