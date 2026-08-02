@@ -31,6 +31,7 @@ TARGET_PROFILE = "directus-11.17.4-civic-case-to-civicrm-standalone-6.16.2/v0.1"
 SOURCE_PROFILE = "directus-11.17.4-civic-case/v0.1"
 TARGET_RESULT_NAME = "target-result.json"
 UI_RESULT_NAME = "ui-surface-result.json"
+BROWSER_RESULT_NAME = "browser-workflow-result.json"
 PROBE_IDS = (
     "record_lookup",
     "relationship_traversal",
@@ -345,6 +346,40 @@ def _assert_clean_ui_result(document: Mapping[str, object]) -> None:
     )
 
 
+def _assert_clean_browser_result(document: Mapping[str, object]) -> None:
+    _require(
+        document
+        == {
+            "decision_scope": "pinned_synthetic_browser_workflow_only",
+            "known_runtime_errors": [
+                {
+                    "error_key": "jquery_notify_unavailable",
+                    "occurrence_count": 2,
+                }
+            ],
+            "limitations": [
+                "synthetic_fixture_only",
+                "target_evidence_is_unsigned_and_unauthenticated",
+                "single_case_browser_workflow_only",
+                "browser_workflow_observed_with_known_jquery_notify_runtime_errors",
+                "does_not_prove_accessibility",
+                "does_not_prove_operational_equivalence",
+                "target_version_and_execution_context_are_operator_asserted",
+            ],
+            "schema_version": "exitdrill/civicrm-browser-workflow-result/v0.1",
+            "target_profile": TARGET_PROFILE,
+            "workflow_results": [
+                {
+                    "evidence_kind": "isolated_headless_chromium_interaction",
+                    "id": "case_dashboard_to_manage_case",
+                    "state": "observed",
+                }
+            ],
+        },
+        "clean browser-workflow result was not exact",
+    )
+
+
 def _assert_aggregate_privacy(value: object, roots: tuple[Path, ...]) -> None:
     def walk(item: object) -> None:
         if isinstance(item, dict):
@@ -442,6 +477,8 @@ def main() -> None:
         _assert_clean_target_result(clean_target_result)
         clean_ui_result = _json_object(clean_a / UI_RESULT_NAME)
         _assert_clean_ui_result(clean_ui_result)
+        clean_browser_result = _json_object(clean_a / BROWSER_RESULT_NAME)
+        _assert_clean_browser_result(clean_browser_result)
 
         committed_target_digest = _tree_digest(TARGET_NATIVE)
         builder_stderr = _build_adversaries(TARGET_NATIVE, adversaries)
@@ -538,6 +575,7 @@ def main() -> None:
             "clean_structural": clean_payload,
             "clean_target": clean_target_result,
             "clean_ui_surface": clean_ui_result,
+            "clean_browser_workflow": clean_browser_result,
             "directus_normalization": directus_result,
             "permission_escalation_target": permission_result,
         }
@@ -550,6 +588,7 @@ def main() -> None:
                     "clean_observed_remediation_signals": 6,
                     "clean_overall_status": "not_structurally_restorable",
                     "clean_target_probe_passes": 5,
+                    "clean_browser_workflow_observations": 1,
                     "clean_ui_surface_observations": 1,
                     "source_profile": SOURCE_PROFILE,
                     "status": "civicrm_target_roundtrip_canary_verified",

@@ -1,0 +1,12 @@
+{
+  "name": "exitdrill-browser-lab",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Development-only browser runtime for the closed synthetic ExitDrill lab",
+  "engines": {
+    "node": ">=24"
+  },
+  "devDependencies": {
+    "playwright-core": "1.62.0"
+  }
+}

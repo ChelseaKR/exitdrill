@@ -27,6 +27,11 @@ the native values or HTTP bodies. The native UI projection records only fixed
 synthetic labels, a route name, status, and region name; raw HTML, cookies, and
 tokens are not retained. Its separate aggregate result contains no record value
 or target identifier.
+The native browser projection contains only a fixed engine label, workflow-step
+keys, an empty retained-artifact list, and a sanitized known-runtime-error key
+and count. The browser container retains no screenshots, traces, downloads,
+HTML, cookies, or credentials. Its aggregate result contains no synthetic record
+value, target identifier, URL parameter, or filesystem path.
 
 Receipts contain aggregates and input digests, not record fields or attachment
 content. Normalized exports necessarily contain the synthetic record fields and
@@ -41,8 +46,10 @@ Compose topology, a fresh random project name, its run-owned volumes, no host
 port, an internal network, disabled outbound mail and scheduled jobs, an empty
 external-password-lookup URL, synthetic credentials generated for that run, and
 the exact verified Directus source-normalization binding recorded in the target
-manifest. Cleanup may remove only those exact disposable project resources. The
-live harness is not a production-data ingestion path.
+manifest. The browser must use the reviewed digest-pinned, read-only,
+capability-dropped container on that internal network with artifact retention
+disabled. Cleanup may remove only those exact disposable project resources.
+The live harness is not a production-data ingestion path.
 
 ## Production gate
 

@@ -10,6 +10,8 @@ from zipfile import ZipFile
 
 COMPARISON_SCHEMA = "exitdrill/schemas/receipt-comparison-v0.1.schema.json"
 TARGET_RESULT_SCHEMA = "exitdrill/schemas/civicrm-target-roundtrip-result-v0.1.schema.json"
+UI_RESULT_SCHEMA = "exitdrill/schemas/civicrm-ui-surface-result-v0.1.schema.json"
+BROWSER_RESULT_SCHEMA = "exitdrill/schemas/civicrm-browser-workflow-result-v0.1.schema.json"
 
 
 def _check_schema(
@@ -64,6 +66,20 @@ def main() -> None:
                 "https://github.com/ChelseaKR/exitdrill/blob/main/"
                 "schemas/receipt-comparison-v0.1.schema.json"
             ),
+        )
+        _check_schema(
+            archive,
+            names,
+            UI_RESULT_SCHEMA,
+            Path("schemas/civicrm-ui-surface-result-v0.1.schema.json"),
+            "https://exitdrill.example/schemas/civicrm-ui-surface-result-v0.1.schema.json",
+        )
+        _check_schema(
+            archive,
+            names,
+            BROWSER_RESULT_SCHEMA,
+            Path("schemas/civicrm-browser-workflow-result-v0.1.schema.json"),
+            "https://exitdrill.example/schemas/civicrm-browser-workflow-result-v0.1.schema.json",
         )
         _check_schema(
             archive,

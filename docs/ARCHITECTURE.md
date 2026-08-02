@@ -176,10 +176,33 @@ stores only a sanitized projection. The offline verifier emits a separate
 aggregate `ui-surface-result.json`; it never changes the structural evaluator or
 the five target-interface probes.
 
-This server-rendered observation does not prove Manage Case, browser
+This server-rendered observation does not by itself prove Manage Case, browser
 interaction, JavaScript behavior, accessibility, or end-to-end task completion.
-Discovery did not establish the Manage Case surface, so that gap remains an
-explicit limitation rather than an inferred success.
+It remains a separate evidence family from the later browser workflow.
+
+## CiviCRM browser-workflow boundary
+
+A third closed observation runs Playwright 1.62.0 with Chromium from an exact
+digest-pinned image on the same internal Docker network. The browser container
+is read-only, drops all capabilities, gains no new privileges, mounts only the
+fixed workflow and pinned `playwright-core` dependency read-only, and retains no
+screenshots, traces, downloads, HTML, cookies, or credentials. Requests outside
+the local application origin are blocked.
+
+The independent reader opens the all-cases dashboard, locates the first
+synthetic case, follows CiviCRM's supported Manage Case action, verifies the
+exact subject, case type, displayed status, coordinator, Roles region, and
+Activities region, and emits only a fixed JSON projection. The offline verifier
+emits a separate aggregate `browser-workflow-result.json`; it does not change
+`target-result.json`, the five target probes, or the structural evaluator.
+
+The pinned CiviCRM Standalone build raises the same non-fatal
+`jquery_notify_unavailable` TypeError on dashboard and Manage Case load. The
+canary accepts only those two exact occurrences and records their sanitized key
+and count; any other page error, failed request, or off-origin request fails the
+workflow. This proves one bounded synthetic browser task despite that known
+runtime defect. It does not prove accessibility, general UI usability,
+production readiness, or any other case-management workflow.
 
 ## Data contracts
 

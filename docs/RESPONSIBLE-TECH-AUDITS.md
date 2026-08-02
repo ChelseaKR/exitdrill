@@ -60,8 +60,10 @@ roles, fields, users, ACL groups, ACL group memberships, ACL roles and rules,
 helper records, and activities are counted as scaffolding, not relabeled as
 preserved source data. Attachment-byte retrieval is explicitly not presented as
 case-level attachment authorization. One separate server-rendered Contact
-Summary observation is reported without claiming Manage Case, browser behavior,
-accessibility, or a completed workflow.
+Summary observation remains distinct from one isolated Dashboard → Manage Case
+browser observation. The browser result discloses two exact known non-fatal
+`jquery_notify_unavailable` errors, retains no browser artifacts, and makes no
+accessibility, general usability, or unobserved-workflow claim.
 
 ## Accountability
 

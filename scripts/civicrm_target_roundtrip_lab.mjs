@@ -19,6 +19,8 @@ import { fileURLToPath } from "node:url";
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const repositoryRoot = resolve(scriptDir, "..");
 const composeFile = join(repositoryRoot, "lab", "civicrm-6.16.2-standalone", "compose.yaml");
+const browserWorkflowScript = join(repositoryRoot, "scripts", "civicrm_browser_workflow.mjs");
+const browserNodeModules = join(repositoryRoot, "node_modules");
 const sourceNativeDir = join(
   repositoryRoot,
   "examples",
@@ -31,6 +33,8 @@ const applicationImage =
   "civicrm/civicrm:6.16.2-php8.5@sha256:cdf062708b054670cc0f9b452e0b883840af71ce6db21615304f9e7ffe44b93f";
 const databaseImage =
   "mariadb:10.11.18@sha256:be981e4113326ada8d6004174dd09eeaefc03094037f811182a52d4f2e737350";
+const browserImage =
+  "mcr.microsoft.com/playwright:v1.62.0-noble@sha256:baed2032d533817f3dbe6425de795788430ba345e819a1201337009ba17c9d07";
 const targetProfile =
   "directus-11.17.4-civic-case-to-civicrm-standalone-6.16.2/v0.1";
 const sourceProfile = "directus-11.17.4-civic-case/v0.1";
@@ -82,6 +86,7 @@ const capturePaths = [
   "permission-allow.json",
   "permission-deny.json",
   "ui-contact-summary.json",
+  "browser-workflow.json",
   `assets/${firstAssetId}.txt`,
   `assets/${secondAssetId}.txt`,
 ];
@@ -890,11 +895,96 @@ function createLabRuntime(envFile, projectName, composeEnvironment) {
     return { body: response.body, result };
   }
 
-  return { api, api4, compose, docker, http, identity, trusted };
+  const browserContainerName = `${projectName}-browser`;
+  let browserContainerActive = false;
+
+  async function browserWorkflow(identityRecord) {
+    browserContainerActive = true;
+    let completedCleanly = false;
+    try {
+      const completed = await docker(
+        [
+          "run",
+          "--rm",
+          "--init",
+          "--pull",
+          "never",
+          "--name",
+          browserContainerName,
+          "--network",
+          `${projectName}_lab`,
+          "--read-only",
+          "--tmpfs",
+          "/tmp:rw,noexec,nosuid,size=268435456",
+          "--shm-size",
+          "1073741824",
+          "--cap-drop",
+          "ALL",
+          "--security-opt",
+          "no-new-privileges:true",
+          "--mount",
+          `type=bind,src=${browserWorkflowScript},dst=/work/civicrm_browser_workflow.mjs,readonly`,
+          "--mount",
+          `type=bind,src=${browserNodeModules},dst=/work/node_modules,readonly`,
+          "-e",
+          "EXITDRILL_BROWSER_USERNAME",
+          "-e",
+          "EXITDRILL_BROWSER_PASSWORD",
+          browserImage,
+          "node",
+          "/work/civicrm_browser_workflow.mjs",
+        ],
+        {
+          env: {
+            EXITDRILL_BROWSER_USERNAME: identityRecord.username,
+            EXITDRILL_BROWSER_PASSWORD: identityRecord.password,
+          },
+          timeoutMs: 120_000,
+          label: "isolated CiviCRM browser workflow",
+        },
+      );
+      const observation = requireObject(
+        parseJsonBytes(completed.stdout, "browser workflow observation"),
+        "browser workflow observation",
+      );
+      completedCleanly = true;
+      return observation;
+    } finally {
+      if (completedCleanly) browserContainerActive = false;
+    }
+  }
+
+  async function cleanupBrowser() {
+    if (!browserContainerActive) return;
+    const listed = await docker(
+      ["container", "ls", "--all", "--quiet", "--filter", `name=^/${browserContainerName}$`],
+      {
+        timeoutMs: 10_000,
+        label: "browser container cleanup inspection",
+        allowAfterInterruption: true,
+      },
+    );
+    const containerIds = listed.stdout.toString("utf8").trim().split(/\s+/).filter(Boolean);
+    if (containerIds.length === 0) {
+      browserContainerActive = false;
+      return;
+    }
+    if (containerIds.length !== 1 || !/^[0-9a-f]{12,64}$/.test(containerIds[0])) {
+      fail("browser container cleanup inspection returned an unexpected result");
+    }
+    await docker(["container", "rm", "--force", browserContainerName], {
+      timeoutMs: 30_000,
+      label: "browser container cleanup",
+      allowAfterInterruption: true,
+    });
+    browserContainerActive = false;
+  }
+
+  return { api, api4, browserWorkflow, cleanupBrowser, compose, docker, http, identity, trusted };
 }
 
 async function validateCompose(runtime, composeEnvironment) {
-  await runtime.docker(["image", "inspect", applicationImage, databaseImage], {
+  await runtime.docker(["image", "inspect", applicationImage, databaseImage, browserImage], {
     timeoutMs: 30_000,
     label: "pinned local image check",
   });
@@ -1861,6 +1951,31 @@ async function captureReadback(runtime, fixture, principals, stageDir) {
     fail(`contact-summary UI omitted required marker(s): ${Object.entries(contactMarkers).filter(([, observed]) => !observed).map(([name]) => name).join(", ")}`);
   }
 
+  const browserObservation = await runtime.browserWorkflow(reader);
+  requireExact(
+    browserObservation,
+    {
+      browser_engine: "chromium",
+      data_mode: "synthetic_only",
+      known_runtime_errors: [
+        {
+          error_key: "jquery_notify_unavailable",
+          occurrence_count: 2,
+        },
+      ],
+      retained_artifacts: [],
+      schema_version: "exitdrill/civicrm-browser-workflow-observation/v0.1",
+      steps: [
+        "case_dashboard_opened",
+        "case_located",
+        "manage_case_opened",
+        "case_controls_observed",
+      ],
+      target_profile: targetProfile,
+    },
+    "browser workflow observation",
+  );
+
   const downloadedAssets = new Map();
   for (const sourceFile of fixture.files) {
     const signed = await runtime.api(
@@ -1907,6 +2022,7 @@ async function captureReadback(runtime, fixture, principals, stageDir) {
         surface: "contact_summary",
       }),
     ],
+    ["browser-workflow.json", jsonDocument(browserObservation)],
     [`assets/${firstAssetId}.txt`, downloadedAssets.get(firstAssetId)],
     [`assets/${secondAssetId}.txt`, downloadedAssets.get(secondAssetId)],
   ]);
@@ -1977,14 +2093,18 @@ function buildManifest(metadata, sourceNormalization) {
     target_version: "6.16.2",
     images: {
       application: applicationImage,
+      browser: browserImage,
       database: databaseImage,
     },
     acquisition_surface:
-      "supported_api_v4_authenticated_private_file_readback_and_authenticated_server_rendered_ui",
+      "supported_api_v4_authenticated_private_file_readback_authenticated_server_rendered_ui_and_isolated_browser_workflow",
     source_normalization: sourceNormalization,
     sandbox: {
       application_empty_before_write: true,
       attachments_private: true,
+      browser_artifact_retention_disabled: true,
+      browser_container_read_only: true,
+      browser_network_internal_only: true,
       egress_blocked: true,
       hibp_lookup_disabled: true,
       mail_disabled: true,
@@ -2043,7 +2163,9 @@ function buildManifest(metadata, sourceNormalization) {
       "source_capture_is_not_a_vendor_native_export",
       "does_not_prove_operational_equivalence",
       "server_rendered_ui_does_not_prove_browser_interaction",
-      "manage_case_and_case_workflow_not_observed",
+      "single_case_browser_workflow_only",
+      "browser_workflow_observed_with_known_jquery_notify_runtime_errors",
+      "browser_workflow_does_not_prove_accessibility",
     ],
   };
 }
@@ -2153,6 +2275,13 @@ async function executeLab(outputRequest) {
   } catch (error) {
     primaryError = error;
   } finally {
+    if (runtime !== null) {
+      try {
+        await runtime.cleanupBrowser();
+      } catch (error) {
+        cleanupError ??= error;
+      }
+    }
     if (composeStarted) {
       try {
         await runtime.compose(["down", "--volumes", "--remove-orphans", "--timeout", "10"], {

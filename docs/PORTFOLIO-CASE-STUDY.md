@@ -28,10 +28,13 @@ synthetic principals separate writes, independent read-back, allowed access, and
 denied access. The clean capture passes five target-interface probes while the
 unchanged structural evaluator still reports six explicit source-to-target gaps.
 The independent reader also observes one authenticated server-rendered Contact
-Summary surface containing the exact synthetic contact and Cases tab. This is a
-bounded target-process experiment, not a completed migration, Manage Case or
-browser workflow test, customer result, employer deliverable, or claim of
-CiviCRM-wide portability.
+Summary surface containing the exact synthetic contact and Cases tab, then
+completes one isolated Chromium workflow from the all-cases dashboard into
+Manage Case and observes the exact case controls. The workflow reports two known
+non-fatal CiviCRM `jquery_notify_unavailable` errors and retains no browser
+artifacts. This is a bounded target-process experiment, not a completed
+migration, accessibility assessment, customer result, employer deliverable, or
+claim of CiviCRM-wide portability.
 
 ## Evidence in the repository
 
@@ -54,6 +57,8 @@ CiviCRM-wide portability.
   [`src/exitdrill/civicrm_target_canary.py`](../src/exitdrill/civicrm_target_canary.py).
   The digest-pinned local harness lives in
   [`scripts/civicrm_target_roundtrip_lab.mjs`](../scripts/civicrm_target_roundtrip_lab.mjs),
+  and its closed browser task is
+  [`scripts/civicrm_browser_workflow.mjs`](../scripts/civicrm_browser_workflow.mjs),
   while
   [`scripts/check_civicrm_target_roundtrip_demo.py`](../scripts/check_civicrm_target_roundtrip_demo.py)
   verifies the frozen clean capture, intentional structural failure, and five
@@ -83,8 +88,10 @@ cutover to another SaaS product. The Directus evidence supports only one frozen
 11.17.4 synthetic source profile captured through documented APIs. The CiviCRM
 evidence supports only one frozen 6.16.2 target profile and five target-interface
 probe observations plus one Contact Summary UI-surface observation. ExitDrill
-still has no supported production connector, production data path, completed UI
-workflow exercise, or cutover evidence.
+also has one bounded Dashboard → Manage Case browser observation with two
+explicit known runtime errors. It still has no supported production connector,
+production data path, accessibility evidence, general UI-workflow coverage, or
+cutover evidence.
 
 ## Resume bullet
 
@@ -92,8 +99,9 @@ workflow exercise, or cutover evidence.
   exports across five structural dimensions; added pinned Directus 11.17.4 source
   and CiviCRM 6.16.2 target canaries with independent API read-back, five bounded
   target-interface probes, one authenticated Contact Summary observation,
-  adversarial controls, and replayable aggregate evidence that keeps six known
-  source-to-target gaps explicit.
+  one isolated Dashboard → Manage Case browser task, adversarial controls, and
+  replayable aggregate evidence that keeps six known source-to-target gaps and
+  two known UI runtime errors explicit.
 
 ## 60-second interview version
 
@@ -122,9 +130,14 @@ CiviCRM Standalone 6.16.2 lab. Separate writer, reader, allowed, and denied
 identities produced five target-interface observations, including private attachment
 byte retrieval and a real permission-filtered denial. The same reader observed
 one authenticated Contact Summary surface with the exact synthetic contact and
-Cases tab; Manage Case and a browser workflow remain unproven. Crucially, those
+Cases tab. In a separate digest-pinned Chromium container, it then opened the
+all-cases dashboard, located the synthetic case, followed Manage Case, and
+observed its summary, type, displayed status, coordinator, Roles, and Activities
+controls. The browser retained no artifacts and the evidence explicitly records
+two known non-fatal jQuery-notify errors in the pinned Standalone build. That is
+one bounded task, not accessibility or general UI proof. Crucially, those
 observations do not hide the result: the unchanged evaluator still reports six
 source permission, audit, and collection-scope gaps and remains
 `not_structurally_restorable`. The next credible milestone is a second real
-source-target pair and a complete browser workflow exercise, not a generic
+source-target pair and a different user-critical browser workflow, not a generic
 connector SDK inferred from one lab.
