@@ -59,7 +59,7 @@ claim of CiviCRM-wide portability.
   [`scripts/civicrm_target_roundtrip_lab.mjs`](../scripts/civicrm_target_roundtrip_lab.mjs),
   and its closed browser task is
   [`scripts/civicrm_browser_workflow.mjs`](../scripts/civicrm_browser_workflow.mjs),
-  while
+  which also emits the sanitized automated-accessibility observation, while
   [`scripts/check_civicrm_target_roundtrip_demo.py`](../scripts/check_civicrm_target_roundtrip_demo.py)
   verifies the frozen clean capture, intentional structural failure, and five
   adversarial controls offline.
@@ -135,7 +135,11 @@ all-cases dashboard, located the synthetic case, followed Manage Case, and
 observed its summary, type, displayed status, coordinator, Roles, and Activities
 controls. The browser retained no artifacts and the evidence explicitly records
 two known non-fatal jQuery-notify errors in the pinned Standalone build. That is
-one bounded task, not accessibility or general UI proof. Crucially, those
+one bounded task, not general UI proof. A separate axe-core observation reports
+32 passing automated rules and two serious findings—color contrast and links
+distinguished only by color—without retaining selectors or HTML. It is not a
+WCAG conformance claim, and keyboard, screen-reader, focus, and zoom/reflow
+testing remain undone. Crucially, those
 observations do not hide the result: the unchanged evaluator still reports six
 source permission, audit, and collection-scope gaps and remains
 `not_structurally_restorable`. The next credible milestone is a second real

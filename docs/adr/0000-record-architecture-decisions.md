@@ -31,6 +31,7 @@ Existing accepted records:
 5. [ADR 0005: Exercise one CiviCRM target-roundtrip canary](../decisions/0005-exercise-one-civicrm-target-roundtrip-canary.md)
 6. [ADR 0006: Observe one authenticated CiviCRM UI surface](../decisions/0006-observe-one-authenticated-civicrm-ui-surface.md)
 7. [ADR 0007: Observe one CiviCRM browser workflow](../decisions/0007-observe-one-civicrm-browser-workflow.md)
+8. [ADR 0008: Record one automated CiviCRM accessibility observation](../decisions/0008-record-one-automated-accessibility-observation.md)
 
 ## Consequences
 

@@ -32,6 +32,7 @@ SOURCE_PROFILE = "directus-11.17.4-civic-case/v0.1"
 TARGET_RESULT_NAME = "target-result.json"
 UI_RESULT_NAME = "ui-surface-result.json"
 BROWSER_RESULT_NAME = "browser-workflow-result.json"
+ACCESSIBILITY_RESULT_NAME = "accessibility-result.json"
 PROBE_IDS = (
     "record_lookup",
     "relationship_traversal",
@@ -380,6 +381,46 @@ def _assert_clean_browser_result(document: Mapping[str, object]) -> None:
     )
 
 
+def _assert_clean_accessibility_result(document: Mapping[str, object]) -> None:
+    _require(
+        document
+        == {
+            "decision_scope": "pinned_synthetic_manage_case_automated_scan_only",
+            "limitations": [
+                "synthetic_fixture_only",
+                "target_evidence_is_unsigned_and_unauthenticated",
+                "single_manage_case_document_only",
+                "automated_rules_only",
+                "does_not_cover_keyboard_navigation",
+                "does_not_cover_screen_reader_behavior",
+                "does_not_cover_zoom_reflow",
+                "does_not_establish_wcag_conformance",
+                "target_version_and_execution_context_are_operator_asserted",
+            ],
+            "scan_result": {
+                "engine": "axe-core",
+                "engine_version": "4.12.1",
+                "inapplicable_rule_count": 29,
+                "incomplete_rule_count": 0,
+                "page_scope": "manage_case_document",
+                "passes_rule_count": 32,
+                "rule_tags": ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"],
+                "violations": [
+                    {"impact": "serious", "node_count": 4, "rule_id": "color-contrast"},
+                    {
+                        "impact": "serious",
+                        "node_count": 2,
+                        "rule_id": "link-in-text-block",
+                    },
+                ],
+            },
+            "schema_version": "exitdrill/civicrm-accessibility-result/v0.1",
+            "target_profile": TARGET_PROFILE,
+        },
+        "clean accessibility result was not exact",
+    )
+
+
 def _assert_aggregate_privacy(value: object, roots: tuple[Path, ...]) -> None:
     def walk(item: object) -> None:
         if isinstance(item, dict):
@@ -479,6 +520,8 @@ def main() -> None:
         _assert_clean_ui_result(clean_ui_result)
         clean_browser_result = _json_object(clean_a / BROWSER_RESULT_NAME)
         _assert_clean_browser_result(clean_browser_result)
+        clean_accessibility_result = _json_object(clean_a / ACCESSIBILITY_RESULT_NAME)
+        _assert_clean_accessibility_result(clean_accessibility_result)
 
         committed_target_digest = _tree_digest(TARGET_NATIVE)
         builder_stderr = _build_adversaries(TARGET_NATIVE, adversaries)
@@ -576,6 +619,7 @@ def main() -> None:
             "clean_target": clean_target_result,
             "clean_ui_surface": clean_ui_result,
             "clean_browser_workflow": clean_browser_result,
+            "clean_accessibility": clean_accessibility_result,
             "directus_normalization": directus_result,
             "permission_escalation_target": permission_result,
         }
@@ -589,6 +633,7 @@ def main() -> None:
                     "clean_overall_status": "not_structurally_restorable",
                     "clean_target_probe_passes": 5,
                     "clean_browser_workflow_observations": 1,
+                    "clean_accessibility_serious_violations": 2,
                     "clean_ui_surface_observations": 1,
                     "source_profile": SOURCE_PROFILE,
                     "status": "civicrm_target_roundtrip_canary_verified",

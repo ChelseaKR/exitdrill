@@ -204,6 +204,27 @@ workflow. This proves one bounded synthetic browser task despite that known
 runtime defect. It does not prove accessibility, general UI usability,
 production readiness, or any other case-management workflow.
 
+## CiviCRM automated-accessibility boundary
+
+A fourth closed observation injects pinned axe-core 4.12.1 into the already
+isolated Chromium page after the Manage Case controls are visible. It runs only
+the WCAG 2.0 A/AA and WCAG 2.1 A/AA tagged automated rules against that full
+document. The native projection retains the engine/version, rule tags, aggregate
+pass/incomplete/inapplicable counts, and each violation's rule ID, impact, and
+affected-node count. Selectors, HTML snippets, help URLs, screenshots, traces,
+and other node-level results are discarded.
+
+The fixed observation reports 32 passing rules, 0 incomplete, 29 inapplicable,
+and two serious violations: `color-contrast` affecting four nodes and
+`link-in-text-block` affecting two. The offline verifier emits these findings in
+a separate `accessibility-result.json`; it does not turn them into a composite
+pass/fail or alter any prior evidence family.
+
+This automated observation does not establish WCAG conformance and does not
+cover keyboard operation, focus order or visibility, screen-reader behavior,
+zoom/reflow, or contextual review of contrast and semantics. Those require
+manual and assistive-technology testing.
+
 ## Data contracts
 
 The baseline records expected identities, exact scalar values for its declared

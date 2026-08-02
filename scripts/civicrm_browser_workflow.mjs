@@ -1,4 +1,5 @@
 import { chromium } from "playwright-core";
+import axe from "axe-core";
 
 const expected = {
   coordinatorName: "Synthetic Person Alpha",
@@ -117,6 +118,34 @@ try {
   await requireVisible(roles.getByText(expected.coordinatorName, { exact: true }));
   currentStep = "case_activities";
   await requireVisible(page.locator(".crm-case-activities-block"));
+  currentStep = "accessibility_scan";
+  await page.addScriptTag({ content: axe.source });
+  const rawAccessibility = await page.evaluate(async () =>
+    globalThis.axe.run(document, {
+      runOnly: {
+        type: "tag",
+        values: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"],
+      },
+    }),
+  );
+  const violationImpacts = new Set(["minor", "moderate", "serious", "critical"]);
+  const violations = rawAccessibility.violations
+    .map((violation) => {
+      if (
+        !/^[a-z][a-z0-9-]{0,79}$/.test(violation.id) ||
+        !violationImpacts.has(violation.impact) ||
+        !Number.isSafeInteger(violation.nodes.length) ||
+        violation.nodes.length < 1
+      ) {
+        fail();
+      }
+      return {
+        impact: violation.impact,
+        node_count: violation.nodes.length,
+        rule_id: violation.id,
+      };
+    })
+    .sort((left, right) => left.rule_id.localeCompare(right.rule_id));
   currentStep = "runtime_integrity";
   const expectedPageErrors = [
     {
@@ -141,24 +170,41 @@ try {
 
   process.stdout.write(
     `${JSON.stringify({
-      browser_engine: "chromium",
-      data_mode: "synthetic_only",
-      known_runtime_errors: [
-        {
-          error_key: "jquery_notify_unavailable",
-          occurrence_count: 2,
-        },
-      ],
-      retained_artifacts: [],
-      schema_version: "exitdrill/civicrm-browser-workflow-observation/v0.1",
-      steps: [
-        "case_dashboard_opened",
-        "case_located",
-        "manage_case_opened",
-        "case_controls_observed",
-      ],
-      target_profile:
-        "directus-11.17.4-civic-case-to-civicrm-standalone-6.16.2/v0.1",
+      accessibility: {
+        data_mode: "synthetic_only",
+        engine: "axe-core",
+        engine_version: axe.version,
+        incomplete_rule_count: rawAccessibility.incomplete.length,
+        inapplicable_rule_count: rawAccessibility.inapplicable.length,
+        page_scope: "manage_case_document",
+        passes_rule_count: rawAccessibility.passes.length,
+        retained_artifacts: [],
+        rule_tags: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"],
+        schema_version: "exitdrill/civicrm-accessibility-observation/v0.1",
+        target_profile:
+          "directus-11.17.4-civic-case-to-civicrm-standalone-6.16.2/v0.1",
+        violations,
+      },
+      workflow: {
+        browser_engine: "chromium",
+        data_mode: "synthetic_only",
+        known_runtime_errors: [
+          {
+            error_key: "jquery_notify_unavailable",
+            occurrence_count: 2,
+          },
+        ],
+        retained_artifacts: [],
+        schema_version: "exitdrill/civicrm-browser-workflow-observation/v0.1",
+        steps: [
+          "case_dashboard_opened",
+          "case_located",
+          "manage_case_opened",
+          "case_controls_observed",
+        ],
+        target_profile:
+          "directus-11.17.4-civic-case-to-civicrm-standalone-6.16.2/v0.1",
+      },
     })}\n`,
   );
   await context.close();

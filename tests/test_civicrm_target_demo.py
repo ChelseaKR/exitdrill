@@ -52,6 +52,7 @@ def test_civicrm_target_roundtrip_canary_acceptance() -> None:
         "adversarial_controls_detected": 5,
         "clean_observed_remediation_signals": 6,
         "clean_overall_status": "not_structurally_restorable",
+        "clean_accessibility_serious_violations": 2,
         "clean_browser_workflow_observations": 1,
         "clean_target_probe_passes": 5,
         "clean_ui_surface_observations": 1,
