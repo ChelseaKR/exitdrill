@@ -6,12 +6,18 @@ import json
 import subprocess
 from pathlib import Path
 from shutil import which
+from tempfile import TemporaryDirectory
 from zipfile import ZipFile
 
 COMPARISON_SCHEMA = "exitdrill/schemas/receipt-comparison-v0.1.schema.json"
 TARGET_RESULT_SCHEMA = "exitdrill/schemas/civicrm-target-roundtrip-result-v0.1.schema.json"
 UI_RESULT_SCHEMA = "exitdrill/schemas/civicrm-ui-surface-result-v0.1.schema.json"
 BROWSER_RESULT_SCHEMA = "exitdrill/schemas/civicrm-browser-workflow-result-v0.1.schema.json"
+ACCESSIBILITY_RESULT_SCHEMA = "exitdrill/schemas/civicrm-accessibility-result-v0.1.schema.json"
+KEYBOARD_RESULT_SCHEMA = "exitdrill/schemas/civicrm-keyboard-result-v0.1.schema.json"
+ACTIVITY_VIEW_RESULT_SCHEMA = "exitdrill/schemas/civicrm-activity-view-result-v0.1.schema.json"
+EVIDENCE_INDEX_V1_SCHEMA = "exitdrill/schemas/civicrm-evidence-index-v0.1.schema.json"
+EVIDENCE_INDEX_V2_SCHEMA = "exitdrill/schemas/civicrm-evidence-index-v0.2.schema.json"
 
 
 def _check_schema(
@@ -51,6 +57,36 @@ def _command_help(uv: str, wheel: Path, command: str) -> str:
     return completed.stdout
 
 
+def _check_civicrm_evidence_verifier(uv: str, wheel: Path) -> None:
+    manifest = Path(
+        "examples/civicrm-6.16.2-target-roundtrip/native/capture-manifest.json"
+    ).resolve()
+    with TemporaryDirectory(prefix="exitdrill-wheel-civicrm-") as temporary:
+        out_dir = Path(temporary) / "out"
+        base = [uv, "run", "--isolated", "--no-project", "--with", str(wheel), "exitdrill"]
+        subprocess.run(  # noqa: S603 - fixed uv arguments, local wheel, and committed fixture
+            [
+                *base,
+                "normalize-civicrm-target-canary",
+                str(manifest),
+                "--out-dir",
+                str(out_dir),
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        completed = subprocess.run(  # noqa: S603 - fixed uv arguments and generated output
+            [*base, "verify-civicrm-evidence-index", str(out_dir / "evidence-index.json")],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        result = json.loads(completed.stdout)
+        if result.get("status") != "evidence_artifact_contracts_verified":
+            raise SystemExit("wheel CiviCRM evidence verification was not exact")
+
+
 def main() -> None:
     wheels = list(Path("dist").glob("exitdrill-*.whl"))
     if len(wheels) != 1:
@@ -67,6 +103,20 @@ def main() -> None:
                 "schemas/receipt-comparison-v0.1.schema.json"
             ),
         )
+        for packaged_path, source_name in (
+            (ACCESSIBILITY_RESULT_SCHEMA, "civicrm-accessibility-result-v0.1.schema.json"),
+            (KEYBOARD_RESULT_SCHEMA, "civicrm-keyboard-result-v0.1.schema.json"),
+            (ACTIVITY_VIEW_RESULT_SCHEMA, "civicrm-activity-view-result-v0.1.schema.json"),
+            (EVIDENCE_INDEX_V1_SCHEMA, "civicrm-evidence-index-v0.1.schema.json"),
+            (EVIDENCE_INDEX_V2_SCHEMA, "civicrm-evidence-index-v0.2.schema.json"),
+        ):
+            _check_schema(
+                archive,
+                names,
+                packaged_path,
+                Path("schemas") / source_name,
+                f"https://exitdrill.example/schemas/{source_name}",
+            )
         _check_schema(
             archive,
             names,
@@ -105,6 +155,7 @@ def main() -> None:
         raise SystemExit("wheel CLI does not expose the Directus canary normalizer")
     if "--out-dir" not in _command_help(uv, wheels[0], "normalize-civicrm-target-canary"):
         raise SystemExit("wheel CLI does not expose the CiviCRM target canary normalizer")
+    _check_civicrm_evidence_verifier(uv, wheels[0])
 
 
 if __name__ == "__main__":

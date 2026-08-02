@@ -69,8 +69,9 @@ employer deliverable, or claim of CiviCRM-wide portability.
   verifies the frozen clean capture, intentional structural failure, and five
   adversarial controls offline. The normalizer also emits a closed
   digest-bound `evidence-index.json` catalog with no composite status or score;
-  a companion fail-closed CLI verifies its artifact bindings and declared
-  schema-version headers without composing the results.
+  a companion fail-closed CLI verifies its artifact bindings, packaged result
+  schemas, normalized export contract, and attachment bytes without composing
+  the results.
 - Aggregate-only receipts, semantic verification, and offline replay are covered
   by [`src/exitdrill/receipt.py`](../src/exitdrill/receipt.py),
   [`tests/test_receipt.py`](../tests/test_receipt.py), and the end-to-end CLI tests

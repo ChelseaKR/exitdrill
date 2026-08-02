@@ -228,9 +228,10 @@ def test_verify_civicrm_evidence_index_cli(
     assert main(["verify-civicrm-evidence-index", str(out_dir / "evidence-index.json")]) == 0
     assert _stdout(capsys) == {
         "artifact_count": 7,
-        "decision_scope": "catalog_binding_and_declared_schema_headers_only",
+        "attachment_count": 2,
+        "decision_scope": "catalog_bindings_artifact_schemas_and_export_attachments_only",
         "schema_version": "exitdrill/civicrm-evidence-index/v0.2",
-        "status": "evidence_index_bindings_verified",
+        "status": "evidence_artifact_contracts_verified",
         "target_profile": ("directus-11.17.4-civic-case-to-civicrm-standalone-6.16.2/v0.1"),
     }
 

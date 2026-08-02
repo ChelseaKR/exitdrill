@@ -37,6 +37,7 @@ Existing accepted records:
 11. [ADR 0011: Index CiviCRM evidence without composing it](../decisions/0011-index-civicrm-evidence-without-composing-it.md)
 12. [ADR 0012: Bind indexed CiviCRM artifacts by digest](../decisions/0012-bind-civicrm-indexed-artifacts-by-digest.md)
 13. [ADR 0013: Verify CiviCRM index bindings without composing results](../decisions/0013-verify-civicrm-index-bindings-without-composing-results.md)
+14. [ADR 0014: Validate indexed CiviCRM artifact contracts](../decisions/0014-validate-indexed-civicrm-artifact-contracts.md)
 
 ## Consequences
 

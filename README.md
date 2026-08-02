@@ -183,9 +183,11 @@ exitdrill verify-civicrm-evidence-index \
   normalized-civicrm-target-canary/evidence-index.json
 ```
 
-That command checks only the closed index, bounded artifact bytes, and declared
-schema-version headers. It does not perform full artifact-schema validation,
-run the structural evaluator, compose results, or authenticate the evidence.
+That command checks the closed index and six result schemas, exact bounded
+artifact bytes, the normalized export contract, and its declared attachment
+bytes. It does not run the structural evaluator, interpret or compose results,
+authenticate the evidence, or prove that the asserted sandbox execution
+occurred.
 
 The five observed target-interface probes cover record lookup, relationship
 traversal, private attachment-byte retrieval, authorized access, and
@@ -415,6 +417,7 @@ beyond these target-interface probes.
 - [CiviCRM non-composite evidence-index decision](docs/decisions/0011-index-civicrm-evidence-without-composing-it.md)
 - [CiviCRM evidence-index digest decision](docs/decisions/0012-bind-civicrm-indexed-artifacts-by-digest.md)
 - [CiviCRM evidence-index verification decision](docs/decisions/0013-verify-civicrm-index-bindings-without-composing-results.md)
+- [CiviCRM indexed-artifact validation decision](docs/decisions/0014-validate-indexed-civicrm-artifact-contracts.md)
 - [Threat model](docs/THREAT-MODEL.md)
 - [Responsible-technology audit](docs/RESPONSIBLE-TECH-AUDITS.md)
 - [Data governance](docs/DATA-GOVERNANCE.md)

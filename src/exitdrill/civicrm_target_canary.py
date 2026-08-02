@@ -16,10 +16,16 @@ import shutil
 import stat
 import tempfile
 from collections.abc import Mapping, Sequence
+from functools import lru_cache
+from importlib.resources import files
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
+from jsonschema import Draft202012Validator, SchemaError, ValidationError
+
 from exitdrill.canonical import canonical_json_bytes, sha256_bytes
+from exitdrill.loader import PackageError, load_export
+from exitdrill.paths import BoundedPathError, ByteBudget, sha256_bounded_file
 
 if TYPE_CHECKING:
     from exitdrill.models import JsonValue
@@ -308,6 +314,15 @@ _EVIDENCE_INDEX_ARTIFACTS = (
         _ACTIVITY_VIEW_RESULT_SCHEMA,
     ),
 )
+_EVIDENCE_SCHEMA_RESOURCES = {
+    _EVIDENCE_INDEX_SCHEMA: "civicrm-evidence-index-v0.2.schema.json",
+    _RESULT_SCHEMA: "civicrm-target-roundtrip-result-v0.1.schema.json",
+    _UI_RESULT_SCHEMA: "civicrm-ui-surface-result-v0.1.schema.json",
+    _BROWSER_RESULT_SCHEMA: "civicrm-browser-workflow-result-v0.1.schema.json",
+    _ACCESSIBILITY_RESULT_SCHEMA: "civicrm-accessibility-result-v0.1.schema.json",
+    _KEYBOARD_RESULT_SCHEMA: "civicrm-keyboard-result-v0.1.schema.json",
+    _ACTIVITY_VIEW_RESULT_SCHEMA: "civicrm-activity-view-result-v0.1.schema.json",
+}
 _CONTACT_KEYS = frozenset(
     {
         "display_name",
@@ -1098,8 +1113,33 @@ def _parse_evidence_index(
     return bindings
 
 
+@lru_cache(maxsize=len(_EVIDENCE_SCHEMA_RESOURCES))
+def _evidence_schema_validator(schema_version: str) -> Draft202012Validator:
+    resource_name = _EVIDENCE_SCHEMA_RESOURCES[schema_version]
+    packaged = files("exitdrill").joinpath("schemas", resource_name)
+    try:
+        schema_bytes = packaged.read_bytes()
+    except FileNotFoundError:
+        schema_bytes = (Path(__file__).parents[2] / "schemas" / resource_name).read_bytes()
+    schema = _decode_json(schema_bytes, f"packaged schema {schema_version}")
+    try:
+        Draft202012Validator.check_schema(schema)
+    except SchemaError as exc:
+        raise _fail(f"packaged schema {schema_version} is invalid") from exc
+    return Draft202012Validator(schema)
+
+
+def _validate_evidence_schema(
+    document: Mapping[str, object], schema_version: str, artifact_id: str
+) -> None:
+    try:
+        _evidence_schema_validator(schema_version).validate(document)
+    except (KeyError, OSError, ValidationError) as exc:
+        raise _fail(f"indexed artifact {artifact_id} does not satisfy its schema") from exc
+
+
 def verify_civicrm_evidence_index(index_path: Path) -> dict[str, JsonValue]:
-    """Verify the closed index, exact artifact bytes, and declared schema headers."""
+    """Verify the closed index, bound artifact schemas, and normalized attachments."""
     index_bytes = _read_regular_file(
         index_path,
         max_bytes=_MAX_EVIDENCE_INDEX_BYTES,
@@ -1107,6 +1147,8 @@ def verify_civicrm_evidence_index(index_path: Path) -> dict[str, JsonValue]:
     )
     document = _decode_json(index_bytes, "evidence index")
     bindings = _parse_evidence_index(document)
+    _validate_evidence_schema(document, _EVIDENCE_INDEX_SCHEMA, "evidence_index")
+    attachment_count = 0
     for artifact_id, filename, expected_schema, expected_size, expected_digest in bindings:
         content = _read_regular_file(
             index_path.parent / filename,
@@ -1121,11 +1163,35 @@ def verify_civicrm_evidence_index(index_path: Path) -> dict[str, JsonValue]:
             expected_schema,
             f"indexed artifact {artifact_id} schema_version",
         )
+        if artifact_id == "normalized_target_readback":
+            try:
+                package = load_export(index_path.parent / filename)
+            except PackageError as exc:
+                raise _fail("indexed normalized export does not satisfy its contract") from exc
+            if package.source_sha256 != expected_digest:
+                raise _fail("indexed normalized export changed during validation")
+            budget = ByteBudget(limit=_MAX_BUNDLE_BYTES)
+            for attachment in package.attachments:
+                try:
+                    digest = sha256_bounded_file(
+                        index_path.parent / "export-files",
+                        attachment.relative_path,
+                        max_bytes=_MAX_ASSET_BYTES,
+                        total_budget=budget,
+                    )
+                except (BoundedPathError, OSError) as exc:
+                    raise _fail("indexed normalized attachment could not be verified") from exc
+                if digest != attachment.content_sha256:
+                    raise _fail("indexed normalized attachment does not match its digest")
+            attachment_count = len(package.attachments)
+        else:
+            _validate_evidence_schema(artifact, expected_schema, artifact_id)
     return {
         "artifact_count": len(bindings),
-        "decision_scope": "catalog_binding_and_declared_schema_headers_only",
+        "attachment_count": attachment_count,
+        "decision_scope": "catalog_bindings_artifact_schemas_and_export_attachments_only",
         "schema_version": _EVIDENCE_INDEX_SCHEMA,
-        "status": "evidence_index_bindings_verified",
+        "status": "evidence_artifact_contracts_verified",
         "target_profile": _PROFILE,
     }
 
