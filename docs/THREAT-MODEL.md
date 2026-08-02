@@ -48,12 +48,13 @@
 | Hash-refreshed target mutation bypasses the verifier | scalar, relationship, attachment, and allow/deny observations flow into normalized output or probe states and are checked by adversarial acceptance | same-count mutations outside the fixed selected fields remain out of scope |
 | Raw target evidence leaks through aggregate output | target result and acceptance stdout use closed aggregate fields and tests reject fixture values, credentials, paths, and raw bodies | the committed native synthetic bundle intentionally contains record-level envelopes and bytes |
 | Server-rendered UI marker is presented as a completed workflow | server-rendered UI evidence remains a separate aggregate result and never inherits the browser result | markup presence can still be mistaken for usability if quoted without the limitations |
-| One browser task is presented as general UI usability | a separate closed browser result covers only Dashboard → Manage Case; no screenshots, traces, HTML, downloads, or credentials are retained; fixed limitations exclude accessibility and other workflows | a successful narrow task can still mask defects elsewhere in CiviCRM |
-| Known CiviCRM page errors are hidden or broadly ignored | the canary accepts only two exact `jquery_notify_unavailable` occurrences at fixed steps, records their sanitized key/count, and rejects every other page error or request-boundary failure | the accepted errors may still affect UI behavior outside the observed controls |
+| Bounded browser tasks are presented as general UI usability | separate closed browser results cover only Dashboard → Manage Case, one generated Activity View, and Dashboard → Contact Summary; no screenshots, traces, HTML, downloads, or credentials are retained; fixed limitations exclude accessibility and other workflows | successful narrow tasks can still mask defects elsewhere in CiviCRM |
+| Known CiviCRM page errors are hidden or broadly ignored | the canary accepts only five exact `jquery_notify_unavailable` occurrences at fixed steps across the three browser tasks, records their sanitized key/count per result, and rejects every other page error or request-boundary failure | the accepted errors may still affect UI behavior outside the observed controls |
 | Automated accessibility findings are presented as WCAG conformance | a separate closed result reports exact findings and fixed limitations exclude keyboard, screen-reader, zoom/reflow, and conformance claims | readers can still omit the limitations when quoting rule counts |
 | Accessibility scan leaks rendered record data | retained scan data is limited to rule IDs, impacts, and aggregate node/rule counts; selectors, HTML snippets, help URLs, screenshots, and traces are discarded and fixture sentinels are rejected from aggregate evidence | the committed native counts can reveal that a small number of affected nodes exist |
 | One keyboard-operable disclosure is presented as general keyboard accessibility | separate evidence names one control, programmatic events, the exact 69-step path, and fixed limitations excluding complete focus order, visible focus, screen readers, and conformance | the observed control may work while other controls remain unreachable or confusing |
 | Viewing target-generated activity scaffolding is presented as restored source history | activity-view evidence is a separate result, labels one generated `Open Case` activity, and leaves the two source audit events missing in the structural evaluator | readers may still conflate operationally useful target scaffolding with preserved history |
+| Opening Contact Summary is presented as contact editing or case navigation | a separate result names only the read-only dashboard-to-contact-summary path and observed Cases affordance, with fixed limitations excluding editing and case navigation | a visible affordance does not prove the destination or mutation workflow works |
 | The evidence index is presented as a composite score or verdict | the closed index contains artifact identity, binding, schema, and independent decision scope but no status, score, pass count, priority, or inferred outcome | readers may still treat a catalog as a hierarchy or combined assessment |
 | Evidence-index digests are presented as authentic execution proof | each entry binds the exact emitted artifact bytes and states that digests prove internal consistency only | an attacker can replace artifacts and recompute the unsigned index |
 | Successful artifact-contract verification is presented as a restoration or authenticity verdict | CLI validates packaged schemas, the normalized export, and attachment bytes but names that limited scope and performs no result aggregation or structural evaluation | callers may omit the scope and overstate structural validity as evidentiary truth |
@@ -81,9 +82,10 @@
   source-permission equivalence, a successful cutover, or structural restoration.
 - Treating the CiviCRM evidence index as a composite score, verdict, or ordering
   of the independently bounded artifacts it catalogs.
-- Calling the Contact Summary marker observation proof of Manage Case, or
-  calling the separate single-case browser observation proof of accessibility,
-  general CiviCRM usability, or another case-management workflow.
+- Calling the Contact Summary marker or browser observation proof of contact
+  editing or case navigation, or calling the separate bounded browser
+  observations proof of accessibility, general CiviCRM usability, or another
+  case-management workflow.
 - Running the local CiviCRM container harness against production-derived data or
   presenting its quickstart topology as a production deployment.
 

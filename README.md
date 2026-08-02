@@ -183,12 +183,12 @@ exitdrill verify-civicrm-evidence-index \
   normalized-civicrm-target-canary/evidence-index.json
 ```
 
-That command checks the closed index and six result schemas, exact bounded
+That command checks the closed index and seven result schemas, exact bounded
 artifact bytes, the normalized export contract, and its declared attachment
 bytes. It does not run the structural evaluator, interpret or compose results,
 authenticate the evidence, or prove that the asserted sandbox execution
 occurred. Its aggregate stdout is a separate closed
-`exitdrill/civicrm-evidence-verification/v0.1` result that identifies the v0.2
+`exitdrill/civicrm-evidence-verification/v0.2` result that identifies the v0.3
 input index and carries those limitations as machine-readable fields.
 
 The five observed target-interface probes cover record lookup, relationship
@@ -242,8 +242,15 @@ subject, `Open Case` type, and `Completed` status. It reports one additional
 exact `jquery_notify_unavailable` error and makes no claim about activity
 editing, creation, source-history equivalence, or other activity types.
 
+A seventh evidence family reopens the all-cases dashboard, follows the exact
+synthetic contact link into Contact Summary, and observes the contact-page
+region, exact contact name, and Cases affordance. It reports two additional
+exact `jquery_notify_unavailable` errors, retains no browser artifacts, and
+makes no claim about contact editing, navigation into a case, accessibility, or
+other contact workflows.
+
 The normalizer also emits `evidence-index.json`, a machine-readable catalog of
-the normalized export and six separate result artifacts. Each entry names its
+the normalized export and seven separate result artifacts. Each entry names its
 own schema and decision scope and binds the exact emitted bytes with a length
 and SHA-256 digest. The index deliberately contains no status, score, pass
 count, or inferred outcome; every artifact must be interpreted with its own
@@ -421,6 +428,7 @@ beyond these target-interface probes.
 - [CiviCRM evidence-index verification decision](docs/decisions/0013-verify-civicrm-index-bindings-without-composing-results.md)
 - [CiviCRM indexed-artifact validation decision](docs/decisions/0014-validate-indexed-civicrm-artifact-contracts.md)
 - [CiviCRM verification-result decision](docs/decisions/0015-publish-a-closed-civicrm-verification-result.md)
+- [CiviCRM contact-summary workflow decision](docs/decisions/0016-observe-one-civicrm-contact-summary-workflow.md)
 - [Threat model](docs/THREAT-MODEL.md)
 - [Responsible-technology audit](docs/RESPONSIBLE-TECH-AUDITS.md)
 - [Data governance](docs/DATA-GOVERNANCE.md)

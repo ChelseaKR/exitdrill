@@ -39,6 +39,7 @@ Existing accepted records:
 13. [ADR 0013: Verify CiviCRM index bindings without composing results](../decisions/0013-verify-civicrm-index-bindings-without-composing-results.md)
 14. [ADR 0014: Validate indexed CiviCRM artifact contracts](../decisions/0014-validate-indexed-civicrm-artifact-contracts.md)
 15. [ADR 0015: Publish a closed CiviCRM verification result](../decisions/0015-publish-a-closed-civicrm-verification-result.md)
+16. [ADR 0016: Observe one CiviCRM contact-summary browser workflow](../decisions/0016-observe-one-civicrm-contact-summary-workflow.md)
 
 ## Consequences
 

@@ -40,6 +40,7 @@ _FILE_PATHS = (
     "browser-accessibility.json",
     "browser-keyboard.json",
     "browser-activity-view.json",
+    "browser-contact-summary-workflow.json",
     f"assets/{_FILE_IDS[0]}.txt",
     f"assets/{_FILE_IDS[1]}.txt",
 )
@@ -117,6 +118,9 @@ _BUNDLE_LIMITATIONS = [
     "single_programmatic_keyboard_interaction_does_not_establish_keyboard_accessibility",
     "single_generated_activity_view_only",
     "activity_view_observed_with_known_jquery_notify_runtime_error",
+    "single_contact_summary_browser_workflow_only",
+    "contact_summary_workflow_observed_with_known_jquery_notify_runtime_errors",
+    "contact_summary_workflow_does_not_prove_contact_editing_or_case_navigation",
 ]
 _RESULT_LIMITATIONS = [
     "synthetic_fixture_only",
@@ -340,6 +344,22 @@ def _responses() -> dict[str, object]:
             ],
             "target_profile": ("directus-11.17.4-civic-case-to-civicrm-standalone-6.16.2/v0.1"),
         },
+        "browser-contact-summary-workflow.json": {
+            "browser_engine": "chromium",
+            "data_mode": "synthetic_only",
+            "known_runtime_errors": [
+                {"error_key": "jquery_notify_unavailable", "occurrence_count": 2}
+            ],
+            "retained_artifacts": [],
+            "schema_version": "exitdrill/civicrm-contact-summary-workflow-observation/v0.1",
+            "steps": [
+                "case_dashboard_reopened",
+                "case_contact_opened",
+                "contact_summary_observed",
+                "cases_affordance_observed",
+            ],
+            "target_profile": ("directus-11.17.4-civic-case-to-civicrm-standalone-6.16.2/v0.1"),
+        },
     }
 
 
@@ -385,7 +405,7 @@ def _base_manifest(files: list[dict[str, object]]) -> dict[str, object]:
         "acquisition_surface": (
             "supported_api_v4_authenticated_private_file_readback_authenticated_"
             "server_rendered_ui_isolated_browser_workflow_automated_accessibility_scan_"
-            "keyboard_interaction_and_activity_view"
+            "keyboard_interaction_and_activity_view_and_contact_summary_workflow"
         ),
         "bundle_sha256": hashlib.sha256(canonical_json_bytes(files)).hexdigest(),
         "data_mode": "synthetic_only",
@@ -488,14 +508,19 @@ def test_normalizes_closed_target_bundle_and_schema_validates(tmp_path: Path) ->
     activity_view_schema = _read_json(
         Path(__file__).parents[1] / "schemas/civicrm-activity-view-result-v0.1.schema.json"
     )
+    contact_summary_workflow_schema = _read_json(
+        Path(__file__).parents[1]
+        / "schemas/civicrm-contact-summary-workflow-result-v0.1.schema.json"
+    )
     evidence_index_schema = _read_json(
-        Path(__file__).parents[1] / "schemas/civicrm-evidence-index-v0.2.schema.json"
+        Path(__file__).parents[1] / "schemas/civicrm-evidence-index-v0.3.schema.json"
     )
     ui_result = _read_json(out_dir / "ui-surface-result.json")
     browser_result = _read_json(out_dir / "browser-workflow-result.json")
     accessibility_result = _read_json(out_dir / "accessibility-result.json")
     keyboard_result = _read_json(out_dir / "keyboard-result.json")
     activity_view_result = _read_json(out_dir / "activity-view-result.json")
+    contact_summary_workflow_result = _read_json(out_dir / "contact-summary-workflow-result.json")
     evidence_index = _read_json(out_dir / "evidence-index.json")
 
     Draft202012Validator.check_schema(evidence_index_schema)
@@ -505,6 +530,7 @@ def test_normalizes_closed_target_bundle_and_schema_validates(tmp_path: Path) ->
     Draft202012Validator(accessibility_schema).validate(accessibility_result)
     Draft202012Validator(keyboard_schema).validate(keyboard_result)
     Draft202012Validator(activity_view_schema).validate(activity_view_result)
+    Draft202012Validator(contact_summary_workflow_schema).validate(contact_summary_workflow_result)
     Draft202012Validator(evidence_index_schema).validate(evidence_index)
     assert _read_json(out_dir / "target-result.json") == result
     assert result["represented_counts"] == _REPRESENTED
@@ -524,6 +550,9 @@ def test_normalizes_closed_target_bundle_and_schema_validates(tmp_path: Path) ->
     ]
     assert keyboard_result["observation"]["tab_steps_to_roles_summary"] == 69
     assert [item["state"] for item in activity_view_result["workflow_results"]] == ["observed"]
+    assert [item["state"] for item in contact_summary_workflow_result["workflow_results"]] == [
+        "observed"
+    ]
     assert [item["artifact_id"] for item in evidence_index["entries"]] == [
         "normalized_target_readback",
         "target_interface",
@@ -532,6 +561,7 @@ def test_normalizes_closed_target_bundle_and_schema_validates(tmp_path: Path) ->
         "automated_accessibility",
         "keyboard_interaction",
         "activity_view",
+        "contact_summary_workflow",
     ]
     assert evidence_index["decision_scope"] == "separate_non_composite_evidence_families"
     for item in evidence_index["entries"]:
@@ -562,15 +592,15 @@ def test_verifies_evidence_artifact_contracts_and_attachments(tmp_path: Path) ->
 
     result = verify_civicrm_evidence_index(out_dir / "evidence-index.json")
     schema = _read_json(
-        Path(__file__).parents[1] / "schemas/civicrm-evidence-verification-v0.1.schema.json"
+        Path(__file__).parents[1] / "schemas/civicrm-evidence-verification-v0.2.schema.json"
     )
     Draft202012Validator.check_schema(schema)
     Draft202012Validator(schema).validate(result)
     assert result == {
-        "artifact_count": 7,
+        "artifact_count": 8,
         "attachment_count": 2,
         "decision_scope": "catalog_bindings_artifact_schemas_and_export_attachments_only",
-        "index_schema_version": "exitdrill/civicrm-evidence-index/v0.2",
+        "index_schema_version": "exitdrill/civicrm-evidence-index/v0.3",
         "limitations": [
             "verification_is_unsigned_and_unauthenticated",
             "does_not_interpret_or_compose_artifact_results",
@@ -578,7 +608,7 @@ def test_verifies_evidence_artifact_contracts_and_attachments(tmp_path: Path) ->
             "does_not_prove_live_execution_or_completeness",
             "digests_prove_internal_consistency_not_authenticity",
         ],
-        "schema_version": "exitdrill/civicrm-evidence-verification/v0.1",
+        "schema_version": "exitdrill/civicrm-evidence-verification/v0.2",
         "status": "evidence_artifact_contracts_verified",
         "target_profile": ("directus-11.17.4-civic-case-to-civicrm-standalone-6.16.2/v0.1"),
     }
@@ -781,6 +811,18 @@ def test_api_capture_projections_accept_optional_exact_count_matched(tmp_path: P
         ("browser-activity-view.json", "retained_artifacts", ["activity.html"]),
         ("browser-activity-view.json", "known_runtime_errors", []),
         ("browser-activity-view.json", "steps", ["activity_view_opened"]),
+        ("browser-contact-summary-workflow.json", "browser_engine", "firefox"),
+        (
+            "browser-contact-summary-workflow.json",
+            "retained_artifacts",
+            ["contact.html"],
+        ),
+        ("browser-contact-summary-workflow.json", "known_runtime_errors", []),
+        (
+            "browser-contact-summary-workflow.json",
+            "steps",
+            ["case_dashboard_reopened"],
+        ),
     ],
 )
 def test_rejects_ui_projection_drift(
@@ -1278,7 +1320,7 @@ def test_rejects_manifest_list_file_list_and_digest_primitive_drift(tmp_path: Pa
     raw = _read_json(file_count)
     raw["files"].pop()
     _write_json(file_count, raw)
-    with pytest.raises(CiviCRMTargetCanaryError, match="exactly 18"):
+    with pytest.raises(CiviCRMTargetCanaryError, match="exactly 19"):
         normalize_civicrm_target_canary(file_count, tmp_path / "file-count-out")
 
     digest = _create_bundle(tmp_path / "digest")
@@ -1359,6 +1401,7 @@ def test_existing_nested_and_missing_parent_destinations_are_rejected(tmp_path: 
         "accessibility-result.json",
         "keyboard-result.json",
         "activity-view-result.json",
+        "contact-summary-workflow-result.json",
         "evidence-index.json",
     ],
 )

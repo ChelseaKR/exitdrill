@@ -45,6 +45,10 @@ The native activity-view projection contains only fixed semantic step keys, an
 engine label, an empty artifact list, and a sanitized known-error key/count. It
 excludes the synthetic subject, route parameters, activity/contact/case IDs,
 HTML, screenshots, traces, and credentials.
+The native contact-summary workflow projection has the same minimized shape:
+fixed semantic step keys, engine label, empty artifact list, and sanitized
+known-error key/count. It excludes the contact name, route parameters, target
+IDs, HTML, screenshots, traces, and credentials.
 The generated evidence index contains only fixed artifact identifiers,
 filenames, schema identifiers, decision scopes, the pinned profile, and fixed
 limitations, plus artifact byte lengths and SHA-256 digests. It contains no raw

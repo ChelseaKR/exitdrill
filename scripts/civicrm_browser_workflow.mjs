@@ -65,7 +65,7 @@ try {
   page.on("download", (download) => download.cancel());
   page.on("pageerror", (error) => {
     pageErrorCount += 1;
-    if (pageErrors.length < 3) {
+    if (pageErrors.length < 5) {
       pageErrors.push({ step: currentStep, name: error.name, message: error.message });
     }
   });
@@ -174,6 +174,30 @@ try {
   await requireVisible(page.getByText("Open Case", { exact: true }));
   await requireVisible(page.getByText(expected.caseSubject, { exact: true }));
   await requireVisible(page.getByText("Completed", { exact: true }));
+  currentStep = "contact_dashboard_navigation";
+  const contactDashboardResponse = await page.goto("/civicrm/case?reset=1&all=1", {
+    timeout: 30_000,
+    waitUntil: "load",
+  });
+  if (!contactDashboardResponse || contactDashboardResponse.status() !== 200) fail();
+  currentStep = "contact_dashboard_marker";
+  await requireVisible(page.getByText("Case Summary", { exact: true }));
+  currentStep = "contact_locator";
+  const contactLink = page.getByRole("link", {
+    name: expected.coordinatorName,
+    exact: true,
+  });
+  await requireVisible(contactLink);
+  currentStep = "contact_summary_navigation";
+  await contactLink.first().click();
+  await page.waitForLoadState("load");
+  if (new URL(page.url()).pathname !== "/civicrm/contact/view") fail();
+  currentStep = "contact_summary_marker";
+  await requireVisible(page.locator(".crm-contact-page"));
+  currentStep = "contact_name";
+  await requireVisible(page.getByText(expected.coordinatorName, { exact: true }));
+  currentStep = "contact_cases_affordance";
+  await requireVisible(page.getByText("Cases", { exact: true }));
   currentStep = "runtime_integrity";
   const expectedPageErrors = [
     {
@@ -188,6 +212,16 @@ try {
     },
     {
       step: "activity_view_navigation",
+      name: "TypeError",
+      message: "$(...).notify is not a function",
+    },
+    {
+      step: "contact_dashboard_navigation",
+      name: "TypeError",
+      message: "$(...).notify is not a function",
+    },
+    {
+      step: "contact_summary_navigation",
       name: "TypeError",
       message: "$(...).notify is not a function",
     },
@@ -219,6 +253,26 @@ try {
           "activity_subject_observed",
           "activity_type_observed",
           "activity_status_observed",
+        ],
+        target_profile:
+          "directus-11.17.4-civic-case-to-civicrm-standalone-6.16.2/v0.1",
+      },
+      contact_summary_workflow: {
+        browser_engine: "chromium",
+        data_mode: "synthetic_only",
+        known_runtime_errors: [
+          {
+            error_key: "jquery_notify_unavailable",
+            occurrence_count: 2,
+          },
+        ],
+        retained_artifacts: [],
+        schema_version: "exitdrill/civicrm-contact-summary-workflow-observation/v0.1",
+        steps: [
+          "case_dashboard_reopened",
+          "case_contact_opened",
+          "contact_summary_observed",
+          "cases_affordance_observed",
         ],
         target_profile:
           "directus-11.17.4-civic-case-to-civicrm-standalone-6.16.2/v0.1",

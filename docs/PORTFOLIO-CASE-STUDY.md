@@ -33,8 +33,9 @@ completes one isolated Chromium workflow from the all-cases dashboard into
 Manage Case and observes the exact case controls. The workflow reports two known
 non-fatal CiviCRM `jquery_notify_unavailable` errors and retains no browser
 artifacts. Separate artifacts record one automated accessibility scan, one
-bounded keyboard interaction, and one read-only Activity View observation. A
-machine-readable evidence index catalogs the normalized export and six result
+bounded keyboard interaction, one read-only Activity View observation, and one
+read-only dashboard-to-Contact-Summary browser path. A machine-readable
+evidence index catalogs the normalized export and seven result
 families without composing their scopes or adding a verdict. Byte lengths and
 SHA-256 digests bind the exact generated set for internal consistency without
 claiming authenticity. This is a bounded target-process experiment, not a
@@ -97,10 +98,11 @@ equivalence, authenticated evidence, legal compliance, savings, or successful
 cutover to another SaaS product. The Directus evidence supports only one frozen
 11.17.4 synthetic source profile captured through documented APIs. The CiviCRM
 evidence supports only one frozen 6.16.2 target profile and five target-interface
-probe observations plus six separately bounded result families: target
+probe observations plus seven separately bounded result families: target
 interface, Contact Summary UI surface, Dashboard → Manage Case browser workflow,
-automated accessibility, keyboard interaction, and Activity View. A separate
-index catalogs those results and the normalized export without composing them.
+automated accessibility, keyboard interaction, Activity View, and Dashboard →
+Contact Summary browser workflow. A separate index catalogs those results and
+the normalized export without composing them.
 It still has no supported production connector, production data path, WCAG
 conformance evidence, general UI-workflow coverage, or cutover evidence.
 
@@ -110,10 +112,10 @@ conformance evidence, general UI-workflow coverage, or cutover evidence.
   exports across five structural dimensions; added pinned Directus 11.17.4 source
   and CiviCRM 6.16.2 target canaries with independent API read-back, five bounded
   target-interface probes, one authenticated Contact Summary observation,
-  one isolated Dashboard → Manage Case browser task, three further bounded
-  accessibility/keyboard/activity observations, adversarial controls, and a
+  one isolated Dashboard → Manage Case browser task, four further bounded
+  accessibility/keyboard/activity/contact-summary observations, adversarial controls, and a
   non-composite evidence catalog that keeps six known source-to-target gaps and
-  three known UI runtime errors explicit.
+  five known UI runtime errors explicit.
 
 ## 60-second interview version
 
@@ -157,8 +159,11 @@ position is evidence, not a keyboard-accessibility pass. Crucially, those
 observations are followed by one distinct read-only task that opens a generated
 `Open Case` activity and verifies its subject, type, and completed status. That
 target scaffolding is not relabeled as restored history. Crucially, the browser
+then reopens the dashboard, follows the exact synthetic contact into Contact
+Summary, and observes the contact-page region and Cases affordance without
+claiming contact editing or case navigation. Crucially, the browser
 observations do not hide the result: the unchanged evaluator still reports six
 source permission, audit, and collection-scope gaps and remains
 `not_structurally_restorable`. The next credible milestone is a second real
-source-target pair and a different user-critical browser workflow, not a generic
-connector SDK inferred from one lab.
+source-target pair and a user-critical workflow outside these read-only
+case/contact paths, not a generic connector SDK inferred from one lab.

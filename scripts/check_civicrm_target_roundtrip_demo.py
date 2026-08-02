@@ -36,6 +36,7 @@ BROWSER_RESULT_NAME = "browser-workflow-result.json"
 ACCESSIBILITY_RESULT_NAME = "accessibility-result.json"
 KEYBOARD_RESULT_NAME = "keyboard-result.json"
 ACTIVITY_VIEW_RESULT_NAME = "activity-view-result.json"
+CONTACT_SUMMARY_WORKFLOW_RESULT_NAME = "contact-summary-workflow-result.json"
 EVIDENCE_INDEX_NAME = "evidence-index.json"
 PROBE_IDS = (
     "record_lookup",
@@ -490,6 +491,39 @@ def _assert_clean_activity_view_result(document: Mapping[str, object]) -> None:
     )
 
 
+def _assert_clean_contact_summary_workflow_result(document: Mapping[str, object]) -> None:
+    _require(
+        document
+        == {
+            "decision_scope": "pinned_synthetic_contact_summary_browser_workflow_only",
+            "known_runtime_errors": [
+                {"error_key": "jquery_notify_unavailable", "occurrence_count": 2}
+            ],
+            "limitations": [
+                "synthetic_fixture_only",
+                "target_evidence_is_unsigned_and_unauthenticated",
+                "single_contact_summary_browser_workflow_only",
+                "contact_summary_workflow_observed_with_known_jquery_notify_runtime_errors",
+                "read_only_contact_summary_only",
+                "does_not_prove_contact_editing_or_case_navigation",
+                "does_not_prove_accessibility",
+                "does_not_prove_operational_equivalence",
+                "target_version_and_execution_context_are_operator_asserted",
+            ],
+            "schema_version": "exitdrill/civicrm-contact-summary-workflow-result/v0.1",
+            "target_profile": TARGET_PROFILE,
+            "workflow_results": [
+                {
+                    "evidence_kind": "isolated_headless_chromium_read_only_interaction",
+                    "id": "case_dashboard_to_contact_summary",
+                    "state": "observed",
+                }
+            ],
+        },
+        "clean contact-summary workflow result was not exact",
+    )
+
+
 def _assert_clean_evidence_index(document: Mapping[str, object], root: Path) -> None:
     entries = document.get("entries")
     if not isinstance(entries, list):
@@ -504,6 +538,7 @@ def _assert_clean_evidence_index(document: Mapping[str, object], root: Path) -> 
             "automated_accessibility",
             "keyboard_interaction",
             "activity_view",
+            "contact_summary_workflow",
         ],
         "clean evidence index artifact order was not exact",
     )
@@ -537,7 +572,7 @@ def _assert_clean_evidence_index(document: Mapping[str, object], root: Path) -> 
         "clean evidence index limitations were not exact",
     )
     _require(
-        document.get("schema_version") == "exitdrill/civicrm-evidence-index/v0.2"
+        document.get("schema_version") == "exitdrill/civicrm-evidence-index/v0.3"
         and document.get("target_profile") == TARGET_PROFILE,
         "clean evidence index profile was not exact",
     )
@@ -648,6 +683,10 @@ def main() -> None:
         _assert_clean_keyboard_result(clean_keyboard_result)
         clean_activity_view_result = _json_object(clean_a / ACTIVITY_VIEW_RESULT_NAME)
         _assert_clean_activity_view_result(clean_activity_view_result)
+        clean_contact_summary_workflow_result = _json_object(
+            clean_a / CONTACT_SUMMARY_WORKFLOW_RESULT_NAME
+        )
+        _assert_clean_contact_summary_workflow_result(clean_contact_summary_workflow_result)
         clean_evidence_index = _json_object(clean_a / EVIDENCE_INDEX_NAME)
         _assert_clean_evidence_index(clean_evidence_index, clean_a)
         clean_evidence_index_verification = verify_civicrm_evidence_index(
@@ -758,6 +797,7 @@ def main() -> None:
             "clean_accessibility": clean_accessibility_result,
             "clean_keyboard": clean_keyboard_result,
             "clean_activity_view": clean_activity_view_result,
+            "clean_contact_summary_workflow": clean_contact_summary_workflow_result,
             "clean_evidence_index": clean_evidence_index,
             "clean_evidence_index_verification": clean_evidence_index_verification,
             "directus_normalization": directus_result,
@@ -776,7 +816,8 @@ def main() -> None:
                     "clean_accessibility_serious_violations": 2,
                     "clean_keyboard_tab_steps_to_roles_summary": 69,
                     "clean_activity_view_observations": 1,
-                    "clean_evidence_index_entries": 7,
+                    "clean_contact_summary_workflow_observations": 1,
+                    "clean_evidence_index_entries": 8,
                     "clean_ui_surface_observations": 1,
                     "source_profile": SOURCE_PROFILE,
                     "status": "civicrm_target_roundtrip_canary_verified",
