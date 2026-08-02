@@ -30,6 +30,7 @@ _BUNDLE_SCHEMA = "exitdrill/civicrm-target-roundtrip-bundle/v0.1"
 _RESULT_SCHEMA = "exitdrill/civicrm-target-roundtrip-result/v0.1"
 _UI_RESULT_SCHEMA = "exitdrill/civicrm-ui-surface-result/v0.1"
 _BROWSER_RESULT_SCHEMA = "exitdrill/civicrm-browser-workflow-result/v0.1"
+_ACCESSIBILITY_RESULT_SCHEMA = "exitdrill/civicrm-accessibility-result/v0.1"
 _SOURCE_SYSTEM = "Directus 11.17.4 synthetic civic-case sandbox"
 _TARGET_SYSTEM = "CiviCRM Standalone"
 _TARGET_VERSION = "6.16.2"
@@ -39,7 +40,7 @@ _DRILL_ID = "directus-civic-case-exit-001"
 _SOURCE_EXPORTED_AT = "2026-08-02T02:38:28.542Z"
 _ACQUISITION_SURFACE = (
     "supported_api_v4_authenticated_private_file_readback_authenticated_server_rendered_ui_"
-    "and_isolated_browser_workflow"
+    "isolated_browser_workflow_and_automated_accessibility_scan"
 )
 _FILE_IDS = (
     "11111111-1111-4111-8111-111111111111",
@@ -59,6 +60,7 @@ _EXPECTED_FILES = (
     "permission-deny.json",
     "ui-contact-summary.json",
     "browser-workflow.json",
+    "browser-accessibility.json",
     f"assets/{_FILE_IDS[0]}.txt",
     f"assets/{_FILE_IDS[1]}.txt",
 )
@@ -178,6 +180,7 @@ _BUNDLE_LIMITATIONS = (
     "single_case_browser_workflow_only",
     "browser_workflow_observed_with_known_jquery_notify_runtime_errors",
     "browser_workflow_does_not_prove_accessibility",
+    "automated_accessibility_scan_does_not_establish_wcag_conformance",
 )
 _RESULT_LIMITATIONS = (
     "synthetic_fixture_only",
@@ -208,6 +211,17 @@ _BROWSER_RESULT_LIMITATIONS = (
     "browser_workflow_observed_with_known_jquery_notify_runtime_errors",
     "does_not_prove_accessibility",
     "does_not_prove_operational_equivalence",
+    "target_version_and_execution_context_are_operator_asserted",
+)
+_ACCESSIBILITY_RESULT_LIMITATIONS = (
+    "synthetic_fixture_only",
+    "target_evidence_is_unsigned_and_unauthenticated",
+    "single_manage_case_document_only",
+    "automated_rules_only",
+    "does_not_cover_keyboard_navigation",
+    "does_not_cover_screen_reader_behavior",
+    "does_not_cover_zoom_reflow",
+    "does_not_establish_wcag_conformance",
     "target_version_and_execution_context_are_operator_asserted",
 )
 _CONTACT_KEYS = frozenset(
@@ -856,6 +870,36 @@ def _browser_workflow_result() -> dict[str, JsonValue]:
     }
 
 
+def _accessibility_result() -> dict[str, JsonValue]:
+    return {
+        "decision_scope": "pinned_synthetic_manage_case_automated_scan_only",
+        "limitations": list(_ACCESSIBILITY_RESULT_LIMITATIONS),
+        "scan_result": {
+            "engine": "axe-core",
+            "engine_version": "4.12.1",
+            "inapplicable_rule_count": 29,
+            "incomplete_rule_count": 0,
+            "page_scope": "manage_case_document",
+            "passes_rule_count": 32,
+            "rule_tags": ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"],
+            "violations": [
+                {
+                    "impact": "serious",
+                    "node_count": 4,
+                    "rule_id": "color-contrast",
+                },
+                {
+                    "impact": "serious",
+                    "node_count": 2,
+                    "rule_id": "link-in-text-block",
+                },
+            ],
+        },
+        "schema_version": _ACCESSIBILITY_RESULT_SCHEMA,
+        "target_profile": _PROFILE,
+    }
+
+
 def _target_result(allow_count: int, deny_count: int) -> dict[str, JsonValue]:
     probes = [
         _probe_result("record_lookup", "pass", "independent_api_v4_readback"),
@@ -896,6 +940,7 @@ def _build_output(
 ) -> tuple[
     dict[str, JsonValue],
     list[tuple[str, bytes]],
+    dict[str, JsonValue],
     dict[str, JsonValue],
     dict[str, JsonValue],
     dict[str, JsonValue],
@@ -956,6 +1001,35 @@ def _build_output(
         },
         "browser workflow projection",
     )
+    _parse_ui_surface(
+        documents["browser-accessibility.json"],
+        {
+            "data_mode": "synthetic_only",
+            "engine": "axe-core",
+            "engine_version": "4.12.1",
+            "inapplicable_rule_count": 29,
+            "incomplete_rule_count": 0,
+            "page_scope": "manage_case_document",
+            "passes_rule_count": 32,
+            "retained_artifacts": [],
+            "rule_tags": ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"],
+            "schema_version": "exitdrill/civicrm-accessibility-observation/v0.1",
+            "target_profile": _PROFILE,
+            "violations": [
+                {
+                    "impact": "serious",
+                    "node_count": 4,
+                    "rule_id": "color-contrast",
+                },
+                {
+                    "impact": "serious",
+                    "node_count": 2,
+                    "rule_id": "link-in-text-block",
+                },
+            ],
+        },
+        "browser accessibility projection",
+    )
     export: dict[str, JsonValue] = {
         "attachments": cast("list[JsonValue]", attachments),
         "audit_events": [],
@@ -974,6 +1048,7 @@ def _build_output(
         _target_result(len(allow_values), len(deny_values)),
         _ui_surface_result(),
         _browser_workflow_result(),
+        _accessibility_result(),
     )
 
 
@@ -984,6 +1059,7 @@ def _write_output(
     result: Mapping[str, JsonValue],
     ui_result: Mapping[str, JsonValue],
     browser_result: Mapping[str, JsonValue],
+    accessibility_result: Mapping[str, JsonValue],
 ) -> None:
     parent = out_dir.parent
     if not parent.exists() or not parent.is_dir():
@@ -1002,6 +1078,9 @@ def _write_output(
         (temporary / "ui-surface-result.json").write_bytes(canonical_json_bytes(ui_result) + b"\n")
         (temporary / "browser-workflow-result.json").write_bytes(
             canonical_json_bytes(browser_result) + b"\n"
+        )
+        (temporary / "accessibility-result.json").write_bytes(
+            canonical_json_bytes(accessibility_result) + b"\n"
         )
         if out_dir.exists() or out_dir.is_symlink():
             raise _fail("output directory already exists")
@@ -1044,7 +1123,17 @@ def normalize_civicrm_target_canary(manifest_path: Path, out_dir: Path) -> dict[
     )
     _, files = _parse_manifest(manifest_document)
     documents = _read_verified_bundle(root, files)
-    export, copies, result, ui_result, browser_result = _build_output(documents)
+    export, copies, result, ui_result, browser_result, accessibility_result = _build_output(
+        documents
+    )
     export_document = canonical_json_bytes(export) + b"\n"
-    _write_output(resolved_out, export_document, copies, result, ui_result, browser_result)
+    _write_output(
+        resolved_out,
+        export_document,
+        copies,
+        result,
+        ui_result,
+        browser_result,
+        accessibility_result,
+    )
     return result

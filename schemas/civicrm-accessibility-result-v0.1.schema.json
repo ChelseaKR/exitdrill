@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://exitdrill.example/schemas/civicrm-accessibility-result-v0.1.schema.json",
+  "title": "ExitDrill CiviCRM automated accessibility result v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["decision_scope", "limitations", "scan_result", "schema_version", "target_profile"],
+  "properties": {
+    "decision_scope": {"const": "pinned_synthetic_manage_case_automated_scan_only"},
+    "limitations": {
+      "const": [
+        "synthetic_fixture_only",
+        "target_evidence_is_unsigned_and_unauthenticated",
+        "single_manage_case_document_only",
+        "automated_rules_only",
+        "does_not_cover_keyboard_navigation",
+        "does_not_cover_screen_reader_behavior",
+        "does_not_cover_zoom_reflow",
+        "does_not_establish_wcag_conformance",
+        "target_version_and_execution_context_are_operator_asserted"
+      ]
+    },
+    "scan_result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "engine",
+        "engine_version",
+        "inapplicable_rule_count",
+        "incomplete_rule_count",
+        "page_scope",
+        "passes_rule_count",
+        "rule_tags",
+        "violations"
+      ],
+      "properties": {
+        "engine": {"const": "axe-core"},
+        "engine_version": {"const": "4.12.1"},
+        "inapplicable_rule_count": {"const": 29},
+        "incomplete_rule_count": {"const": 0},
+        "page_scope": {"const": "manage_case_document"},
+        "passes_rule_count": {"const": 32},
+        "rule_tags": {"const": ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]},
+        "violations": {
+          "const": [
+            {"impact": "serious", "node_count": 4, "rule_id": "color-contrast"},
+            {"impact": "serious", "node_count": 2, "rule_id": "link-in-text-block"}
+          ]
+        }
+      }
+    },
+    "schema_version": {"const": "exitdrill/civicrm-accessibility-result/v0.1"},
+    "target_profile": {
+      "const": "directus-11.17.4-civic-case-to-civicrm-standalone-6.16.2/v0.1"
+    }
+  }
+}

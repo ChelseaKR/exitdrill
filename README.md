@@ -208,6 +208,13 @@ browser artifacts and reports two known non-fatal CiviCRM
 `jquery_notify_unavailable` errors. It does not prove accessibility, general UI
 usability, another casework task, or production readiness.
 
+A fourth evidence family runs pinned axe-core WCAG 2.0/2.1 A/AA-tagged rules on
+that Manage Case document. Its sanitized `accessibility-result.json` reports 32
+passing rules, 0 incomplete rules, 29 inapplicable rules, and two serious
+violations: `color-contrast` on four nodes and `link-in-text-block` on two. It
+retains no selectors or HTML and does not establish WCAG conformance; keyboard,
+screen-reader, focus, contrast-context, and zoom/reflow testing remain manual.
+
 ## Compare recurring receipts
 
 After creating two receipts, compare their aggregate evidence offline:
@@ -369,6 +376,8 @@ beyond these target-interface probes.
 - [Directus canary boundary decision](docs/decisions/0004-normalize-one-directus-canary-outside-evaluator.md)
 - [CiviCRM target-roundtrip decision](docs/decisions/0005-exercise-one-civicrm-target-roundtrip-canary.md)
 - [CiviCRM UI-surface decision](docs/decisions/0006-observe-one-authenticated-civicrm-ui-surface.md)
+- [CiviCRM browser-workflow decision](docs/decisions/0007-observe-one-civicrm-browser-workflow.md)
+- [CiviCRM automated-accessibility decision](docs/decisions/0008-record-one-automated-accessibility-observation.md)
 - [Threat model](docs/THREAT-MODEL.md)
 - [Responsible-technology audit](docs/RESPONSIBLE-TECH-AUDITS.md)
 - [Data governance](docs/DATA-GOVERNANCE.md)
@@ -382,7 +391,7 @@ beyond these target-interface probes.
 | Security & Supply-Chain | Applies; closed local inputs, zero runtime dependencies, pinned CI actions, SAST, secret and dependency scanning are committed |
 | CI/CD | Applies; committed workflows mirror local verification and demo paths |
 | Release/versioning | Applies; the build-only candidate workflow publishes no package or registry artifact |
-| Accessibility | Applies; deterministic report tests cover the language declaration, skip link, table caption, aggregate-only content, escaping, and absence of scripts |
+| Accessibility | Applies; deterministic report tests cover the language declaration, skip link, table caption, aggregate-only content, escaping, and absence of scripts; the pinned CiviCRM page has a separate automated finding report that is explicitly not a conformance claim |
 | Observability | Tier C; service telemetry is out of scope because the CLI is offline and emits no operational logs |
 | Performance | N/A — offline CLI with no latency contract; input and attachment work remain bounded |
 | Internationalization | N/A — English-only expert operator workflow |

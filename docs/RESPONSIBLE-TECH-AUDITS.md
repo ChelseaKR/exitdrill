@@ -63,7 +63,10 @@ case-level attachment authorization. One separate server-rendered Contact
 Summary observation remains distinct from one isolated Dashboard → Manage Case
 browser observation. The browser result discloses two exact known non-fatal
 `jquery_notify_unavailable` errors, retains no browser artifacts, and makes no
-accessibility, general usability, or unobserved-workflow claim.
+general usability or unobserved-workflow claim. A fourth result reports one
+sanitized automated accessibility scan, including two serious findings, while
+explicitly withholding any WCAG conformance claim and naming the keyboard,
+screen-reader, focus, and zoom/reflow work that automation cannot replace.
 
 ## Accountability
 

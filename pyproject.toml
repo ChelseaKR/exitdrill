@@ -41,6 +41,7 @@ packages = ["src/exitdrill"]
 "schemas/civicrm-target-roundtrip-result-v0.1.schema.json" = "exitdrill/schemas/civicrm-target-roundtrip-result-v0.1.schema.json"
 "schemas/civicrm-ui-surface-result-v0.1.schema.json" = "exitdrill/schemas/civicrm-ui-surface-result-v0.1.schema.json"
 "schemas/civicrm-browser-workflow-result-v0.1.schema.json" = "exitdrill/schemas/civicrm-browser-workflow-result-v0.1.schema.json"
+"schemas/civicrm-accessibility-result-v0.1.schema.json" = "exitdrill/schemas/civicrm-accessibility-result-v0.1.schema.json"
 
 [tool.ruff]
 line-length = 100

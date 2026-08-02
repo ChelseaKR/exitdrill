@@ -20,6 +20,10 @@ All notable changes will be documented here.
 
 ### Added
 
+- A fourth CiviCRM evidence family: pinned axe-core 4.12.1 scans the isolated
+  synthetic Manage Case document, retains only aggregate rule counts and
+  sanitized violation IDs/impacts/node counts, reports two serious findings,
+  and explicitly does not establish WCAG conformance.
 - Canonical `docs/adr/` compatibility index linking all accepted ADRs without
   moving or rewriting their durable `docs/decisions/` history.
 - A real-process, synthetic-only Directus 11.17.4 API-response canary captured

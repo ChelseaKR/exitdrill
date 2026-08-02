@@ -87,6 +87,7 @@ const capturePaths = [
   "permission-deny.json",
   "ui-contact-summary.json",
   "browser-workflow.json",
+  "browser-accessibility.json",
   `assets/${firstAssetId}.txt`,
   `assets/${secondAssetId}.txt`,
 ];
@@ -1951,7 +1952,9 @@ async function captureReadback(runtime, fixture, principals, stageDir) {
     fail(`contact-summary UI omitted required marker(s): ${Object.entries(contactMarkers).filter(([, observed]) => !observed).map(([name]) => name).join(", ")}`);
   }
 
-  const browserObservation = await runtime.browserWorkflow(reader);
+  const browserRun = await runtime.browserWorkflow(reader);
+  requireExact(Object.keys(browserRun).sort(), ["accessibility", "workflow"], "browser run fields");
+  const browserObservation = requireObject(browserRun.workflow, "browser workflow observation");
   requireExact(
     browserObservation,
     {
@@ -1974,6 +1977,31 @@ async function captureReadback(runtime, fixture, principals, stageDir) {
       target_profile: targetProfile,
     },
     "browser workflow observation",
+  );
+  const accessibilityObservation = requireObject(
+    browserRun.accessibility,
+    "browser accessibility observation",
+  );
+  requireExact(
+    accessibilityObservation,
+    {
+      data_mode: "synthetic_only",
+      engine: "axe-core",
+      engine_version: "4.12.1",
+      inapplicable_rule_count: 29,
+      incomplete_rule_count: 0,
+      page_scope: "manage_case_document",
+      passes_rule_count: 32,
+      retained_artifacts: [],
+      rule_tags: ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"],
+      schema_version: "exitdrill/civicrm-accessibility-observation/v0.1",
+      target_profile: targetProfile,
+      violations: [
+        { impact: "serious", node_count: 4, rule_id: "color-contrast" },
+        { impact: "serious", node_count: 2, rule_id: "link-in-text-block" },
+      ],
+    },
+    "browser accessibility observation",
   );
 
   const downloadedAssets = new Map();
@@ -2023,6 +2051,7 @@ async function captureReadback(runtime, fixture, principals, stageDir) {
       }),
     ],
     ["browser-workflow.json", jsonDocument(browserObservation)],
+    ["browser-accessibility.json", jsonDocument(accessibilityObservation)],
     [`assets/${firstAssetId}.txt`, downloadedAssets.get(firstAssetId)],
     [`assets/${secondAssetId}.txt`, downloadedAssets.get(secondAssetId)],
   ]);
@@ -2097,7 +2126,7 @@ function buildManifest(metadata, sourceNormalization) {
       database: databaseImage,
     },
     acquisition_surface:
-      "supported_api_v4_authenticated_private_file_readback_authenticated_server_rendered_ui_and_isolated_browser_workflow",
+      "supported_api_v4_authenticated_private_file_readback_authenticated_server_rendered_ui_isolated_browser_workflow_and_automated_accessibility_scan",
     source_normalization: sourceNormalization,
     sandbox: {
       application_empty_before_write: true,
@@ -2166,6 +2195,7 @@ function buildManifest(metadata, sourceNormalization) {
       "single_case_browser_workflow_only",
       "browser_workflow_observed_with_known_jquery_notify_runtime_errors",
       "browser_workflow_does_not_prove_accessibility",
+      "automated_accessibility_scan_does_not_establish_wcag_conformance",
     ],
   };
 }

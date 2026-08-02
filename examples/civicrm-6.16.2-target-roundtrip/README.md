@@ -11,7 +11,8 @@ The accepted profile is
 source-to-target lab, not a generic CiviCRM adapter. Its `native/` bundle
 contains fixed API read-back envelopes, identity-separation evidence,
 permission-probe outcomes, and attachment bytes from the disposable target.
-It also contains one sanitized browser-workflow observation.
+It also contains separate sanitized browser-workflow and automated-accessibility
+observations.
 The profile verifier must reject any other version, file inventory, sandbox
 posture, identity shape, or response shape rather than infer a mapping.
 
@@ -48,6 +49,15 @@ The pinned CiviCRM Standalone UI raises two exact, non-fatal
 their sanitized key and count and rejects any other page error, failed request,
 or off-origin request. This defect remains part of the evidence, not a hidden
 exception.
+
+`browser-accessibility.json` is a separate sanitized axe-core 4.12.1 scan of
+the full Manage Case document after those controls are visible. It retains only
+rule counts and each violation's rule ID, impact, and affected-node count—never
+selectors, HTML snippets, screenshots, or traces. The fixed scan reports 32
+passing rules, 0 incomplete, 29 inapplicable, and two serious violations:
+`color-contrast` on four nodes and `link-in-text-block` on two nodes. Automated
+coverage is partial and does not establish WCAG conformance; keyboard,
+screen-reader, focus, and zoom/reflow testing remain unperformed.
 
 Source-mapped business-state read-back never uses the writer credential or its
 in-memory mutation responses. A separate AuthX identity envelope records writer
@@ -129,10 +139,11 @@ result. The generated `target-result.json` records only bounded probe
 observations and represented, unmapped, or target-generated counts; it has no
 composite restoration status.
 
-The generated `ui-surface-result.json` and `browser-workflow-result.json` are
-separate evidence families. The browser result supports only the single task
-described above and does not modify the target probe algebra or structural
-result.
+The generated `ui-surface-result.json`, `browser-workflow-result.json`, and
+`accessibility-result.json` are separate evidence families. The browser result
+supports only the single task described above. The accessibility result reports
+only the bounded automated findings and is not a conformance verdict. Neither
+modifies the target probe algebra or structural result.
 
 The live capture gate and offline acceptance gate are distinct. The live harness
 may publish a bundle only after its fresh sandbox, source normalization, target
@@ -166,7 +177,8 @@ credentials, filesystem paths, or raw API responses.
 This evidence supports only the statement that one pinned synthetic Directus
 API-response profile was mapped into one pinned CiviCRM 6.16.2 sandbox, five
 declared target-interface probes and one Dashboard → Manage Case browser task
-were observed, and the unchanged structural evaluator reported the six known
+were observed, one bounded automated accessibility scan reported the exact
+findings above, and the unchanged structural evaluator reported the six known
 source-to-target gaps.
 
 It does **not** establish:
@@ -177,7 +189,7 @@ It does **not** establish:
 - preservation of source permission principals, effective authorization, or
   audit history;
 - attachment authorization equivalence;
-- accessibility, general CiviCRM UI usability, or any unobserved workflow;
+- WCAG conformance, general CiviCRM UI usability, or any unobserved workflow;
 - production safety, customer use, vendor deletion, or legal compliance; or
 - completeness or authenticity of the source capture, target capture, or
   separately authored baseline.

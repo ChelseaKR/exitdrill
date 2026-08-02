@@ -32,6 +32,11 @@ keys, an empty retained-artifact list, and a sanitized known-runtime-error key
 and count. The browser container retains no screenshots, traces, downloads,
 HTML, cookies, or credentials. Its aggregate result contains no synthetic record
 value, target identifier, URL parameter, or filesystem path.
+The native accessibility projection contains only the scanner name/version,
+fixed rule tags, aggregate rule counts, and sanitized violation rule IDs,
+impacts, and node counts. It excludes selectors, HTML snippets, help text, URLs,
+screenshots, and traces. Its aggregate result adds fixed scope limitations but
+no record values or browser artifacts.
 
 Receipts contain aggregates and input digests, not record fields or attachment
 content. Normalized exports necessarily contain the synthetic record fields and
