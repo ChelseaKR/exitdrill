@@ -221,6 +221,12 @@ with Enter, and reopens with Space. `keyboard-result.json` preserves that
 observation without calling it a pass; it does not assess the intervening focus
 order, focus visibility, complete keyboard access, or assistive technology.
 
+A sixth evidence family follows the generated activity's supported read-only
+`View` action and observes the Activity View heading, exact synthetic case
+subject, `Open Case` type, and `Completed` status. It reports one additional
+exact `jquery_notify_unavailable` error and makes no claim about activity
+editing, creation, source-history equivalence, or other activity types.
+
 ## Compare recurring receipts
 
 After creating two receipts, compare their aggregate evidence offline:
@@ -385,6 +391,7 @@ beyond these target-interface probes.
 - [CiviCRM browser-workflow decision](docs/decisions/0007-observe-one-civicrm-browser-workflow.md)
 - [CiviCRM automated-accessibility decision](docs/decisions/0008-record-one-automated-accessibility-observation.md)
 - [CiviCRM keyboard-interaction decision](docs/decisions/0009-record-one-keyboard-interaction-observation.md)
+- [CiviCRM activity-view decision](docs/decisions/0010-observe-one-civicrm-activity-view-workflow.md)
 - [Threat model](docs/THREAT-MODEL.md)
 - [Responsible-technology audit](docs/RESPONSIBLE-TECH-AUDITS.md)
 - [Data governance](docs/DATA-GOVERNANCE.md)

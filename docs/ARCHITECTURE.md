@@ -240,6 +240,22 @@ meaning or efficiency of the preceding focus sequence, visible focus styling,
 focus traps elsewhere, complete keyboard operation, or screen-reader behavior.
 It therefore establishes neither keyboard accessibility nor WCAG conformance.
 
+## CiviCRM activity-view boundary
+
+A sixth closed observation follows the first generated activity's supported
+read-only `View` action from Manage Case. It requires the fixed Activity View
+route and exact markers for the synthetic case subject, `Open Case` activity
+type, `Completed` status, and page heading. The route raises one additional
+`jquery_notify_unavailable` TypeError; only that exact error at the activity-view
+navigation step is accepted.
+
+The native projection retains semantic step keys, the sanitized error key/count,
+browser engine, and an empty artifact list. The verifier emits separate
+`activity-view-result.json` evidence. This proves only that one target-generated
+activity can be viewed. It does not prove editing, creation, filtering,
+attachment behavior, other activity types, or restoration of the two missing
+source audit events.
+
 ## Data contracts
 
 The baseline records expected identities, exact scalar values for its declared

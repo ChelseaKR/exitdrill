@@ -70,6 +70,9 @@ screen-reader, focus, and zoom/reflow work that automation cannot replace.
 A fifth result makes one programmatic keyboard path visible—including the 69
 Tab presses needed to reach the Roles disclosure—without labeling that path a
 pass or general keyboard-accessibility result.
+A sixth result verifies that one target-generated `Open Case` activity can be
+viewed read-only, while keeping that scaffolding separate from the two missing
+source audit-history records.
 
 ## Accountability
 

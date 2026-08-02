@@ -20,6 +20,10 @@ All notable changes will be documented here.
 
 ### Added
 
+- A sixth CiviCRM evidence family that follows a supported read-only activity
+  View action, verifies one generated `Open Case` activity's exact bounded
+  markers, and records its additional known runtime error without relabeling
+  target scaffolding as restored source history.
 - A fifth CiviCRM evidence family that records one bounded keyboard interaction:
   the Roles disclosure is reached after 69 Tab presses, closes with Enter, and
   reopens with Space, without claiming complete keyboard accessibility.

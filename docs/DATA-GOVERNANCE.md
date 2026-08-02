@@ -41,6 +41,10 @@ The native keyboard projection contains only fixed semantic step keys, the
 Chromium engine key, an aggregate Tab count, and an empty artifact list. It
 retains no focused-element labels, accessible names, selectors, DOM paths, HTML,
 screenshots, or traces.
+The native activity-view projection contains only fixed semantic step keys, an
+engine label, an empty artifact list, and a sanitized known-error key/count. It
+excludes the synthetic subject, route parameters, activity/contact/case IDs,
+HTML, screenshots, traces, and credentials.
 
 Receipts contain aggregates and input digests, not record fields or attachment
 content. Normalized exports necessarily contain the synthetic record fields and

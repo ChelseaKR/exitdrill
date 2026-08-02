@@ -142,6 +142,9 @@ WCAG conformance claim, and keyboard, screen-reader, focus, and zoom/reflow
 testing remain undone. A following bounded check reaches the Roles disclosure
 after 69 Tab presses and activates it with Enter and Space; the unusually deep
 position is evidence, not a keyboard-accessibility pass. Crucially, those
+observations are followed by one distinct read-only task that opens a generated
+`Open Case` activity and verifies its subject, type, and completed status. That
+target scaffolding is not relabeled as restored history. Crucially, the browser
 observations do not hide the result: the unchanged evaluator still reports six
 source permission, audit, and collection-scope gaps and remains
 `not_structurally_restorable`. The next credible milestone is a second real

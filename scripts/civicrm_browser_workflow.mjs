@@ -164,6 +164,16 @@ try {
   currentStep = "keyboard_roles_summary_space";
   await page.keyboard.press("Space");
   if (!(await roles.evaluate((element) => element.open))) fail();
+  currentStep = "activity_view_navigation";
+  const viewActivity = page.locator(".crm-case-activities-block a.action-item.view");
+  await requireVisible(viewActivity);
+  await viewActivity.first().click();
+  await page.waitForLoadState("load");
+  if (new URL(page.url()).pathname !== "/civicrm/case/activity/view") fail();
+  await requireVisible(page.getByText("Activity View", { exact: true }));
+  await requireVisible(page.getByText("Open Case", { exact: true }));
+  await requireVisible(page.getByText(expected.caseSubject, { exact: true }));
+  await requireVisible(page.getByText("Completed", { exact: true }));
   currentStep = "runtime_integrity";
   const expectedPageErrors = [
     {
@@ -173,6 +183,11 @@ try {
     },
     {
       step: "case_view",
+      name: "TypeError",
+      message: "$(...).notify is not a function",
+    },
+    {
+      step: "activity_view_navigation",
       name: "TypeError",
       message: "$(...).notify is not a function",
     },
@@ -188,6 +203,26 @@ try {
 
   process.stdout.write(
     `${JSON.stringify({
+      activity_view: {
+        browser_engine: "chromium",
+        data_mode: "synthetic_only",
+        known_runtime_errors: [
+          {
+            error_key: "jquery_notify_unavailable",
+            occurrence_count: 1,
+          },
+        ],
+        retained_artifacts: [],
+        schema_version: "exitdrill/civicrm-activity-view-observation/v0.1",
+        steps: [
+          "activity_view_opened",
+          "activity_subject_observed",
+          "activity_type_observed",
+          "activity_status_observed",
+        ],
+        target_profile:
+          "directus-11.17.4-civic-case-to-civicrm-standalone-6.16.2/v0.1",
+      },
       accessibility: {
         data_mode: "synthetic_only",
         engine: "axe-core",
