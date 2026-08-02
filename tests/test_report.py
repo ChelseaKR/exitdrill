@@ -42,6 +42,8 @@ def test_renders_deterministic_aggregate_only_accessible_report(example_root: Pa
     assert "<caption>Expected, exported, and restored counts" in first
     assert "Structurally restorable" in first
     assert "Does not prove operational equivalence." in first
+    assert "Field-value equivalence is limited to baseline-declared required fields." in first
+    assert "field_value_equivalence_limited_to_declared_required_fields" not in first
     assert cast(str, receipt["payload_sha256"]) in first
     assert "Synthetic Person" not in first
     assert "person-001" not in first

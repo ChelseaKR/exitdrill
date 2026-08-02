@@ -15,7 +15,8 @@ past-performance claim, or proof of an operational migration.
 
 ## Evidence in the repository
 
-- Five-dimension evaluation and neutral SQLite restoration are implemented in
+- Five-dimension evaluation, exact comparisons for baseline-declared critical
+  field values, and neutral SQLite restoration are implemented in
   [`src/exitdrill/evaluator.py`](../src/exitdrill/evaluator.py) and bounded by the
   design in [`docs/ARCHITECTURE.md`](ARCHITECTURE.md).
 - The equal-row-count adversarial scenario is encoded in
@@ -48,9 +49,9 @@ native-export proof, production-capable target adapter, or workflow read-back.
 ## Resume bullet
 
 - Built ExitDrill, an offline Python technical alpha that tests synthetic SaaS
-  exports across five structural dimensions and detects adversarial data loss
-  hidden by unchanged row counts, with replayable aggregate receipts and a
-  standalone evidence report.
+  exports across five structural dimensions, verifies baseline-declared critical
+  field values, and detects adversarial data loss hidden by unchanged row counts,
+  with replayable aggregate receipts and a standalone evidence report.
 
 ## 60-second interview version
 
@@ -60,12 +61,14 @@ organization can reconstruct the structure it depends on. I created an
 independent synthetic baseline, a normalized export contract, and an evaluator
 covering entities, relationships, attachment bytes, permissions, and audit
 history. The evaluator also loads the graph into a foreign-key-enforced SQLite
-reference model and produces aggregate receipts that can be replayed offline. To
-make the claim falsifiable, I built an adversarial fixture that preserves the
-entity row count while replacing an entity, rewiring a relationship, corrupting
-an attachment, collapsing a permission, and replacing an audit event; the drill
-surfaces the losses. I also added a deterministic, script-free HTML evidence
-report and strict quality gates. The boundary matters: this demonstrates a
-synthetic structural test, not a production migration or operational exit
-readiness. The next credible milestone is one lawful native export restored into
-a real isolated target, followed by read-back and workflow probes.
+reference model and produces aggregate receipts that can be replayed offline.
+Baseline-declared critical fields use typed exact-value assertions, while
+undeclared values remain explicitly outside the claim. To make the result
+falsifiable, I built an adversarial fixture that preserves the entity row count
+while replacing an entity, rewiring a relationship, corrupting an attachment,
+collapsing a permission, and replacing an audit event; the drill surfaces the
+losses. I also added a deterministic, script-free HTML evidence report and strict
+quality gates. The boundary matters: this demonstrates a synthetic structural
+test, not a production migration or operational exit readiness. The next
+credible milestone is one lawful native-format export generated from an isolated
+synthetic sandbox, followed by target read-back and workflow probes.

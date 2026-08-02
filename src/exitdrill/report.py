@@ -32,7 +32,9 @@ _LIMITATION_LABELS = {
     "does_not_authenticate_export_or_baseline": "Does not authenticate the export or baseline.",
     "does_not_prove_operational_equivalence": "Does not prove operational equivalence.",
     "does_not_prove_vendor_deletion": "Does not prove vendor deletion.",
-    "does_not_verify_field_value_equivalence": "Does not verify field-value equivalence.",
+    "field_value_equivalence_limited_to_declared_required_fields": (
+        "Field-value equivalence is limited to baseline-declared required fields."
+    ),
     "does_not_verify_permission_principal_identity": (
         "Does not verify permission-principal identity."
     ),

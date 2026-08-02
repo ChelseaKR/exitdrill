@@ -46,7 +46,8 @@ permission model.
 - `report.py` renders one semantically verified aggregate receipt as a
   deterministic, accessible, script-free offline HTML report with the complete
   claims boundary intact.
-- `cli.py` exposes validation, drill, verification/replay, and comparison.
+- `cli.py` exposes validation, drill, verification/replay, comparison, and
+  offline reporting.
 
 ## Architecture decision
 
