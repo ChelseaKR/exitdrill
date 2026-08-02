@@ -1,0 +1,1 @@
+{"browser_engine":"chromium","data_mode":"synthetic_only","retained_artifacts":[],"schema_version":"exitdrill/civicrm-keyboard-observation/v0.1","steps":["roles_summary_reached_by_tab","roles_summary_closed_by_enter","roles_summary_reopened_by_space"],"tab_steps_to_roles_summary":69,"target_profile":"directus-11.17.4-civic-case-to-civicrm-standalone-6.16.2/v0.1"}

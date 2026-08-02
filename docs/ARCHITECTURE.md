@@ -225,6 +225,21 @@ cover keyboard operation, focus order or visibility, screen-reader behavior,
 zoom/reflow, or contextual review of contrast and semantics. Those require
 manual and assistive-technology testing.
 
+## CiviCRM keyboard-interaction boundary
+
+A fifth closed observation clears focus after the Manage Case scan and sends at
+most 80 Tab presses from the document start. In the pinned page, the Roles
+disclosure summary receives focus on press 69; Enter closes it and Space reopens
+it. The native projection retains only those semantic steps, the Tab count, the
+browser engine, and an empty artifact list. The offline verifier emits separate
+`keyboard-result.json` evidence and does not convert the observation into a
+pass/fail score.
+
+This programmatic interaction covers one control only. It does not evaluate the
+meaning or efficiency of the preceding focus sequence, visible focus styling,
+focus traps elsewhere, complete keyboard operation, or screen-reader behavior.
+It therefore establishes neither keyboard accessibility nor WCAG conformance.
+
 ## Data contracts
 
 The baseline records expected identities, exact scalar values for its declared

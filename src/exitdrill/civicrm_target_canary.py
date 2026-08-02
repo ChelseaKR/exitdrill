@@ -31,6 +31,7 @@ _RESULT_SCHEMA = "exitdrill/civicrm-target-roundtrip-result/v0.1"
 _UI_RESULT_SCHEMA = "exitdrill/civicrm-ui-surface-result/v0.1"
 _BROWSER_RESULT_SCHEMA = "exitdrill/civicrm-browser-workflow-result/v0.1"
 _ACCESSIBILITY_RESULT_SCHEMA = "exitdrill/civicrm-accessibility-result/v0.1"
+_KEYBOARD_RESULT_SCHEMA = "exitdrill/civicrm-keyboard-result/v0.1"
 _SOURCE_SYSTEM = "Directus 11.17.4 synthetic civic-case sandbox"
 _TARGET_SYSTEM = "CiviCRM Standalone"
 _TARGET_VERSION = "6.16.2"
@@ -40,7 +41,7 @@ _DRILL_ID = "directus-civic-case-exit-001"
 _SOURCE_EXPORTED_AT = "2026-08-02T02:38:28.542Z"
 _ACQUISITION_SURFACE = (
     "supported_api_v4_authenticated_private_file_readback_authenticated_server_rendered_ui_"
-    "isolated_browser_workflow_and_automated_accessibility_scan"
+    "isolated_browser_workflow_automated_accessibility_scan_and_keyboard_interaction"
 )
 _FILE_IDS = (
     "11111111-1111-4111-8111-111111111111",
@@ -61,6 +62,7 @@ _EXPECTED_FILES = (
     "ui-contact-summary.json",
     "browser-workflow.json",
     "browser-accessibility.json",
+    "browser-keyboard.json",
     f"assets/{_FILE_IDS[0]}.txt",
     f"assets/{_FILE_IDS[1]}.txt",
 )
@@ -181,6 +183,7 @@ _BUNDLE_LIMITATIONS = (
     "browser_workflow_observed_with_known_jquery_notify_runtime_errors",
     "browser_workflow_does_not_prove_accessibility",
     "automated_accessibility_scan_does_not_establish_wcag_conformance",
+    "single_programmatic_keyboard_interaction_does_not_establish_keyboard_accessibility",
 )
 _RESULT_LIMITATIONS = (
     "synthetic_fixture_only",
@@ -221,6 +224,18 @@ _ACCESSIBILITY_RESULT_LIMITATIONS = (
     "does_not_cover_keyboard_navigation",
     "does_not_cover_screen_reader_behavior",
     "does_not_cover_zoom_reflow",
+    "does_not_establish_wcag_conformance",
+    "target_version_and_execution_context_are_operator_asserted",
+)
+_KEYBOARD_RESULT_LIMITATIONS = (
+    "synthetic_fixture_only",
+    "target_evidence_is_unsigned_and_unauthenticated",
+    "single_manage_case_roles_disclosure_only",
+    "programmatic_keyboard_events_only",
+    "does_not_cover_complete_tab_order",
+    "does_not_assess_visible_focus_indicator",
+    "does_not_cover_screen_reader_behavior",
+    "does_not_establish_keyboard_accessibility",
     "does_not_establish_wcag_conformance",
     "target_version_and_execution_context_are_operator_asserted",
 )
@@ -900,6 +915,24 @@ def _accessibility_result() -> dict[str, JsonValue]:
     }
 
 
+def _keyboard_result() -> dict[str, JsonValue]:
+    return {
+        "decision_scope": "pinned_synthetic_manage_case_keyboard_interaction_only",
+        "limitations": list(_KEYBOARD_RESULT_LIMITATIONS),
+        "observation": {
+            "browser_engine": "chromium",
+            "steps": [
+                "roles_summary_reached_by_tab",
+                "roles_summary_closed_by_enter",
+                "roles_summary_reopened_by_space",
+            ],
+            "tab_steps_to_roles_summary": 69,
+        },
+        "schema_version": _KEYBOARD_RESULT_SCHEMA,
+        "target_profile": _PROFILE,
+    }
+
+
 def _target_result(allow_count: int, deny_count: int) -> dict[str, JsonValue]:
     probes = [
         _probe_result("record_lookup", "pass", "independent_api_v4_readback"),
@@ -940,6 +973,7 @@ def _build_output(
 ) -> tuple[
     dict[str, JsonValue],
     list[tuple[str, bytes]],
+    dict[str, JsonValue],
     dict[str, JsonValue],
     dict[str, JsonValue],
     dict[str, JsonValue],
@@ -1030,6 +1064,23 @@ def _build_output(
         },
         "browser accessibility projection",
     )
+    _parse_ui_surface(
+        documents["browser-keyboard.json"],
+        {
+            "browser_engine": "chromium",
+            "data_mode": "synthetic_only",
+            "retained_artifacts": [],
+            "schema_version": "exitdrill/civicrm-keyboard-observation/v0.1",
+            "steps": [
+                "roles_summary_reached_by_tab",
+                "roles_summary_closed_by_enter",
+                "roles_summary_reopened_by_space",
+            ],
+            "tab_steps_to_roles_summary": 69,
+            "target_profile": _PROFILE,
+        },
+        "browser keyboard projection",
+    )
     export: dict[str, JsonValue] = {
         "attachments": cast("list[JsonValue]", attachments),
         "audit_events": [],
@@ -1049,6 +1100,7 @@ def _build_output(
         _ui_surface_result(),
         _browser_workflow_result(),
         _accessibility_result(),
+        _keyboard_result(),
     )
 
 
@@ -1060,6 +1112,7 @@ def _write_output(
     ui_result: Mapping[str, JsonValue],
     browser_result: Mapping[str, JsonValue],
     accessibility_result: Mapping[str, JsonValue],
+    keyboard_result: Mapping[str, JsonValue],
 ) -> None:
     parent = out_dir.parent
     if not parent.exists() or not parent.is_dir():
@@ -1081,6 +1134,9 @@ def _write_output(
         )
         (temporary / "accessibility-result.json").write_bytes(
             canonical_json_bytes(accessibility_result) + b"\n"
+        )
+        (temporary / "keyboard-result.json").write_bytes(
+            canonical_json_bytes(keyboard_result) + b"\n"
         )
         if out_dir.exists() or out_dir.is_symlink():
             raise _fail("output directory already exists")
@@ -1123,9 +1179,15 @@ def normalize_civicrm_target_canary(manifest_path: Path, out_dir: Path) -> dict[
     )
     _, files = _parse_manifest(manifest_document)
     documents = _read_verified_bundle(root, files)
-    export, copies, result, ui_result, browser_result, accessibility_result = _build_output(
-        documents
-    )
+    (
+        export,
+        copies,
+        result,
+        ui_result,
+        browser_result,
+        accessibility_result,
+        keyboard_result,
+    ) = _build_output(documents)
     export_document = canonical_json_bytes(export) + b"\n"
     _write_output(
         resolved_out,
@@ -1135,5 +1197,6 @@ def normalize_civicrm_target_canary(manifest_path: Path, out_dir: Path) -> dict[
         ui_result,
         browser_result,
         accessibility_result,
+        keyboard_result,
     )
     return result

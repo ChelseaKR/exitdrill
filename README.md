@@ -215,6 +215,12 @@ violations: `color-contrast` on four nodes and `link-in-text-block` on two. It
 retains no selectors or HTML and does not establish WCAG conformance; keyboard,
 screen-reader, focus, contrast-context, and zoom/reflow testing remain manual.
 
+A fifth evidence family sends bounded programmatic keyboard events from the
+document start. The Roles disclosure is reached after 69 Tab presses, closes
+with Enter, and reopens with Space. `keyboard-result.json` preserves that
+observation without calling it a pass; it does not assess the intervening focus
+order, focus visibility, complete keyboard access, or assistive technology.
+
 ## Compare recurring receipts
 
 After creating two receipts, compare their aggregate evidence offline:
@@ -378,6 +384,7 @@ beyond these target-interface probes.
 - [CiviCRM UI-surface decision](docs/decisions/0006-observe-one-authenticated-civicrm-ui-surface.md)
 - [CiviCRM browser-workflow decision](docs/decisions/0007-observe-one-civicrm-browser-workflow.md)
 - [CiviCRM automated-accessibility decision](docs/decisions/0008-record-one-automated-accessibility-observation.md)
+- [CiviCRM keyboard-interaction decision](docs/decisions/0009-record-one-keyboard-interaction-observation.md)
 - [Threat model](docs/THREAT-MODEL.md)
 - [Responsible-technology audit](docs/RESPONSIBLE-TECH-AUDITS.md)
 - [Data governance](docs/DATA-GOVERNANCE.md)
