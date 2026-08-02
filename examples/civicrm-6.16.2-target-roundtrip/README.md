@@ -160,6 +160,12 @@ support only the two read-only tasks described above. The accessibility and
 keyboard results report only their bounded observations and are not conformance
 verdicts. None modifies the target probe algebra or structural result.
 
+`evidence-index.json` is a seventh, non-evaluative artifact: a closed catalog of
+`export.json` and the six result files. It records only each artifact's fixed
+identifier, filename, schema, and independent decision scope. It contains no
+status, score, pass count, priority, or inferred conclusion, and it does not
+replace schema validation or the structural evaluator.
+
 The live capture gate and offline acceptance gate are distinct. The live harness
 may publish a bundle only after its fresh sandbox, source normalization, target
 load, independent business-state read-back, and target-interface probes pass.

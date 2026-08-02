@@ -20,6 +20,9 @@ All notable changes will be documented here.
 
 ### Added
 
+- A closed `evidence-index.json` catalog for the normalized CiviCRM export and
+  six independent result artifacts, with per-entry schemas and decision scopes
+  but no composite status, score, pass count, or inferred conclusion.
 - A sixth CiviCRM evidence family that follows a supported read-only activity
   View action, verifies one generated `Open Case` activity's exact bounded
   markers, and records its additional known runtime error without relabeling

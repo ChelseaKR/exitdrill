@@ -34,6 +34,7 @@ Existing accepted records:
 8. [ADR 0008: Record one automated CiviCRM accessibility observation](../decisions/0008-record-one-automated-accessibility-observation.md)
 9. [ADR 0009: Record one CiviCRM keyboard interaction observation](../decisions/0009-record-one-keyboard-interaction-observation.md)
 10. [ADR 0010: Observe one CiviCRM activity-view workflow](../decisions/0010-observe-one-civicrm-activity-view-workflow.md)
+11. [ADR 0011: Index CiviCRM evidence without composing it](../decisions/0011-index-civicrm-evidence-without-composing-it.md)
 
 ## Consequences
 

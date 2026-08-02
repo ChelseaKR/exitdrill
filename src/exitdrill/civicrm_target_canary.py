@@ -33,6 +33,7 @@ _BROWSER_RESULT_SCHEMA = "exitdrill/civicrm-browser-workflow-result/v0.1"
 _ACCESSIBILITY_RESULT_SCHEMA = "exitdrill/civicrm-accessibility-result/v0.1"
 _KEYBOARD_RESULT_SCHEMA = "exitdrill/civicrm-keyboard-result/v0.1"
 _ACTIVITY_VIEW_RESULT_SCHEMA = "exitdrill/civicrm-activity-view-result/v0.1"
+_EVIDENCE_INDEX_SCHEMA = "exitdrill/civicrm-evidence-index/v0.1"
 _SOURCE_SYSTEM = "Directus 11.17.4 synthetic civic-case sandbox"
 _TARGET_SYSTEM = "CiviCRM Standalone"
 _TARGET_VERSION = "6.16.2"
@@ -252,6 +253,14 @@ _ACTIVITY_VIEW_RESULT_LIMITATIONS = (
     "read_only_activity_view_only",
     "does_not_prove_activity_editing_or_creation",
     "does_not_prove_operational_equivalence",
+    "target_version_and_execution_context_are_operator_asserted",
+)
+_EVIDENCE_INDEX_LIMITATIONS = (
+    "index_is_unsigned_and_unauthenticated",
+    "index_is_not_a_composite_assessment",
+    "entries_have_independent_decision_scopes",
+    "normalized_export_requires_separate_baseline_evaluation",
+    "each_result_must_be_interpreted_with_its_own_limitations",
     "target_version_and_execution_context_are_operator_asserted",
 )
 _CONTACT_KEYS = frozenset(
@@ -965,6 +974,60 @@ def _activity_view_result() -> dict[str, JsonValue]:
     }
 
 
+def _evidence_index() -> dict[str, JsonValue]:
+    entries = [
+        {
+            "artifact_id": "normalized_target_readback",
+            "decision_scope": "normalized_target_readback_for_structural_evaluation",
+            "filename": "export.json",
+            "schema_version": "exitdrill/export/v0.1",
+        },
+        {
+            "artifact_id": "target_interface",
+            "decision_scope": "pinned_synthetic_target_roundtrip_only",
+            "filename": "target-result.json",
+            "schema_version": _RESULT_SCHEMA,
+        },
+        {
+            "artifact_id": "ui_surface",
+            "decision_scope": "pinned_synthetic_ui_surface_only",
+            "filename": "ui-surface-result.json",
+            "schema_version": _UI_RESULT_SCHEMA,
+        },
+        {
+            "artifact_id": "browser_workflow",
+            "decision_scope": "pinned_synthetic_browser_workflow_only",
+            "filename": "browser-workflow-result.json",
+            "schema_version": _BROWSER_RESULT_SCHEMA,
+        },
+        {
+            "artifact_id": "automated_accessibility",
+            "decision_scope": "pinned_synthetic_manage_case_automated_scan_only",
+            "filename": "accessibility-result.json",
+            "schema_version": _ACCESSIBILITY_RESULT_SCHEMA,
+        },
+        {
+            "artifact_id": "keyboard_interaction",
+            "decision_scope": "pinned_synthetic_manage_case_keyboard_interaction_only",
+            "filename": "keyboard-result.json",
+            "schema_version": _KEYBOARD_RESULT_SCHEMA,
+        },
+        {
+            "artifact_id": "activity_view",
+            "decision_scope": "pinned_synthetic_generated_activity_view_only",
+            "filename": "activity-view-result.json",
+            "schema_version": _ACTIVITY_VIEW_RESULT_SCHEMA,
+        },
+    ]
+    return {
+        "decision_scope": "separate_non_composite_evidence_families",
+        "entries": cast("list[JsonValue]", entries),
+        "limitations": list(_EVIDENCE_INDEX_LIMITATIONS),
+        "schema_version": _EVIDENCE_INDEX_SCHEMA,
+        "target_profile": _PROFILE,
+    }
+
+
 def _target_result(allow_count: int, deny_count: int) -> dict[str, JsonValue]:
     probes = [
         _probe_result("record_lookup", "pass", "independent_api_v4_readback"),
@@ -1195,6 +1258,9 @@ def _write_output(
         )
         (temporary / "activity-view-result.json").write_bytes(
             canonical_json_bytes(activity_view_result) + b"\n"
+        )
+        (temporary / "evidence-index.json").write_bytes(
+            canonical_json_bytes(_evidence_index()) + b"\n"
         )
         if out_dir.exists() or out_dir.is_symlink():
             raise _fail("output directory already exists")

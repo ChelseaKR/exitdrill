@@ -472,11 +472,15 @@ def test_normalizes_closed_target_bundle_and_schema_validates(tmp_path: Path) ->
     activity_view_schema = _read_json(
         Path(__file__).parents[1] / "schemas/civicrm-activity-view-result-v0.1.schema.json"
     )
+    evidence_index_schema = _read_json(
+        Path(__file__).parents[1] / "schemas/civicrm-evidence-index-v0.1.schema.json"
+    )
     ui_result = _read_json(out_dir / "ui-surface-result.json")
     browser_result = _read_json(out_dir / "browser-workflow-result.json")
     accessibility_result = _read_json(out_dir / "accessibility-result.json")
     keyboard_result = _read_json(out_dir / "keyboard-result.json")
     activity_view_result = _read_json(out_dir / "activity-view-result.json")
+    evidence_index = _read_json(out_dir / "evidence-index.json")
 
     Draft202012Validator(schema).validate(result)
     Draft202012Validator(ui_schema).validate(ui_result)
@@ -484,6 +488,7 @@ def test_normalizes_closed_target_bundle_and_schema_validates(tmp_path: Path) ->
     Draft202012Validator(accessibility_schema).validate(accessibility_result)
     Draft202012Validator(keyboard_schema).validate(keyboard_result)
     Draft202012Validator(activity_view_schema).validate(activity_view_result)
+    Draft202012Validator(evidence_index_schema).validate(evidence_index)
     assert _read_json(out_dir / "target-result.json") == result
     assert result["represented_counts"] == _REPRESENTED
     assert result["unmapped_counts"] == _UNMAPPED
@@ -502,6 +507,16 @@ def test_normalizes_closed_target_bundle_and_schema_validates(tmp_path: Path) ->
     ]
     assert keyboard_result["observation"]["tab_steps_to_roles_summary"] == 69
     assert [item["state"] for item in activity_view_result["workflow_results"]] == ["observed"]
+    assert [item["artifact_id"] for item in evidence_index["entries"]] == [
+        "normalized_target_readback",
+        "target_interface",
+        "ui_surface",
+        "browser_workflow",
+        "automated_accessibility",
+        "keyboard_interaction",
+        "activity_view",
+    ]
+    assert evidence_index["decision_scope"] == "separate_non_composite_evidence_families"
     assert package.drill_id == "directus-civic-case-exit-001"
     assert package.source_system == "Directus 11.17.4 synthetic civic-case sandbox"
     assert package.exported_at == "2026-08-02T02:38:28.542Z"
@@ -1234,6 +1249,7 @@ def test_existing_nested_and_missing_parent_destinations_are_rejected(tmp_path: 
         "accessibility-result.json",
         "keyboard-result.json",
         "activity-view-result.json",
+        "evidence-index.json",
     ],
 )
 def test_failed_materialization_removes_temporary_output(

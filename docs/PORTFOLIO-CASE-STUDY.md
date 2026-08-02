@@ -32,9 +32,13 @@ Summary surface containing the exact synthetic contact and Cases tab, then
 completes one isolated Chromium workflow from the all-cases dashboard into
 Manage Case and observes the exact case controls. The workflow reports two known
 non-fatal CiviCRM `jquery_notify_unavailable` errors and retains no browser
-artifacts. This is a bounded target-process experiment, not a completed
-migration, accessibility assessment, customer result, employer deliverable, or
-claim of CiviCRM-wide portability.
+artifacts. Separate artifacts record one automated accessibility scan, one
+bounded keyboard interaction, and one read-only Activity View observation. A
+machine-readable evidence index catalogs the normalized export and six result
+families without composing their scopes or adding a verdict. This is a bounded
+target-process experiment, not a completed migration, accessibility-conformance
+assessment, customer result, employer deliverable, or claim of CiviCRM-wide
+portability.
 
 ## Evidence in the repository
 
@@ -62,7 +66,8 @@ claim of CiviCRM-wide portability.
   which also emits the sanitized automated-accessibility observation, while
   [`scripts/check_civicrm_target_roundtrip_demo.py`](../scripts/check_civicrm_target_roundtrip_demo.py)
   verifies the frozen clean capture, intentional structural failure, and five
-  adversarial controls offline.
+  adversarial controls offline. The normalizer also emits a closed
+  `evidence-index.json` catalog with no composite status or score.
 - Aggregate-only receipts, semantic verification, and offline replay are covered
   by [`src/exitdrill/receipt.py`](../src/exitdrill/receipt.py),
   [`tests/test_receipt.py`](../tests/test_receipt.py), and the end-to-end CLI tests
@@ -87,11 +92,12 @@ equivalence, authenticated evidence, legal compliance, savings, or successful
 cutover to another SaaS product. The Directus evidence supports only one frozen
 11.17.4 synthetic source profile captured through documented APIs. The CiviCRM
 evidence supports only one frozen 6.16.2 target profile and five target-interface
-probe observations plus one Contact Summary UI-surface observation. ExitDrill
-also has one bounded Dashboard → Manage Case browser observation with two
-explicit known runtime errors. It still has no supported production connector,
-production data path, accessibility evidence, general UI-workflow coverage, or
-cutover evidence.
+probe observations plus six separately bounded result families: target
+interface, Contact Summary UI surface, Dashboard → Manage Case browser workflow,
+automated accessibility, keyboard interaction, and Activity View. A separate
+index catalogs those results and the normalized export without composing them.
+It still has no supported production connector, production data path, WCAG
+conformance evidence, general UI-workflow coverage, or cutover evidence.
 
 ## Resume bullet
 
@@ -99,9 +105,10 @@ cutover evidence.
   exports across five structural dimensions; added pinned Directus 11.17.4 source
   and CiviCRM 6.16.2 target canaries with independent API read-back, five bounded
   target-interface probes, one authenticated Contact Summary observation,
-  one isolated Dashboard → Manage Case browser task, adversarial controls, and
-  replayable aggregate evidence that keeps six known source-to-target gaps and
-  two known UI runtime errors explicit.
+  one isolated Dashboard → Manage Case browser task, three further bounded
+  accessibility/keyboard/activity observations, adversarial controls, and a
+  non-composite evidence catalog that keeps six known source-to-target gaps and
+  three known UI runtime errors explicit.
 
 ## 60-second interview version
 
