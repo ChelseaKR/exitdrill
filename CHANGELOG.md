@@ -6,6 +6,9 @@ All notable changes will be documented here.
 
 ### Changed
 
+- Advanced the CiviCRM evidence index to `v0.3` and the closed verification
+  result to `v0.2` for an eighth indexed artifact: a separate bounded
+  contact-summary browser-workflow result.
 - Advanced the CiviCRM evidence index to `v0.2`, binding each catalog entry to
   the exact emitted artifact bytes and length while explicitly withholding any
   authenticity claim.
@@ -23,6 +26,10 @@ All notable changes will be documented here.
 
 ### Added
 
+- A seventh CiviCRM evidence family that reopens the case dashboard, follows
+  the exact synthetic contact into Contact Summary, verifies the contact-page
+  region and Cases affordance, and explicitly withholds contact-editing,
+  case-navigation, accessibility, and operational-equivalence claims.
 - A fail-closed `verify-civicrm-evidence-index` command that checks the exact
   v0.2 catalog, bounded artifact bytes, packaged result schemas, normalized
   export contract, and declared attachment bytes without producing a composite

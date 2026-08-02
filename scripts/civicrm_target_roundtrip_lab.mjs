@@ -90,6 +90,7 @@ const capturePaths = [
   "browser-accessibility.json",
   "browser-keyboard.json",
   "browser-activity-view.json",
+  "browser-contact-summary-workflow.json",
   `assets/${firstAssetId}.txt`,
   `assets/${secondAssetId}.txt`,
 ];
@@ -1957,7 +1958,7 @@ async function captureReadback(runtime, fixture, principals, stageDir) {
   const browserRun = await runtime.browserWorkflow(reader);
   requireExact(
     Object.keys(browserRun).sort(),
-    ["accessibility", "activity_view", "keyboard", "workflow"],
+    ["accessibility", "activity_view", "contact_summary_workflow", "keyboard", "workflow"],
     "browser run fields",
   );
   const browserObservation = requireObject(browserRun.workflow, "browser workflow observation");
@@ -2051,6 +2052,30 @@ async function captureReadback(runtime, fixture, principals, stageDir) {
     },
     "browser activity-view observation",
   );
+  const contactSummaryWorkflowObservation = requireObject(
+    browserRun.contact_summary_workflow,
+    "browser contact-summary workflow observation",
+  );
+  requireExact(
+    contactSummaryWorkflowObservation,
+    {
+      browser_engine: "chromium",
+      data_mode: "synthetic_only",
+      known_runtime_errors: [
+        { error_key: "jquery_notify_unavailable", occurrence_count: 2 },
+      ],
+      retained_artifacts: [],
+      schema_version: "exitdrill/civicrm-contact-summary-workflow-observation/v0.1",
+      steps: [
+        "case_dashboard_reopened",
+        "case_contact_opened",
+        "contact_summary_observed",
+        "cases_affordance_observed",
+      ],
+      target_profile: targetProfile,
+    },
+    "browser contact-summary workflow observation",
+  );
 
   const downloadedAssets = new Map();
   for (const sourceFile of fixture.files) {
@@ -2102,6 +2127,10 @@ async function captureReadback(runtime, fixture, principals, stageDir) {
     ["browser-accessibility.json", jsonDocument(accessibilityObservation)],
     ["browser-keyboard.json", jsonDocument(keyboardObservation)],
     ["browser-activity-view.json", jsonDocument(activityViewObservation)],
+    [
+      "browser-contact-summary-workflow.json",
+      jsonDocument(contactSummaryWorkflowObservation),
+    ],
     [`assets/${firstAssetId}.txt`, downloadedAssets.get(firstAssetId)],
     [`assets/${secondAssetId}.txt`, downloadedAssets.get(secondAssetId)],
   ]);
@@ -2176,7 +2205,7 @@ function buildManifest(metadata, sourceNormalization) {
       database: databaseImage,
     },
     acquisition_surface:
-      "supported_api_v4_authenticated_private_file_readback_authenticated_server_rendered_ui_isolated_browser_workflow_automated_accessibility_scan_keyboard_interaction_and_activity_view",
+      "supported_api_v4_authenticated_private_file_readback_authenticated_server_rendered_ui_isolated_browser_workflow_automated_accessibility_scan_keyboard_interaction_and_activity_view_and_contact_summary_workflow",
     source_normalization: sourceNormalization,
     sandbox: {
       application_empty_before_write: true,
@@ -2249,6 +2278,9 @@ function buildManifest(metadata, sourceNormalization) {
       "single_programmatic_keyboard_interaction_does_not_establish_keyboard_accessibility",
       "single_generated_activity_view_only",
       "activity_view_observed_with_known_jquery_notify_runtime_error",
+      "single_contact_summary_browser_workflow_only",
+      "contact_summary_workflow_observed_with_known_jquery_notify_runtime_errors",
+      "contact_summary_workflow_does_not_prove_contact_editing_or_case_navigation",
     ],
   };
 }

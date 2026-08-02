@@ -227,10 +227,10 @@ def test_verify_civicrm_evidence_index_cli(
 
     assert main(["verify-civicrm-evidence-index", str(out_dir / "evidence-index.json")]) == 0
     assert _stdout(capsys) == {
-        "artifact_count": 7,
+        "artifact_count": 8,
         "attachment_count": 2,
         "decision_scope": "catalog_bindings_artifact_schemas_and_export_attachments_only",
-        "index_schema_version": "exitdrill/civicrm-evidence-index/v0.2",
+        "index_schema_version": "exitdrill/civicrm-evidence-index/v0.3",
         "limitations": [
             "verification_is_unsigned_and_unauthenticated",
             "does_not_interpret_or_compose_artifact_results",
@@ -238,7 +238,7 @@ def test_verify_civicrm_evidence_index_cli(
             "does_not_prove_live_execution_or_completeness",
             "digests_prove_internal_consistency_not_authenticity",
         ],
-        "schema_version": "exitdrill/civicrm-evidence-verification/v0.1",
+        "schema_version": "exitdrill/civicrm-evidence-verification/v0.2",
         "status": "evidence_artifact_contracts_verified",
         "target_profile": ("directus-11.17.4-civic-case-to-civicrm-standalone-6.16.2/v0.1"),
     }

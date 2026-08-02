@@ -43,9 +43,12 @@ packages = ["src/exitdrill"]
 "schemas/civicrm-accessibility-result-v0.1.schema.json" = "exitdrill/schemas/civicrm-accessibility-result-v0.1.schema.json"
 "schemas/civicrm-keyboard-result-v0.1.schema.json" = "exitdrill/schemas/civicrm-keyboard-result-v0.1.schema.json"
 "schemas/civicrm-activity-view-result-v0.1.schema.json" = "exitdrill/schemas/civicrm-activity-view-result-v0.1.schema.json"
+"schemas/civicrm-contact-summary-workflow-result-v0.1.schema.json" = "exitdrill/schemas/civicrm-contact-summary-workflow-result-v0.1.schema.json"
 "schemas/civicrm-evidence-index-v0.1.schema.json" = "exitdrill/schemas/civicrm-evidence-index-v0.1.schema.json"
 "schemas/civicrm-evidence-index-v0.2.schema.json" = "exitdrill/schemas/civicrm-evidence-index-v0.2.schema.json"
+"schemas/civicrm-evidence-index-v0.3.schema.json" = "exitdrill/schemas/civicrm-evidence-index-v0.3.schema.json"
 "schemas/civicrm-evidence-verification-v0.1.schema.json" = "exitdrill/schemas/civicrm-evidence-verification-v0.1.schema.json"
+"schemas/civicrm-evidence-verification-v0.2.schema.json" = "exitdrill/schemas/civicrm-evidence-verification-v0.2.schema.json"
 
 [tool.ruff]
 line-length = 100

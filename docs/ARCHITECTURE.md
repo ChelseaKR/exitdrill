@@ -256,10 +256,26 @@ activity can be viewed. It does not prove editing, creation, filtering,
 attachment behavior, other activity types, or restoration of the two missing
 source audit events.
 
+## CiviCRM contact-summary browser-workflow boundary
+
+A seventh closed observation reopens the all-cases dashboard after the
+activity-view task, locates the exact synthetic contact link, and follows it to
+the fixed Contact Summary route. It requires the contact-page region, exact
+synthetic contact name, and Cases affordance. Dashboard and Contact Summary
+navigation each raise the same bounded `jquery_notify_unavailable` TypeError;
+only those two exact occurrences at those steps are accepted.
+
+The native projection retains semantic step keys, browser engine, the sanitized
+error key/count, and an empty artifact list. The verifier emits separate
+`contact-summary-workflow-result.json` evidence. This proves only one read-only
+dashboard-to-contact-summary path. It does not prove contact editing, navigation
+into a case, accessibility, other contact workflows, or operational
+equivalence.
+
 ## CiviCRM evidence-index boundary
 
 The normalizer emits `evidence-index.json` as a closed catalog of the normalized
-export and six independent CiviCRM result artifacts. Each entry fixes only an
+export and seven independent CiviCRM result artifacts. Each entry fixes only an
 artifact identifier, filename, schema, decision scope, byte length, and SHA-256
 digest. The binding is calculated from the exact byte string written for each
 artifact. The index contains no status, score, pass count, priority, or inferred
@@ -274,15 +290,15 @@ nor the operator-asserted target execution. Its digests detect an internally
 inconsistent artifact set but can be recomputed by a fabricator.
 
 `verify-civicrm-evidence-index` provides a fail-closed consumer for this narrow
-contract. It validates the exact v0.2 index, performs bounded regular-file reads
-of the seven fixed sibling artifacts, checks their lengths and digests, validates
-the index and six result documents against packaged JSON Schemas, and validates
+contract. It validates the exact v0.3 index, performs bounded regular-file reads
+of the eight fixed sibling artifacts, checks their lengths and digests, validates
+the index and seven result documents against packaged JSON Schemas, and validates
 the normalized export through the existing strict loader. Its bounded export
 attachment reads verify every declared content digest. It does not run the
 structural evaluator or interpret the observations, and its success scope is
 explicitly `catalog_bindings_artifact_schemas_and_export_attachments_only`.
 The command emits a separate closed
-`exitdrill/civicrm-evidence-verification/v0.1` document. Its own
+`exitdrill/civicrm-evidence-verification/v0.2` document. Its own
 `schema_version` is distinct from `index_schema_version`, and fixed limitations
 prevent a binding/schema success from being represented as authenticated,
 complete, interpreted, or structurally restorable evidence.
