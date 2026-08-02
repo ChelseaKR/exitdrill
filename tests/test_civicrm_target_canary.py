@@ -13,6 +13,7 @@ from exitdrill.canonical import canonical_json_bytes
 from exitdrill.civicrm_target_canary import (
     CiviCRMTargetCanaryError,
     normalize_civicrm_target_canary,
+    verify_civicrm_evidence_index,
 )
 from exitdrill.evaluator import run_drill
 from exitdrill.loader import load_baseline, load_export
@@ -537,6 +538,50 @@ def test_normalizes_closed_target_bundle_and_schema_validates(tmp_path: Path) ->
             == (manifest.parent / "assets" / f"{attachment.attachment_id}.txt").read_bytes()
         )
         assert hashlib.sha256(copied.read_bytes()).hexdigest() == attachment.content_sha256
+
+
+def test_verifies_evidence_index_bindings_and_schema_headers(tmp_path: Path) -> None:
+    manifest = _create_bundle(tmp_path / "capture")
+    out_dir = tmp_path / "out"
+    normalize_civicrm_target_canary(manifest, out_dir)
+
+    assert verify_civicrm_evidence_index(out_dir / "evidence-index.json") == {
+        "artifact_count": 7,
+        "decision_scope": "catalog_binding_and_declared_schema_headers_only",
+        "schema_version": "exitdrill/civicrm-evidence-index/v0.2",
+        "status": "evidence_index_bindings_verified",
+        "target_profile": ("directus-11.17.4-civic-case-to-civicrm-standalone-6.16.2/v0.1"),
+    }
+
+
+def test_evidence_index_verifier_rejects_changed_artifact_bytes(tmp_path: Path) -> None:
+    manifest = _create_bundle(tmp_path / "capture")
+    out_dir = tmp_path / "out"
+    normalize_civicrm_target_canary(manifest, out_dir)
+    (out_dir / "keyboard-result.json").write_text("{}\n", encoding="utf-8")
+
+    with pytest.raises(CiviCRMTargetCanaryError, match="does not match its binding"):
+        verify_civicrm_evidence_index(out_dir / "evidence-index.json")
+
+
+def test_evidence_index_verifier_rejects_rebound_wrong_schema_header(tmp_path: Path) -> None:
+    manifest = _create_bundle(tmp_path / "capture")
+    out_dir = tmp_path / "out"
+    normalize_civicrm_target_canary(manifest, out_dir)
+    artifact_path = out_dir / "keyboard-result.json"
+    artifact = _read_json(artifact_path)
+    artifact["schema_version"] = "exitdrill/civicrm-keyboard-result/v9.9"
+    artifact_bytes = canonical_json_bytes(artifact) + b"\n"
+    artifact_path.write_bytes(artifact_bytes)
+    index_path = out_dir / "evidence-index.json"
+    index = _read_json(index_path)
+    entry = next(item for item in index["entries"] if item["artifact_id"] == "keyboard_interaction")
+    entry["bytes"] = len(artifact_bytes)
+    entry["sha256"] = hashlib.sha256(artifact_bytes).hexdigest()
+    index_path.write_bytes(canonical_json_bytes(index) + b"\n")
+
+    with pytest.raises(CiviCRMTargetCanaryError, match="schema_version"):
+        verify_civicrm_evidence_index(index_path)
 
 
 def test_expected_structural_result_keeps_all_six_missing_signals(tmp_path: Path) -> None:

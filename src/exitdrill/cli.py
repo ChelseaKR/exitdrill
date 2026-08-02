@@ -11,6 +11,7 @@ from exitdrill.canonical import canonical_json_bytes
 from exitdrill.civicrm_target_canary import (
     CiviCRMTargetCanaryError,
     normalize_civicrm_target_canary,
+    verify_civicrm_evidence_index,
 )
 from exitdrill.comparison import (
     _comparison_has_observed_loss_signal_increase,
@@ -85,6 +86,11 @@ def _parser() -> argparse.ArgumentParser:
     )
     normalize_civicrm.add_argument("manifest", type=Path)
     normalize_civicrm.add_argument("--out-dir", type=Path, required=True)
+    verify_civicrm_index = commands.add_parser(
+        "verify-civicrm-evidence-index",
+        help="verify the bounded CiviCRM evidence catalog and artifact bindings",
+    )
+    verify_civicrm_index.add_argument("index", type=Path)
     return parser
 
 
@@ -216,6 +222,19 @@ def _report(receipt_path: Path, out: Path) -> int:
     return 0
 
 
+def _run_canary_command(args: argparse.Namespace) -> int:
+    if args.command == "normalize-directus-canary":
+        _print_json(normalize_directus_canary(args.manifest, args.out_dir))
+        return 0
+    if args.command == "normalize-civicrm-target-canary":
+        _print_json(normalize_civicrm_target_canary(args.manifest, args.out_dir))
+        return 0
+    if args.command == "verify-civicrm-evidence-index":
+        _print_json(verify_civicrm_evidence_index(args.index))
+        return 0
+    return 2
+
+
 def main(argv: list[str] | None = None) -> int:
     """Run the CLI with bounded failures."""
     args = _parser().parse_args(argv)
@@ -247,12 +266,7 @@ def main(argv: list[str] | None = None) -> int:
             )
         if args.command == "report":
             return _report(args.receipt, args.out)
-        if args.command == "normalize-directus-canary":
-            _print_json(normalize_directus_canary(args.manifest, args.out_dir))
-            return 0
-        if args.command == "normalize-civicrm-target-canary":
-            _print_json(normalize_civicrm_target_canary(args.manifest, args.out_dir))
-            return 0
+        return _run_canary_command(args)
     except (
         CiviCRMTargetCanaryError,
         DirectusCanaryError,

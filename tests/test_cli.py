@@ -205,6 +205,36 @@ def test_normalize_civicrm_target_canary_cli(
     assert "11111111-1111-4111-8111-111111111111" not in raw_output
 
 
+def test_verify_civicrm_evidence_index_cli(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    project = Path(__file__).parents[1]
+    native = project / "examples" / "civicrm-6.16.2-target-roundtrip" / "native"
+    out_dir = tmp_path / "normalized-target"
+    assert (
+        main(
+            [
+                "normalize-civicrm-target-canary",
+                str(native / "capture-manifest.json"),
+                "--out-dir",
+                str(out_dir),
+            ]
+        )
+        == 0
+    )
+    capsys.readouterr()
+
+    assert main(["verify-civicrm-evidence-index", str(out_dir / "evidence-index.json")]) == 0
+    assert _stdout(capsys) == {
+        "artifact_count": 7,
+        "decision_scope": "catalog_binding_and_declared_schema_headers_only",
+        "schema_version": "exitdrill/civicrm-evidence-index/v0.2",
+        "status": "evidence_index_bindings_verified",
+        "target_profile": ("directus-11.17.4-civic-case-to-civicrm-standalone-6.16.2/v0.1"),
+    }
+
+
 def test_normalize_civicrm_target_canary_cli_error_does_not_disclose_path(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],

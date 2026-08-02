@@ -168,6 +168,17 @@ conclusion, and it does not replace schema validation or the structural
 evaluator. The unsigned digests detect internal inconsistency but do not
 authenticate who produced the files or whether the lab assertions are true.
 
+After normalization, verify the index contract and exact artifact bindings:
+
+```sh
+exitdrill verify-civicrm-evidence-index out/evidence-index.json
+```
+
+The command's success scope is
+`catalog_binding_and_declared_schema_headers_only`. It does not validate each
+artifact's full schema, interpret any finding, run the structural evaluator, or
+authenticate the files.
+
 The live capture gate and offline acceptance gate are distinct. The live harness
 may publish a bundle only after its fresh sandbox, source normalization, target
 load, independent business-state read-back, and target-interface probes pass.

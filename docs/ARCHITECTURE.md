@@ -273,6 +273,13 @@ own observation. The index is unsigned and authenticates neither the artifacts
 nor the operator-asserted target execution. Its digests detect an internally
 inconsistent artifact set but can be recomputed by a fabricator.
 
+`verify-civicrm-evidence-index` provides a fail-closed consumer for this narrow
+contract. It validates the exact v0.2 index, performs bounded regular-file reads
+of the seven fixed sibling artifacts, checks their lengths and digests, strictly
+decodes their JSON, and checks each declared schema-version header. It does not
+run the full artifact schemas or evaluator, and its success scope is explicitly
+`catalog_binding_and_declared_schema_headers_only`.
+
 ## Data contracts
 
 The baseline records expected identities, exact scalar values for its declared

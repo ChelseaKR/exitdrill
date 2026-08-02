@@ -264,6 +264,50 @@ _EVIDENCE_INDEX_LIMITATIONS = (
     "digests_prove_internal_consistency_not_authenticity",
     "target_version_and_execution_context_are_operator_asserted",
 )
+_EVIDENCE_INDEX_ARTIFACTS = (
+    (
+        "normalized_target_readback",
+        "normalized_target_readback_for_structural_evaluation",
+        "export.json",
+        "exitdrill/export/v0.1",
+    ),
+    (
+        "target_interface",
+        "pinned_synthetic_target_roundtrip_only",
+        "target-result.json",
+        _RESULT_SCHEMA,
+    ),
+    (
+        "ui_surface",
+        "pinned_synthetic_ui_surface_only",
+        "ui-surface-result.json",
+        _UI_RESULT_SCHEMA,
+    ),
+    (
+        "browser_workflow",
+        "pinned_synthetic_browser_workflow_only",
+        "browser-workflow-result.json",
+        _BROWSER_RESULT_SCHEMA,
+    ),
+    (
+        "automated_accessibility",
+        "pinned_synthetic_manage_case_automated_scan_only",
+        "accessibility-result.json",
+        _ACCESSIBILITY_RESULT_SCHEMA,
+    ),
+    (
+        "keyboard_interaction",
+        "pinned_synthetic_manage_case_keyboard_interaction_only",
+        "keyboard-result.json",
+        _KEYBOARD_RESULT_SCHEMA,
+    ),
+    (
+        "activity_view",
+        "pinned_synthetic_generated_activity_view_only",
+        "activity-view-result.json",
+        _ACTIVITY_VIEW_RESULT_SCHEMA,
+    ),
+)
 _CONTACT_KEYS = frozenset(
     {
         "display_name",
@@ -308,6 +352,8 @@ _MAX_MANIFEST_BYTES = 64 * 1024
 _MAX_JSON_BYTES = 512 * 1024
 _MAX_ASSET_BYTES = 16 * 1024 * 1024
 _MAX_BUNDLE_BYTES = 32 * 1024 * 1024
+_MAX_EVIDENCE_INDEX_BYTES = 64 * 1024
+_MAX_EVIDENCE_ARTIFACT_BYTES = 10 * 1024 * 1024
 _MAX_JSON_DEPTH = 32
 _MAX_JSON_NODES = 20_000
 _MAX_INTEGER = 9_223_372_036_854_775_807
@@ -976,59 +1022,110 @@ def _activity_view_result() -> dict[str, JsonValue]:
 
 
 def _evidence_index(artifacts: Mapping[str, bytes]) -> dict[str, JsonValue]:
-    entries: list[dict[str, JsonValue]] = [
-        {
-            "artifact_id": "normalized_target_readback",
-            "decision_scope": "normalized_target_readback_for_structural_evaluation",
-            "filename": "export.json",
-            "schema_version": "exitdrill/export/v0.1",
-        },
-        {
-            "artifact_id": "target_interface",
-            "decision_scope": "pinned_synthetic_target_roundtrip_only",
-            "filename": "target-result.json",
-            "schema_version": _RESULT_SCHEMA,
-        },
-        {
-            "artifact_id": "ui_surface",
-            "decision_scope": "pinned_synthetic_ui_surface_only",
-            "filename": "ui-surface-result.json",
-            "schema_version": _UI_RESULT_SCHEMA,
-        },
-        {
-            "artifact_id": "browser_workflow",
-            "decision_scope": "pinned_synthetic_browser_workflow_only",
-            "filename": "browser-workflow-result.json",
-            "schema_version": _BROWSER_RESULT_SCHEMA,
-        },
-        {
-            "artifact_id": "automated_accessibility",
-            "decision_scope": "pinned_synthetic_manage_case_automated_scan_only",
-            "filename": "accessibility-result.json",
-            "schema_version": _ACCESSIBILITY_RESULT_SCHEMA,
-        },
-        {
-            "artifact_id": "keyboard_interaction",
-            "decision_scope": "pinned_synthetic_manage_case_keyboard_interaction_only",
-            "filename": "keyboard-result.json",
-            "schema_version": _KEYBOARD_RESULT_SCHEMA,
-        },
-        {
-            "artifact_id": "activity_view",
-            "decision_scope": "pinned_synthetic_generated_activity_view_only",
-            "filename": "activity-view-result.json",
-            "schema_version": _ACTIVITY_VIEW_RESULT_SCHEMA,
-        },
-    ]
-    for entry in entries:
-        content = artifacts[cast("str", entry["filename"])]
-        entry["bytes"] = len(content)
-        entry["sha256"] = sha256_bytes(content)
+    entries: list[dict[str, JsonValue]] = []
+    for artifact_id, decision_scope, filename, schema_version in _EVIDENCE_INDEX_ARTIFACTS:
+        content = artifacts[filename]
+        entries.append(
+            {
+                "artifact_id": artifact_id,
+                "bytes": len(content),
+                "decision_scope": decision_scope,
+                "filename": filename,
+                "schema_version": schema_version,
+                "sha256": sha256_bytes(content),
+            }
+        )
     return {
         "decision_scope": "separate_non_composite_evidence_families",
         "entries": cast("list[JsonValue]", entries),
         "limitations": list(_EVIDENCE_INDEX_LIMITATIONS),
         "schema_version": _EVIDENCE_INDEX_SCHEMA,
+        "target_profile": _PROFILE,
+    }
+
+
+def _parse_evidence_index(
+    document: Mapping[str, object],
+) -> list[tuple[str, str, str, int, str]]:
+    _exact_keys(
+        document,
+        {"decision_scope", "entries", "limitations", "schema_version", "target_profile"},
+        "evidence index",
+    )
+    _require_literal(
+        document["decision_scope"],
+        "separate_non_composite_evidence_families",
+        "evidence index decision_scope",
+    )
+    _require_literal(document["schema_version"], _EVIDENCE_INDEX_SCHEMA, "evidence index schema")
+    _require_literal(document["target_profile"], _PROFILE, "evidence index target profile")
+    _require_literal(
+        document["limitations"], list(_EVIDENCE_INDEX_LIMITATIONS), "evidence index limitations"
+    )
+    raw_entries = _array(
+        document["entries"], "evidence index entries", length=len(_EVIDENCE_INDEX_ARTIFACTS)
+    )
+    bindings: list[tuple[str, str, str, int, str]] = []
+    expected_keys = {
+        "artifact_id",
+        "bytes",
+        "decision_scope",
+        "filename",
+        "schema_version",
+        "sha256",
+    }
+    for index, expected in enumerate(_EVIDENCE_INDEX_ARTIFACTS):
+        artifact_id, decision_scope, filename, schema_version = expected
+        where = f"evidence index entries[{index}]"
+        entry = _object(raw_entries[index], where)
+        _exact_keys(entry, expected_keys, where)
+        _require_literal(entry["artifact_id"], artifact_id, f"{where}.artifact_id")
+        _require_literal(entry["decision_scope"], decision_scope, f"{where}.decision_scope")
+        _require_literal(entry["filename"], filename, f"{where}.filename")
+        _require_literal(entry["schema_version"], schema_version, f"{where}.schema_version")
+        size = _integer(entry["bytes"], f"{where}.bytes", minimum=1)
+        if size > _MAX_EVIDENCE_ARTIFACT_BYTES:
+            raise _fail(f"{where}.bytes exceeds its byte limit")
+        bindings.append(
+            (
+                artifact_id,
+                filename,
+                schema_version,
+                size,
+                _sha256(entry["sha256"], f"{where}.sha256"),
+            )
+        )
+    return bindings
+
+
+def verify_civicrm_evidence_index(index_path: Path) -> dict[str, JsonValue]:
+    """Verify the closed index, exact artifact bytes, and declared schema headers."""
+    index_bytes = _read_regular_file(
+        index_path,
+        max_bytes=_MAX_EVIDENCE_INDEX_BYTES,
+        where="evidence index",
+    )
+    document = _decode_json(index_bytes, "evidence index")
+    bindings = _parse_evidence_index(document)
+    for artifact_id, filename, expected_schema, expected_size, expected_digest in bindings:
+        content = _read_regular_file(
+            index_path.parent / filename,
+            max_bytes=_MAX_EVIDENCE_ARTIFACT_BYTES,
+            where=f"indexed artifact {artifact_id}",
+        )
+        if len(content) != expected_size or sha256_bytes(content) != expected_digest:
+            raise _fail(f"indexed artifact {artifact_id} does not match its binding")
+        artifact = _decode_json(content, f"indexed artifact {artifact_id}")
+        _require_literal(
+            artifact.get("schema_version"),
+            expected_schema,
+            f"indexed artifact {artifact_id} schema_version",
+        )
+    return {
+        "artifact_count": len(bindings),
+        "decision_scope": "catalog_binding_and_declared_schema_headers_only",
+        "schema_version": _EVIDENCE_INDEX_SCHEMA,
+        "status": "evidence_index_bindings_verified",
         "target_profile": _PROFILE,
     }
 

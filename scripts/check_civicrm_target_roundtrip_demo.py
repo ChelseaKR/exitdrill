@@ -15,6 +15,7 @@ from typing import cast
 from exitdrill.civicrm_target_canary import (
     CiviCRMTargetCanaryError,
     normalize_civicrm_target_canary,
+    verify_civicrm_evidence_index,
 )
 from exitdrill.directus_canary import normalize_directus_canary
 from exitdrill.evaluator import run_drill
@@ -649,6 +650,13 @@ def main() -> None:
         _assert_clean_activity_view_result(clean_activity_view_result)
         clean_evidence_index = _json_object(clean_a / EVIDENCE_INDEX_NAME)
         _assert_clean_evidence_index(clean_evidence_index, clean_a)
+        clean_evidence_index_verification = verify_civicrm_evidence_index(
+            clean_a / EVIDENCE_INDEX_NAME
+        )
+        _require(
+            clean_evidence_index_verification.get("status") == "evidence_index_bindings_verified",
+            "clean evidence index binding verification was not exact",
+        )
 
         committed_target_digest = _tree_digest(TARGET_NATIVE)
         builder_stderr = _build_adversaries(TARGET_NATIVE, adversaries)
@@ -750,6 +758,7 @@ def main() -> None:
             "clean_keyboard": clean_keyboard_result,
             "clean_activity_view": clean_activity_view_result,
             "clean_evidence_index": clean_evidence_index,
+            "clean_evidence_index_verification": clean_evidence_index_verification,
             "directus_normalization": directus_result,
             "permission_escalation_target": permission_result,
         }
