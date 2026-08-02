@@ -7,6 +7,7 @@
 |---|---|---|
 | Export declares itself complete | separate baseline and per-dimension coverage | baseline can be false or stale |
 | Missing category disappears from denominator | closed five-dimension contract | real vendor semantics may need more dimensions |
+| Same-type entity value corruption passes shape checks | exact comparison for baseline-declared required fields | undeclared fields and an inaccurate baseline remain outside the claim |
 | Path traversal or symlink escape | post-resolution bounded-root check and descriptor-relative no-follow component traversal where supported | operator can choose an overbroad root; concurrent parent-directory replacement remains platform-dependent where descriptor-relative traversal is unavailable |
 | Ambiguous or hostile JSON | duplicate-key and non-finite-number rejection, 64-level nesting bound, 200,000-node ceiling, exact schemas, regular-file requirement, and byte limits | a maximally wide in-bound document still consumes bounded parser work |
 | Attachment path-swap or size-change race | size check and hashing use one already-open descriptor, bound reads to the checked size, and reject an extra byte | same-size concurrent content rewriting can still produce a mixed snapshot |

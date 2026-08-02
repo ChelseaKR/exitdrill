@@ -41,7 +41,7 @@ def test_clean_fixture_is_structurally_restorable(example_root: Path) -> None:
     limitations = result.payload()["trust_limitations"]
     assert isinstance(limitations, list)
     assert "does_not_prove_operational_equivalence" in limitations
-    assert "does_not_verify_field_value_equivalence" in limitations
+    assert "field_value_equivalence_limited_to_declared_required_fields" in limitations
     assert "does_not_verify_permission_principal_identity" in limitations
 
 
@@ -225,16 +225,44 @@ def test_drill_rejects_incoherent_chronology(
         _run(copied_example)
 
 
-def test_same_type_field_value_changes_remain_out_of_scope(copied_example: Path) -> None:
+@pytest.mark.parametrize(
+    ("entity_index", "field", "value"),
+    [
+        (0, "display_name", "Different synthetic string"),
+        (0, "active", False),
+        (1, "status", "closed"),
+        (1, "priority", 3),
+    ],
+)
+def test_same_type_field_value_changes_fail(
+    copied_example: Path,
+    entity_index: int,
+    field: str,
+    value: object,
+) -> None:
     path = copied_example / "export.json"
     raw = _json(path)
-    raw["entities"][0]["fields"]["display_name"] = "Different synthetic string"  # type: ignore[index]
+    raw["entities"][entity_index]["fields"][field] = value  # type: ignore[index]
     _write(path, raw)
     result = _run(copied_example)
-    assert result.overall_status is OverallStatus.STRUCTURALLY_RESTORABLE
+    assert result.overall_status is OverallStatus.NOT_STRUCTURALLY_RESTORABLE
+    assert result.dimensions[0].invalid_count == 1
     limitations = result.payload()["trust_limitations"]
     assert isinstance(limitations, list)
-    assert "does_not_verify_field_value_equivalence" in limitations
+    assert "field_value_equivalence_limited_to_declared_required_fields" in limitations
+
+
+def test_multiple_field_value_mismatches_count_one_invalid_entity(copied_example: Path) -> None:
+    path = copied_example / "export.json"
+    raw = _json(path)
+    fields = raw["entities"][0]["fields"]  # type: ignore[index]
+    fields["display_name"] = "Different synthetic string"
+    fields["active"] = False
+    _write(path, raw)
+
+    result = _run(copied_example)
+    assert result.dimensions[0].invalid_count == 1
+    assert result.payload()["observed_remediation_signals"] == 1
 
 
 def test_payload_preserves_complete_dimension_denominator(example_root: Path) -> None:

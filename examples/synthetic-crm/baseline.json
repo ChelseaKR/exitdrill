@@ -1,5 +1,5 @@
 {
-  "schema_version": "exitdrill/baseline/v0.2",
+  "schema_version": "exitdrill/baseline/v0.3",
   "drill_id": "synthetic-crm-exit-001",
   "source_system": "Invented CommunityCase CRM",
   "captured_at": "2026-07-22T18:00:00Z",
@@ -15,16 +15,16 @@
       "type": "person",
       "id": "person-001",
       "required_fields": [
-        {"name": "display_name", "type": "string"},
-        {"name": "active", "type": "boolean"}
+        {"name": "display_name", "type": "string", "expected_value": "Synthetic Person"},
+        {"name": "active", "type": "boolean", "expected_value": true}
       ]
     },
     {
       "type": "case",
       "id": "case-001",
       "required_fields": [
-        {"name": "status", "type": "string"},
-        {"name": "priority", "type": "number"}
+        {"name": "status", "type": "string", "expected_value": "open"},
+        {"name": "priority", "type": "number", "expected_value": 2}
       ]
     }
   ],

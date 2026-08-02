@@ -13,10 +13,10 @@ ExitDrill asks a question that ordinary backup and native export checks do not:
 > SaaS vendor disappeared or became unacceptable?
 
 The current evaluator compares an independently captured baseline with a
-normalized export, validates entities, relationships, attachment bytes,
-permission grants, and audit events, then loads the package into an in-memory
-neutral SQLite reference model. It emits an aggregate receipt that can be
-checked and replayed offline.
+normalized export, validates entity identities and declared critical field
+values, relationships, attachment bytes, permission grants, and audit events,
+then loads the package into an in-memory neutral SQLite reference model. It
+emits an aggregate receipt that can be checked and replayed offline.
 
 This is a structural normalization experiment, not yet the complete product.
 A neutral SQLite restore does **not** prove that people can operate in an
@@ -52,12 +52,21 @@ exitdrill verify receipt.json \
   --baseline examples/synthetic-crm/baseline.json \
   --export examples/synthetic-crm/export.json \
   --attachment-root examples/synthetic-crm/export-files
+
+exitdrill report receipt.json --out report.html
 ```
 
 Checksum-only verification reports `checksum_self_consistent`; it does not
 authenticate the receipt. Supplying all replay inputs reports `replay_verified`.
 The receipt payload is a closed contract: recomputing a checksum cannot make
 missing dimensions, impossible counts, or contradictory statuses valid.
+
+The `report` command strict-loads and semantically verifies the receipt before
+writing a deterministic, accessible, standalone HTML summary. The report has no
+scripts or external assets, contains only the aggregate receipt evidence, and
+states the same trust limitations in plain language. It does not turn an
+unsigned checksum into authentication or a structural result into operational
+exit readiness.
 
 The fixture uses only invented people, cases, relationships, roles, events, and
 attachment content.
@@ -184,8 +193,9 @@ compliant.
 - No claim that an export proves its own completeness.
 - No claim that file presence proves semantic usability.
 - No claim that a successful neutral import proves operational recovery.
-- Required field values beyond shape and permission-principal identity remain
-  explicitly outside the current evaluator's denominator.
+- Field-value equivalence is limited to baseline-declared required fields;
+  undeclared field values and permission-principal identity remain explicitly
+  outside the current evaluator's denominator.
 - No raw record fields or attachment content in receipts.
 - No receipt comparison based on paths, claimed timestamps, or a composite
   portability score.
@@ -205,6 +215,11 @@ what an operator could observe before requesting the export. Its coverage must
 be declared separately for entities, relationships, attachments, permissions,
 and audit history. Partial or unavailable coverage yields `indeterminate`; it
 never silently becomes a pass.
+
+Each required entity field also carries an independently captured expected
+scalar value. A missing field, wrong scalar type, or unequal value is an invalid
+entity. Fields absent from that declared set make no equivalence claim, and raw
+field values never enter the receipt.
 
 ## Product direction
 

@@ -14,7 +14,7 @@ TRUST_LIMITATIONS = (
     "does_not_prove_operational_equivalence",
     "does_not_prove_vendor_deletion",
     "does_not_authenticate_export_or_baseline",
-    "does_not_verify_field_value_equivalence",
+    "field_value_equivalence_limited_to_declared_required_fields",
     "does_not_verify_permission_principal_identity",
 )
 
@@ -75,10 +75,22 @@ def classify_overall_status(statuses: Collection[DimensionStatus]) -> OverallSta
     return OverallStatus.STRUCTURALLY_RESTORABLE
 
 
+def matches_field_type(value_type: str, value: object) -> bool:
+    """Return whether a value satisfies one supported required-field type."""
+    if value_type == "string":
+        return isinstance(value, str) and bool(value.strip())
+    if value_type == "boolean":
+        return isinstance(value, bool)
+    if value_type == "number":
+        return isinstance(value, int | float) and not isinstance(value, bool)
+    return False
+
+
 @dataclass(frozen=True, slots=True)
 class FieldRequirement:
     name: str
     value_type: str
+    expected_value: JsonScalar
 
 
 @dataclass(frozen=True, slots=True)
@@ -259,7 +271,7 @@ class DrillResult:
             "export_sha256": self.export_sha256,
             "observed_remediation_signals": remediation_signals,
             "overall_status": self.overall_status.value,
-            "schema_version": "exitdrill/drill-result/v0.2",
+            "schema_version": "exitdrill/drill-result/v0.3",
             "source_system": self.source_system,
             "trust_limitations": cast(
                 JsonValue,

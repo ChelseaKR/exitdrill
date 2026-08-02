@@ -19,6 +19,7 @@ from exitdrill.models import (
     OverallStatus,
     classify_dimension_status,
     classify_overall_status,
+    matches_field_type,
 )
 from exitdrill.paths import BoundedPathError, ByteBudget, sha256_bounded_file
 from exitdrill.timestamps import parse_timestamp
@@ -32,13 +33,7 @@ class DrillError(ValueError):
 
 
 def _value_matches(requirement: FieldRequirement, value: object) -> bool:
-    if requirement.value_type == "string":
-        return isinstance(value, str) and bool(value.strip())
-    if requirement.value_type == "boolean":
-        return isinstance(value, bool)
-    if requirement.value_type == "number":
-        return isinstance(value, int | float) and not isinstance(value, bool)
-    return False
+    return matches_field_type(requirement.value_type, value) and value == requirement.expected_value
 
 
 def _dimension_result(

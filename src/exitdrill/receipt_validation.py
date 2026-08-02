@@ -141,7 +141,7 @@ def validate_payload(raw: object) -> None:
     """Validate one complete aggregate result payload without trusting its hash."""
     value = _object(raw, "receipt payload")
     _exact_fields(value, _PAYLOAD_KEYS, "receipt payload")
-    if value.get("schema_version") != "exitdrill/drill-result/v0.2":
+    if value.get("schema_version") != "exitdrill/drill-result/v0.3":
         raise PayloadError("unsupported receipt payload schema")
     if value.get("decision_scope") != "offline_structural_exit_drill_only":
         raise PayloadError("receipt payload decision scope is unsupported")
