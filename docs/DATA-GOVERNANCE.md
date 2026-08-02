@@ -23,7 +23,10 @@ projections and attachment content so the offline verifier can replay the
 observation. It contains identity IDs and authentication-flow labels, but no
 passwords, tokens, site keys, database credentials, signed download URLs, host
 paths, or production identifiers. The aggregate target result contains none of
-the native values or HTTP bodies.
+the native values or HTTP bodies. The native UI projection records only fixed
+synthetic labels, a route name, status, and region name; raw HTML, cookies, and
+tokens are not retained. Its separate aggregate result contains no record value
+or target identifier.
 
 Receipts contain aggregates and input digests, not record fields or attachment
 content. Normalized exports necessarily contain the synthetic record fields and

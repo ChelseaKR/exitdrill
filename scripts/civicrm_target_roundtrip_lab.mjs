@@ -81,6 +81,7 @@ const capturePaths = [
   "identity-deny.json",
   "permission-allow.json",
   "permission-deny.json",
+  "ui-contact-summary.json",
   `assets/${firstAssetId}.txt`,
   `assets/${secondAssetId}.txt`,
 ];
@@ -668,15 +669,32 @@ elseif ($mode === 'download') {
   }
   if ($relative) $url = 'http://application' . $url;
 }
+elseif ($mode === 'ui') {
+  $url = getenv('LAB_HTTP_URL');
+  $parts = parse_url($url);
+  if (!is_array($parts) || isset($parts['scheme']) || isset($parts['host']) || isset($parts['port']) || isset($parts['user']) || isset($parts['pass']) || isset($parts['fragment'])) {
+    fwrite(STDERR, "refusing a non-local UI URL\n");
+    exit(77);
+  }
+  parse_str($parts['query'] ?? '', $query);
+  $queryKeys = array_keys($query);
+  sort($queryKeys, SORT_STRING);
+  $contactSummary = ($parts['path'] ?? null) === '/civicrm/contact/view' && $queryKeys === ['cid', 'reset'];
+  if (!$contactSummary || ($query['reset'] ?? null) !== '1' || !ctype_digit((string) ($query['cid'] ?? '')) || (int) $query['cid'] < 1) {
+    fwrite(STDERR, "refusing an unrecognized UI route\n");
+    exit(78);
+  }
+  $url = 'http://application' . $url;
+}
 else {
   fwrite(STDERR, "unknown bounded HTTP mode\n");
   exit(75);
 }
 $headers = [
   'Authorization: Basic ' . base64_encode($username . ':' . $password),
-  'X-Requested-With: XMLHttpRequest',
   'Connection: close',
 ];
+if ($mode !== 'ui') $headers[] = 'X-Requested-With: XMLHttpRequest';
 if ($content !== null) $headers[] = 'Content-Type: application/x-www-form-urlencoded';
 $context = stream_context_create(['http' => [
   'method' => $method,
@@ -812,7 +830,7 @@ function createLabRuntime(envFile, projectName, composeEnvironment) {
         "-e",
         "LAB_HTTP_PARAMS",
       );
-    } else if (mode === "download") {
+    } else if (mode === "download" || mode === "ui") {
       environment.LAB_HTTP_URL = values.url;
       args.push("-e", "LAB_HTTP_URL");
     }
@@ -1827,6 +1845,22 @@ async function captureReadback(runtime, fixture, principals, stageDir) {
     fail("allow ACL probe returned the wrong protected contact");
   }
 
+  const contactSummary = await runtime.http("ui", reader, {
+    url: `/civicrm/contact/view?reset=1&cid=${readerContactIds.get(1)}`,
+  });
+  if (contactSummary.status !== 200) {
+    fail(`contact-summary UI returned HTTP ${contactSummary.status}`);
+  }
+  const contactHtml = contactSummary.body.toString("utf8");
+  const contactMarkers = {
+    contact_name: contactHtml.includes("Synthetic Person Alpha"),
+    contact_summary: contactHtml.includes("crm-contact-page"),
+    cases_tab: contactHtml.includes(">Cases<"),
+  };
+  if (Object.values(contactMarkers).some((observed) => !observed)) {
+    fail(`contact-summary UI omitted required marker(s): ${Object.entries(contactMarkers).filter(([, observed]) => !observed).map(([name]) => name).join(", ")}`);
+  }
+
   const downloadedAssets = new Map();
   for (const sourceFile of fixture.files) {
     const signed = await runtime.api(
@@ -1862,6 +1896,17 @@ async function captureReadback(runtime, fixture, principals, stageDir) {
     ["identity-deny.json", jsonDocument(identities.deny.result)],
     ["permission-allow.json", capturedApiEnvelope(permissionAllow.result)],
     ["permission-deny.json", capturedApiEnvelope(permissionDeny.result)],
+    [
+      "ui-contact-summary.json",
+      jsonDocument({
+        authenticated_identity: "reader",
+        http_status: contactSummary.status,
+        observed_labels: ["Cases", "Synthetic Person Alpha"],
+        observed_regions: ["contact_summary"],
+        route: "civicrm/contact/view",
+        surface: "contact_summary",
+      }),
+    ],
     [`assets/${firstAssetId}.txt`, downloadedAssets.get(firstAssetId)],
     [`assets/${secondAssetId}.txt`, downloadedAssets.get(secondAssetId)],
   ]);
@@ -1934,7 +1979,8 @@ function buildManifest(metadata, sourceNormalization) {
       application: applicationImage,
       database: databaseImage,
     },
-    acquisition_surface: "supported_api_v4_and_authenticated_private_file_readback",
+    acquisition_surface:
+      "supported_api_v4_authenticated_private_file_readback_and_authenticated_server_rendered_ui",
     source_normalization: sourceNormalization,
     sandbox: {
       application_empty_before_write: true,
@@ -1996,6 +2042,8 @@ function buildManifest(metadata, sourceNormalization) {
       "synthetic_fixture_only",
       "source_capture_is_not_a_vendor_native_export",
       "does_not_prove_operational_equivalence",
+      "server_rendered_ui_does_not_prove_browser_interaction",
+      "manage_case_and_case_workflow_not_observed",
     ],
   };
 }

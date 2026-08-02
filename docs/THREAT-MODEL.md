@@ -1,7 +1,7 @@
 # Threat model
 
 **Scope:** synthetic structural evaluator, bounded Directus source canary, and one pinned CiviCRM target-roundtrip canary
-**Reviewed:** 2026-08-01
+**Reviewed:** 2026-08-02
 
 | Threat or failure | Current control | Residual risk |
 |---|---|---|
@@ -47,6 +47,7 @@
 | Passing target-interface probes hides structural source gaps | target result has no composite restoration state and the unchanged evaluator still reports six missing signals | readers may still quote the probe pass count without the structural result |
 | Hash-refreshed target mutation bypasses the verifier | scalar, relationship, attachment, and allow/deny observations flow into normalized output or probe states and are checked by adversarial acceptance | same-count mutations outside the fixed selected fields remain out of scope |
 | Raw target evidence leaks through aggregate output | target result and acceptance stdout use closed aggregate fields and tests reject fixture values, credentials, paths, and raw bodies | the committed native synthetic bundle intentionally contains record-level envelopes and bytes |
+| Server-rendered UI marker is presented as a completed workflow | UI evidence is a separate aggregate result; fixed limitations exclude Manage Case, browser interaction, JavaScript behavior, accessibility, and end-to-end tasks | markup presence can still be mistaken for usability if quoted without the limitations |
 | Target capture is presented as authenticated execution evidence | exact inventory and bundle hashes plus fixed unsigned/operator-asserted limitations | a fabricator can recompute every hash and assertion |
 | Local CiviCRM Docker lab is presented as production-ready | docs identify the upstream quickstart as local testing and prohibit production data | readers can ignore deployment context |
 | Production target receives messages/payments | the only target path is a fixed synthetic, egress-blocked local profile with no payment mapping | production-derived use remains prohibited until the governance gate is accepted |
@@ -68,6 +69,8 @@
   portability, or nonprofit case-management behavior.
 - Calling five CiviCRM target-interface probe passes proof of UI usability,
   source-permission equivalence, a successful cutover, or structural restoration.
+- Calling the Contact Summary marker observation proof of Manage Case or a
+  completed browser workflow.
 - Running the local CiviCRM container harness against production-derived data or
   presenting its quickstart topology as a production deployment.
 

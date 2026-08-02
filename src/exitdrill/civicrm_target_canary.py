@@ -28,6 +28,7 @@ _PROFILE = "directus-11.17.4-civic-case-to-civicrm-standalone-6.16.2/v0.1"
 _SOURCE_PROFILE = "directus-11.17.4-civic-case/v0.1"
 _BUNDLE_SCHEMA = "exitdrill/civicrm-target-roundtrip-bundle/v0.1"
 _RESULT_SCHEMA = "exitdrill/civicrm-target-roundtrip-result/v0.1"
+_UI_RESULT_SCHEMA = "exitdrill/civicrm-ui-surface-result/v0.1"
 _SOURCE_SYSTEM = "Directus 11.17.4 synthetic civic-case sandbox"
 _TARGET_SYSTEM = "CiviCRM Standalone"
 _TARGET_VERSION = "6.16.2"
@@ -35,7 +36,9 @@ _DRILL_ID = "directus-civic-case-exit-001"
 # This is the source observation timestamp carried through the target read-back package.
 # It is not a target capture time and supplies no trusted-time claim.
 _SOURCE_EXPORTED_AT = "2026-08-02T02:38:28.542Z"
-_ACQUISITION_SURFACE = "supported_api_v4_and_authenticated_private_file_readback"
+_ACQUISITION_SURFACE = (
+    "supported_api_v4_authenticated_private_file_readback_and_authenticated_server_rendered_ui"
+)
 _FILE_IDS = (
     "11111111-1111-4111-8111-111111111111",
     "22222222-2222-4222-8222-222222222222",
@@ -52,6 +55,7 @@ _EXPECTED_FILES = (
     "identity-deny.json",
     "permission-allow.json",
     "permission-deny.json",
+    "ui-contact-summary.json",
     f"assets/{_FILE_IDS[0]}.txt",
     f"assets/{_FILE_IDS[1]}.txt",
 )
@@ -160,6 +164,8 @@ _BUNDLE_LIMITATIONS = (
     "synthetic_fixture_only",
     "source_capture_is_not_a_vendor_native_export",
     "does_not_prove_operational_equivalence",
+    "server_rendered_ui_does_not_prove_browser_interaction",
+    "manage_case_and_case_workflow_not_observed",
 )
 _RESULT_LIMITATIONS = (
     "synthetic_fixture_only",
@@ -171,6 +177,16 @@ _RESULT_LIMITATIONS = (
     "source_permissions_and_audit_history_are_not_restored",
     "target_scaffolding_is_not_source_data",
     "api_probes_do_not_prove_ui_usability",
+    "target_version_and_execution_context_are_operator_asserted",
+)
+_UI_RESULT_LIMITATIONS = (
+    "synthetic_fixture_only",
+    "target_evidence_is_unsigned_and_unauthenticated",
+    "server_rendered_html_projection_only",
+    "does_not_prove_browser_interaction_or_javascript_behavior",
+    "does_not_prove_accessibility_or_end_to_end_task_completion",
+    "manage_case_and_case_workflow_not_observed",
+    "does_not_prove_operational_equivalence",
     "target_version_and_execution_context_are_operator_asserted",
 )
 _CONTACT_KEYS = frozenset(
@@ -774,6 +790,28 @@ def _probe_result(probe_id: str, state: str, evidence_kind: str) -> dict[str, Js
     return {"evidence_kind": evidence_kind, "id": probe_id, "state": state}
 
 
+def _parse_ui_surface(document: bytes, expected: Mapping[str, object], where: str) -> None:
+    surface = _decode_json(document, where)
+    _require_literal(surface, expected, where)
+
+
+def _ui_surface_result() -> dict[str, JsonValue]:
+    surfaces = [
+        _probe_result(
+            "contact_summary",
+            "observed",
+            "authenticated_server_rendered_html_projection",
+        ),
+    ]
+    return {
+        "decision_scope": "pinned_synthetic_ui_surface_only",
+        "limitations": list(_UI_RESULT_LIMITATIONS),
+        "schema_version": _UI_RESULT_SCHEMA,
+        "surface_results": cast("list[JsonValue]", surfaces),
+        "target_profile": _PROFILE,
+    }
+
+
 def _target_result(allow_count: int, deny_count: int) -> dict[str, JsonValue]:
     probes = [
         _probe_result("record_lookup", "pass", "independent_api_v4_readback"),
@@ -811,7 +849,12 @@ def _sort_export_lists(export: dict[str, JsonValue]) -> None:
 
 def _build_output(
     documents: Mapping[str, bytes],
-) -> tuple[dict[str, JsonValue], list[tuple[str, bytes]], dict[str, JsonValue]]:
+) -> tuple[
+    dict[str, JsonValue],
+    list[tuple[str, bytes]],
+    dict[str, JsonValue],
+    dict[str, JsonValue],
+]:
     identity_contact_ids = _parse_identities(documents)
     people, person_by_target = _parse_contacts(documents["contacts.json"])
     cases, case_by_target = _parse_cases(documents["cases.json"])
@@ -833,6 +876,18 @@ def _build_output(
     deny_values = _permission_values(
         documents["permission-deny.json"], "permission-deny response", person_by_target
     )
+    _parse_ui_surface(
+        documents["ui-contact-summary.json"],
+        {
+            "authenticated_identity": "reader",
+            "http_status": 200,
+            "observed_labels": ["Cases", "Synthetic Person Alpha"],
+            "observed_regions": ["contact_summary"],
+            "route": "civicrm/contact/view",
+            "surface": "contact_summary",
+        },
+        "contact-summary UI projection",
+    )
     export: dict[str, JsonValue] = {
         "attachments": cast("list[JsonValue]", attachments),
         "audit_events": [],
@@ -845,7 +900,12 @@ def _build_output(
         "source_system": _SOURCE_SYSTEM,
     }
     _sort_export_lists(export)
-    return export, copies, _target_result(len(allow_values), len(deny_values))
+    return (
+        export,
+        copies,
+        _target_result(len(allow_values), len(deny_values)),
+        _ui_surface_result(),
+    )
 
 
 def _write_output(
@@ -853,6 +913,7 @@ def _write_output(
     export_document: bytes,
     copies: Sequence[tuple[str, bytes]],
     result: Mapping[str, JsonValue],
+    ui_result: Mapping[str, JsonValue],
 ) -> None:
     parent = out_dir.parent
     if not parent.exists() or not parent.is_dir():
@@ -868,6 +929,7 @@ def _write_output(
         for source_id, content in copies:
             (attachment_dir / f"{source_id}.txt").write_bytes(content)
         (temporary / "target-result.json").write_bytes(canonical_json_bytes(result) + b"\n")
+        (temporary / "ui-surface-result.json").write_bytes(canonical_json_bytes(ui_result) + b"\n")
         if out_dir.exists() or out_dir.is_symlink():
             raise _fail("output directory already exists")
         temporary.rename(out_dir)
@@ -909,7 +971,7 @@ def normalize_civicrm_target_canary(manifest_path: Path, out_dir: Path) -> dict[
     )
     _, files = _parse_manifest(manifest_document)
     documents = _read_verified_bundle(root, files)
-    export, copies, result = _build_output(documents)
+    export, copies, result, ui_result = _build_output(documents)
     export_document = canonical_json_bytes(export) + b"\n"
-    _write_output(resolved_out, export_document, copies, result)
+    _write_output(resolved_out, export_document, copies, result, ui_result)
     return result
