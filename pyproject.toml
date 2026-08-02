@@ -18,11 +18,10 @@ classifiers = [
   "Programming Language :: Python :: 3.12",
   "Topic :: System :: Archiving :: Backup",
 ]
-dependencies = []
+dependencies = ["jsonschema>=4.23"]
 
 [dependency-groups]
 dev = [
-  "jsonschema>=4.23",
   "mypy>=1.18",
   "pytest>=8",
   "pytest-cov>=5",

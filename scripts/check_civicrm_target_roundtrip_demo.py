@@ -654,8 +654,9 @@ def main() -> None:
             clean_a / EVIDENCE_INDEX_NAME
         )
         _require(
-            clean_evidence_index_verification.get("status") == "evidence_index_bindings_verified",
-            "clean evidence index binding verification was not exact",
+            clean_evidence_index_verification.get("status")
+            == "evidence_artifact_contracts_verified",
+            "clean evidence artifact contract verification was not exact",
         )
 
         committed_target_digest = _tree_digest(TARGET_NATIVE)

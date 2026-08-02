@@ -51,6 +51,11 @@ limitations, plus artifact byte lengths and SHA-256 digests. It contains no raw
 record fields, identifiers, credentials, browser content, paths, probe states,
 findings, scores, or conclusions. The digests can still disclose whether a
 holder has an exact known synthetic artifact, but they are not keyed or signed.
+The evidence verifier reads only the fixed indexed JSON files and normalized
+attachment paths under the generated output root. Its stdout contains fixed
+profile and scope labels plus artifact and attachment counts; validation errors
+do not disclose record values, attachment content, credentials, or filesystem
+paths.
 
 Receipts contain aggregates and input digests, not record fields or attachment
 content. Normalized exports necessarily contain the synthetic record fields and

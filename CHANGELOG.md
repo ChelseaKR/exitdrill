@@ -24,8 +24,9 @@ All notable changes will be documented here.
 ### Added
 
 - A fail-closed `verify-civicrm-evidence-index` command that checks the exact
-  v0.2 catalog, bounded artifact bytes, digests, and declared schema-version
-  headers without producing a composite or structural verdict.
+  v0.2 catalog, bounded artifact bytes, packaged result schemas, normalized
+  export contract, and declared attachment bytes without producing a composite
+  or structural verdict.
 - A closed `evidence-index.json` catalog for the normalized CiviCRM export and
   six independent result artifacts, with per-entry schemas and decision scopes
   but no composite status, score, pass count, or inferred conclusion.

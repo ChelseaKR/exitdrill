@@ -138,10 +138,12 @@ wheels = [
 name = "exitdrill"
 version = "0.1.0"
 source = { editable = "." }
+dependencies = [
+    { name = "jsonschema" },
+]
 
 [package.dev-dependencies]
 dev = [
-    { name = "jsonschema" },
     { name = "mypy" },
     { name = "pytest" },
     { name = "pytest-cov" },
@@ -150,10 +152,10 @@ dev = [
 ]
 
 [package.metadata]
+requires-dist = [{ name = "jsonschema", specifier = ">=4.23" }]
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "jsonschema", specifier = ">=4.23" },
     { name = "mypy", specifier = ">=1.18" },
     { name = "pytest", specifier = ">=8" },
     { name = "pytest-cov", specifier = ">=5" },

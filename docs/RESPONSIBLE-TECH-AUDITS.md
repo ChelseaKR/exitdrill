@@ -79,9 +79,10 @@ assessment. Its entries retain independent decision scopes, so proximity in the
 index cannot be read as combined evidence. Per-entry byte lengths and SHA-256
 digests bind the generated set for internal consistency but do not authenticate
 the operator or prove any observation true.
-The companion CLI verifier checks those bindings and declared schema-version
-headers only. It returns no composite result and cannot substitute for the
-artifact-specific schemas, limitations, or structural evaluation.
+The companion CLI verifier checks those bindings, the packaged index and result
+schemas, the normalized export contract, and its declared attachment bytes. It
+returns no composite result and cannot substitute for the artifact-specific
+limitations, structural evaluation, or evidence authentication.
 
 ## Accountability
 

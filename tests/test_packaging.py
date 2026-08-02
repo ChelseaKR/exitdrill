@@ -10,7 +10,7 @@ def test_package_metadata_and_typing_marker_are_aligned() -> None:
     assert metadata["project"]["name"] == "exitdrill"
     assert metadata["project"]["version"] == exitdrill.__version__
     assert metadata["project"]["scripts"]["exitdrill"] == "exitdrill.cli:main"
-    assert metadata["project"]["dependencies"] == []
+    assert metadata["project"]["dependencies"] == ["jsonschema>=4.23"]
     assert (project / "src" / "exitdrill" / "py.typed").is_file()
 
 

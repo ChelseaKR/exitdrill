@@ -175,9 +175,10 @@ exitdrill verify-civicrm-evidence-index out/evidence-index.json
 ```
 
 The command's success scope is
-`catalog_binding_and_declared_schema_headers_only`. It does not validate each
-artifact's full schema, interpret any finding, run the structural evaluator, or
-authenticate the files.
+`catalog_bindings_artifact_schemas_and_export_attachments_only`. It validates
+the packaged index and result schemas, the normalized export contract, and its
+declared attachment bytes. It does not interpret any finding, run the structural
+evaluator, authenticate the files, or prove live execution.
 
 The live capture gate and offline acceptance gate are distinct. The live harness
 may publish a bundle only after its fresh sandbox, source normalization, target

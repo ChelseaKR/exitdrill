@@ -351,6 +351,21 @@ def _read_json(path: Path) -> dict[str, Any]:
     return cast(dict[str, Any], json.loads(path.read_text(encoding="utf-8")))
 
 
+def _rewrite_bound_artifact(
+    out_dir: Path,
+    artifact_id: str,
+    document: dict[str, Any],
+) -> None:
+    index_path = out_dir / "evidence-index.json"
+    index = _read_json(index_path)
+    entry = next(item for item in index["entries"] if item["artifact_id"] == artifact_id)
+    artifact_bytes = canonical_json_bytes(document) + b"\n"
+    (out_dir / entry["filename"]).write_bytes(artifact_bytes)
+    entry["bytes"] = len(artifact_bytes)
+    entry["sha256"] = hashlib.sha256(artifact_bytes).hexdigest()
+    index_path.write_bytes(canonical_json_bytes(index) + b"\n")
+
+
 def _inventory(root: Path) -> list[dict[str, object]]:
     result: list[dict[str, object]] = []
     for relative in _FILE_PATHS:
@@ -540,16 +555,17 @@ def test_normalizes_closed_target_bundle_and_schema_validates(tmp_path: Path) ->
         assert hashlib.sha256(copied.read_bytes()).hexdigest() == attachment.content_sha256
 
 
-def test_verifies_evidence_index_bindings_and_schema_headers(tmp_path: Path) -> None:
+def test_verifies_evidence_artifact_contracts_and_attachments(tmp_path: Path) -> None:
     manifest = _create_bundle(tmp_path / "capture")
     out_dir = tmp_path / "out"
     normalize_civicrm_target_canary(manifest, out_dir)
 
     assert verify_civicrm_evidence_index(out_dir / "evidence-index.json") == {
         "artifact_count": 7,
-        "decision_scope": "catalog_binding_and_declared_schema_headers_only",
+        "attachment_count": 2,
+        "decision_scope": "catalog_bindings_artifact_schemas_and_export_attachments_only",
         "schema_version": "exitdrill/civicrm-evidence-index/v0.2",
-        "status": "evidence_index_bindings_verified",
+        "status": "evidence_artifact_contracts_verified",
         "target_profile": ("directus-11.17.4-civic-case-to-civicrm-standalone-6.16.2/v0.1"),
     }
 
@@ -568,20 +584,50 @@ def test_evidence_index_verifier_rejects_rebound_wrong_schema_header(tmp_path: P
     manifest = _create_bundle(tmp_path / "capture")
     out_dir = tmp_path / "out"
     normalize_civicrm_target_canary(manifest, out_dir)
-    artifact_path = out_dir / "keyboard-result.json"
-    artifact = _read_json(artifact_path)
+    artifact = _read_json(out_dir / "keyboard-result.json")
     artifact["schema_version"] = "exitdrill/civicrm-keyboard-result/v9.9"
-    artifact_bytes = canonical_json_bytes(artifact) + b"\n"
-    artifact_path.write_bytes(artifact_bytes)
-    index_path = out_dir / "evidence-index.json"
-    index = _read_json(index_path)
-    entry = next(item for item in index["entries"] if item["artifact_id"] == "keyboard_interaction")
-    entry["bytes"] = len(artifact_bytes)
-    entry["sha256"] = hashlib.sha256(artifact_bytes).hexdigest()
-    index_path.write_bytes(canonical_json_bytes(index) + b"\n")
+    _rewrite_bound_artifact(out_dir, "keyboard_interaction", artifact)
 
     with pytest.raises(CiviCRMTargetCanaryError, match="schema_version"):
-        verify_civicrm_evidence_index(index_path)
+        verify_civicrm_evidence_index(out_dir / "evidence-index.json")
+
+
+def test_evidence_index_verifier_rejects_rebound_schema_invalid_result(tmp_path: Path) -> None:
+    manifest = _create_bundle(tmp_path / "capture")
+    out_dir = tmp_path / "out"
+    normalize_civicrm_target_canary(manifest, out_dir)
+    artifact = _read_json(out_dir / "keyboard-result.json")
+    artifact["undeclared_summary"] = "pass"
+    _rewrite_bound_artifact(out_dir, "keyboard_interaction", artifact)
+
+    with pytest.raises(CiviCRMTargetCanaryError, match="does not satisfy its schema"):
+        verify_civicrm_evidence_index(out_dir / "evidence-index.json")
+
+
+def test_evidence_index_verifier_rejects_rebound_invalid_export(tmp_path: Path) -> None:
+    manifest = _create_bundle(tmp_path / "capture")
+    out_dir = tmp_path / "out"
+    normalize_civicrm_target_canary(manifest, out_dir)
+    export = _read_json(out_dir / "export.json")
+    export["undeclared_summary"] = "pass"
+    _rewrite_bound_artifact(out_dir, "normalized_target_readback", export)
+
+    with pytest.raises(CiviCRMTargetCanaryError, match="does not satisfy its contract"):
+        verify_civicrm_evidence_index(out_dir / "evidence-index.json")
+
+
+def test_evidence_index_verifier_rejects_changed_export_attachment(tmp_path: Path) -> None:
+    manifest = _create_bundle(tmp_path / "capture")
+    out_dir = tmp_path / "out"
+    normalize_civicrm_target_canary(manifest, out_dir)
+    package = load_export(out_dir / "export.json")
+    attachment = package.attachments[0]
+    attachment_path = out_dir / "export-files" / attachment.relative_path
+    original = attachment_path.read_bytes()
+    attachment_path.write_bytes(bytes([original[0] ^ 1]) + original[1:])
+
+    with pytest.raises(CiviCRMTargetCanaryError, match="attachment does not match its digest"):
+        verify_civicrm_evidence_index(out_dir / "evidence-index.json")
 
 
 def test_expected_structural_result_keeps_all_six_missing_signals(tmp_path: Path) -> None:

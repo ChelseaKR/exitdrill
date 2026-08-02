@@ -275,10 +275,12 @@ inconsistent artifact set but can be recomputed by a fabricator.
 
 `verify-civicrm-evidence-index` provides a fail-closed consumer for this narrow
 contract. It validates the exact v0.2 index, performs bounded regular-file reads
-of the seven fixed sibling artifacts, checks their lengths and digests, strictly
-decodes their JSON, and checks each declared schema-version header. It does not
-run the full artifact schemas or evaluator, and its success scope is explicitly
-`catalog_binding_and_declared_schema_headers_only`.
+of the seven fixed sibling artifacts, checks their lengths and digests, validates
+the index and six result documents against packaged JSON Schemas, and validates
+the normalized export through the existing strict loader. Its bounded export
+attachment reads verify every declared content digest. It does not run the
+structural evaluator or interpret the observations, and its success scope is
+explicitly `catalog_bindings_artifact_schemas_and_export_attachments_only`.
 
 ## Data contracts
 
