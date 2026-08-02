@@ -12,7 +12,7 @@ source-to-target lab, not a generic CiviCRM adapter. Its `native/` bundle
 contains fixed API read-back envelopes, identity-separation evidence,
 permission-probe outcomes, and attachment bytes from the disposable target.
 It also contains separate sanitized browser-workflow, automated-accessibility,
-and keyboard-interaction observations.
+keyboard-interaction, and activity-view observations.
 The profile verifier must reject any other version, file inventory, sandbox
 posture, identity shape, or response shape rather than infer a mapping.
 
@@ -65,6 +65,13 @@ closes with Enter, and reopens with Space. The projection retains no focused
 element labels, selectors, DOM paths, screenshots, or HTML. This is not a
 complete tab-order, visible-focus, keyboard-accessibility, screen-reader, or
 WCAG-conformance result.
+
+`browser-activity-view.json` records a second read-only browser task. From
+Manage Case, the reader follows the generated activity's supported `View`
+action and observes the Activity View heading, exact synthetic case subject,
+`Open Case` type, and `Completed` status. The route raises one additional exact
+`jquery_notify_unavailable` error. The projection retains no route parameters,
+target IDs, HTML, screenshots, traces, or credentials.
 
 Source-mapped business-state read-back never uses the writer credential or its
 in-memory mutation responses. A separate AuthX identity envelope records writer
@@ -147,11 +154,11 @@ observations and represented, unmapped, or target-generated counts; it has no
 composite restoration status.
 
 The generated `ui-surface-result.json`, `browser-workflow-result.json`,
-`accessibility-result.json`, and `keyboard-result.json` are separate evidence
-families. The browser result supports only the single task described above. The
-accessibility and keyboard results report only their bounded observations and
-are not conformance verdicts. None modifies the target probe algebra or
-structural result.
+`accessibility-result.json`, `keyboard-result.json`, and
+`activity-view-result.json` are separate evidence families. The browser results
+support only the two read-only tasks described above. The accessibility and
+keyboard results report only their bounded observations and are not conformance
+verdicts. None modifies the target probe algebra or structural result.
 
 The live capture gate and offline acceptance gate are distinct. The live harness
 may publish a bundle only after its fresh sandbox, source normalization, target
@@ -187,8 +194,8 @@ API-response profile was mapped into one pinned CiviCRM 6.16.2 sandbox, five
 declared target-interface probes and one Dashboard → Manage Case browser task
 were observed, one bounded automated accessibility scan reported the exact
 findings above, one disclosure's programmatic keyboard behavior was observed,
-and the unchanged structural evaluator reported the six known source-to-target
-gaps.
+one target-generated activity was viewed read-only, and the unchanged
+structural evaluator reported the six known source-to-target gaps.
 
 It does **not** establish:
 
@@ -199,6 +206,7 @@ It does **not** establish:
   audit history;
 - attachment authorization equivalence;
 - WCAG conformance, general CiviCRM UI usability, or any unobserved workflow;
+- activity editing, creation, or restoration of source audit history;
 - production safety, customer use, vendor deletion, or legal compliance; or
 - completeness or authenticity of the source capture, target capture, or
   separately authored baseline.

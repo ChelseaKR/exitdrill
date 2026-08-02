@@ -33,6 +33,7 @@ Existing accepted records:
 7. [ADR 0007: Observe one CiviCRM browser workflow](../decisions/0007-observe-one-civicrm-browser-workflow.md)
 8. [ADR 0008: Record one automated CiviCRM accessibility observation](../decisions/0008-record-one-automated-accessibility-observation.md)
 9. [ADR 0009: Record one CiviCRM keyboard interaction observation](../decisions/0009-record-one-keyboard-interaction-observation.md)
+10. [ADR 0010: Observe one CiviCRM activity-view workflow](../decisions/0010-observe-one-civicrm-activity-view-workflow.md)
 
 ## Consequences
 

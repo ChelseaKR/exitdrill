@@ -89,6 +89,7 @@ const capturePaths = [
   "browser-workflow.json",
   "browser-accessibility.json",
   "browser-keyboard.json",
+  "browser-activity-view.json",
   `assets/${firstAssetId}.txt`,
   `assets/${secondAssetId}.txt`,
 ];
@@ -1956,7 +1957,7 @@ async function captureReadback(runtime, fixture, principals, stageDir) {
   const browserRun = await runtime.browserWorkflow(reader);
   requireExact(
     Object.keys(browserRun).sort(),
-    ["accessibility", "keyboard", "workflow"],
+    ["accessibility", "activity_view", "keyboard", "workflow"],
     "browser run fields",
   );
   const browserObservation = requireObject(browserRun.workflow, "browser workflow observation");
@@ -2026,6 +2027,30 @@ async function captureReadback(runtime, fixture, principals, stageDir) {
     },
     "browser keyboard observation",
   );
+  const activityViewObservation = requireObject(
+    browserRun.activity_view,
+    "browser activity-view observation",
+  );
+  requireExact(
+    activityViewObservation,
+    {
+      browser_engine: "chromium",
+      data_mode: "synthetic_only",
+      known_runtime_errors: [
+        { error_key: "jquery_notify_unavailable", occurrence_count: 1 },
+      ],
+      retained_artifacts: [],
+      schema_version: "exitdrill/civicrm-activity-view-observation/v0.1",
+      steps: [
+        "activity_view_opened",
+        "activity_subject_observed",
+        "activity_type_observed",
+        "activity_status_observed",
+      ],
+      target_profile: targetProfile,
+    },
+    "browser activity-view observation",
+  );
 
   const downloadedAssets = new Map();
   for (const sourceFile of fixture.files) {
@@ -2076,6 +2101,7 @@ async function captureReadback(runtime, fixture, principals, stageDir) {
     ["browser-workflow.json", jsonDocument(browserObservation)],
     ["browser-accessibility.json", jsonDocument(accessibilityObservation)],
     ["browser-keyboard.json", jsonDocument(keyboardObservation)],
+    ["browser-activity-view.json", jsonDocument(activityViewObservation)],
     [`assets/${firstAssetId}.txt`, downloadedAssets.get(firstAssetId)],
     [`assets/${secondAssetId}.txt`, downloadedAssets.get(secondAssetId)],
   ]);
@@ -2150,7 +2176,7 @@ function buildManifest(metadata, sourceNormalization) {
       database: databaseImage,
     },
     acquisition_surface:
-      "supported_api_v4_authenticated_private_file_readback_authenticated_server_rendered_ui_isolated_browser_workflow_automated_accessibility_scan_and_keyboard_interaction",
+      "supported_api_v4_authenticated_private_file_readback_authenticated_server_rendered_ui_isolated_browser_workflow_automated_accessibility_scan_keyboard_interaction_and_activity_view",
     source_normalization: sourceNormalization,
     sandbox: {
       application_empty_before_write: true,
@@ -2221,6 +2247,8 @@ function buildManifest(metadata, sourceNormalization) {
       "browser_workflow_does_not_prove_accessibility",
       "automated_accessibility_scan_does_not_establish_wcag_conformance",
       "single_programmatic_keyboard_interaction_does_not_establish_keyboard_accessibility",
+      "single_generated_activity_view_only",
+      "activity_view_observed_with_known_jquery_notify_runtime_error",
     ],
   };
 }

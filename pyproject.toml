@@ -43,6 +43,7 @@ packages = ["src/exitdrill"]
 "schemas/civicrm-browser-workflow-result-v0.1.schema.json" = "exitdrill/schemas/civicrm-browser-workflow-result-v0.1.schema.json"
 "schemas/civicrm-accessibility-result-v0.1.schema.json" = "exitdrill/schemas/civicrm-accessibility-result-v0.1.schema.json"
 "schemas/civicrm-keyboard-result-v0.1.schema.json" = "exitdrill/schemas/civicrm-keyboard-result-v0.1.schema.json"
+"schemas/civicrm-activity-view-result-v0.1.schema.json" = "exitdrill/schemas/civicrm-activity-view-result-v0.1.schema.json"
 
 [tool.ruff]
 line-length = 100

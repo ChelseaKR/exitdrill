@@ -32,6 +32,7 @@ _UI_RESULT_SCHEMA = "exitdrill/civicrm-ui-surface-result/v0.1"
 _BROWSER_RESULT_SCHEMA = "exitdrill/civicrm-browser-workflow-result/v0.1"
 _ACCESSIBILITY_RESULT_SCHEMA = "exitdrill/civicrm-accessibility-result/v0.1"
 _KEYBOARD_RESULT_SCHEMA = "exitdrill/civicrm-keyboard-result/v0.1"
+_ACTIVITY_VIEW_RESULT_SCHEMA = "exitdrill/civicrm-activity-view-result/v0.1"
 _SOURCE_SYSTEM = "Directus 11.17.4 synthetic civic-case sandbox"
 _TARGET_SYSTEM = "CiviCRM Standalone"
 _TARGET_VERSION = "6.16.2"
@@ -41,7 +42,8 @@ _DRILL_ID = "directus-civic-case-exit-001"
 _SOURCE_EXPORTED_AT = "2026-08-02T02:38:28.542Z"
 _ACQUISITION_SURFACE = (
     "supported_api_v4_authenticated_private_file_readback_authenticated_server_rendered_ui_"
-    "isolated_browser_workflow_automated_accessibility_scan_and_keyboard_interaction"
+    "isolated_browser_workflow_automated_accessibility_scan_keyboard_interaction_and_"
+    "activity_view"
 )
 _FILE_IDS = (
     "11111111-1111-4111-8111-111111111111",
@@ -63,6 +65,7 @@ _EXPECTED_FILES = (
     "browser-workflow.json",
     "browser-accessibility.json",
     "browser-keyboard.json",
+    "browser-activity-view.json",
     f"assets/{_FILE_IDS[0]}.txt",
     f"assets/{_FILE_IDS[1]}.txt",
 )
@@ -184,6 +187,8 @@ _BUNDLE_LIMITATIONS = (
     "browser_workflow_does_not_prove_accessibility",
     "automated_accessibility_scan_does_not_establish_wcag_conformance",
     "single_programmatic_keyboard_interaction_does_not_establish_keyboard_accessibility",
+    "single_generated_activity_view_only",
+    "activity_view_observed_with_known_jquery_notify_runtime_error",
 )
 _RESULT_LIMITATIONS = (
     "synthetic_fixture_only",
@@ -237,6 +242,16 @@ _KEYBOARD_RESULT_LIMITATIONS = (
     "does_not_cover_screen_reader_behavior",
     "does_not_establish_keyboard_accessibility",
     "does_not_establish_wcag_conformance",
+    "target_version_and_execution_context_are_operator_asserted",
+)
+_ACTIVITY_VIEW_RESULT_LIMITATIONS = (
+    "synthetic_fixture_only",
+    "target_evidence_is_unsigned_and_unauthenticated",
+    "single_generated_open_case_activity_only",
+    "activity_view_observed_with_known_jquery_notify_runtime_error",
+    "read_only_activity_view_only",
+    "does_not_prove_activity_editing_or_creation",
+    "does_not_prove_operational_equivalence",
     "target_version_and_execution_context_are_operator_asserted",
 )
 _CONTACT_KEYS = frozenset(
@@ -933,6 +948,23 @@ def _keyboard_result() -> dict[str, JsonValue]:
     }
 
 
+def _activity_view_result() -> dict[str, JsonValue]:
+    return {
+        "decision_scope": "pinned_synthetic_generated_activity_view_only",
+        "known_runtime_errors": [{"error_key": "jquery_notify_unavailable", "occurrence_count": 1}],
+        "limitations": list(_ACTIVITY_VIEW_RESULT_LIMITATIONS),
+        "schema_version": _ACTIVITY_VIEW_RESULT_SCHEMA,
+        "target_profile": _PROFILE,
+        "workflow_results": [
+            _probe_result(
+                "generated_open_case_activity_view",
+                "observed",
+                "isolated_headless_chromium_read_only_interaction",
+            )
+        ],
+    }
+
+
 def _target_result(allow_count: int, deny_count: int) -> dict[str, JsonValue]:
     probes = [
         _probe_result("record_lookup", "pass", "independent_api_v4_readback"),
@@ -973,6 +1005,7 @@ def _build_output(
 ) -> tuple[
     dict[str, JsonValue],
     list[tuple[str, bytes]],
+    dict[str, JsonValue],
     dict[str, JsonValue],
     dict[str, JsonValue],
     dict[str, JsonValue],
@@ -1081,6 +1114,26 @@ def _build_output(
         },
         "browser keyboard projection",
     )
+    _parse_ui_surface(
+        documents["browser-activity-view.json"],
+        {
+            "browser_engine": "chromium",
+            "data_mode": "synthetic_only",
+            "known_runtime_errors": [
+                {"error_key": "jquery_notify_unavailable", "occurrence_count": 1}
+            ],
+            "retained_artifacts": [],
+            "schema_version": "exitdrill/civicrm-activity-view-observation/v0.1",
+            "steps": [
+                "activity_view_opened",
+                "activity_subject_observed",
+                "activity_type_observed",
+                "activity_status_observed",
+            ],
+            "target_profile": _PROFILE,
+        },
+        "browser activity-view projection",
+    )
     export: dict[str, JsonValue] = {
         "attachments": cast("list[JsonValue]", attachments),
         "audit_events": [],
@@ -1101,6 +1154,7 @@ def _build_output(
         _browser_workflow_result(),
         _accessibility_result(),
         _keyboard_result(),
+        _activity_view_result(),
     )
 
 
@@ -1113,6 +1167,7 @@ def _write_output(
     browser_result: Mapping[str, JsonValue],
     accessibility_result: Mapping[str, JsonValue],
     keyboard_result: Mapping[str, JsonValue],
+    activity_view_result: Mapping[str, JsonValue],
 ) -> None:
     parent = out_dir.parent
     if not parent.exists() or not parent.is_dir():
@@ -1137,6 +1192,9 @@ def _write_output(
         )
         (temporary / "keyboard-result.json").write_bytes(
             canonical_json_bytes(keyboard_result) + b"\n"
+        )
+        (temporary / "activity-view-result.json").write_bytes(
+            canonical_json_bytes(activity_view_result) + b"\n"
         )
         if out_dir.exists() or out_dir.is_symlink():
             raise _fail("output directory already exists")
@@ -1187,6 +1245,7 @@ def normalize_civicrm_target_canary(manifest_path: Path, out_dir: Path) -> dict[
         browser_result,
         accessibility_result,
         keyboard_result,
+        activity_view_result,
     ) = _build_output(documents)
     export_document = canonical_json_bytes(export) + b"\n"
     _write_output(
@@ -1198,5 +1257,6 @@ def normalize_civicrm_target_canary(manifest_path: Path, out_dir: Path) -> dict[
         browser_result,
         accessibility_result,
         keyboard_result,
+        activity_view_result,
     )
     return result
