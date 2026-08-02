@@ -8,10 +8,15 @@ import sys
 from pathlib import Path
 
 from exitdrill.canonical import canonical_json_bytes
+from exitdrill.civicrm_target_canary import (
+    CiviCRMTargetCanaryError,
+    normalize_civicrm_target_canary,
+)
 from exitdrill.comparison import (
     _comparison_has_observed_loss_signal_increase,
     compare_receipt_files,
 )
+from exitdrill.directus_canary import DirectusCanaryError, normalize_directus_canary
 from exitdrill.evaluator import DrillError, run_drill
 from exitdrill.exercise import ExercisePlanError, load_exercise_plan
 from exitdrill.loader import PackageError, load_baseline, load_export
@@ -23,6 +28,7 @@ from exitdrill.receipt import (
     verify_receipt,
     write_receipt,
 )
+from exitdrill.report import ReportError, render_receipt_file, write_report
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -61,6 +67,24 @@ def _parser() -> argparse.ArgumentParser:
         action="store_true",
         help="return 3 for a comparable observed aggregate missing/invalid increase",
     )
+    report = commands.add_parser(
+        "report",
+        help="render an accessible offline report from a verified receipt",
+    )
+    report.add_argument("receipt", type=Path)
+    report.add_argument("--out", type=Path, required=True)
+    normalize_directus = commands.add_parser(
+        "normalize-directus-canary",
+        help="verify and normalize the bounded Directus 11.17.4 canary bundle",
+    )
+    normalize_directus.add_argument("manifest", type=Path)
+    normalize_directus.add_argument("--out-dir", type=Path, required=True)
+    normalize_civicrm = commands.add_parser(
+        "normalize-civicrm-target-canary",
+        help="verify and normalize the bounded CiviCRM 6.16.2 target read-back bundle",
+    )
+    normalize_civicrm.add_argument("manifest", type=Path)
+    normalize_civicrm.add_argument("--out-dir", type=Path, required=True)
     return parser
 
 
@@ -179,6 +203,19 @@ def _compare(
     return 0
 
 
+def _report(receipt_path: Path, out: Path) -> int:
+    document = render_receipt_file(receipt_path)
+    write_report(out, document)
+    _print_json(
+        {
+            "decision_scope": "verified_aggregate_receipt_report_only",
+            "report": str(out),
+            "status": "report_written",
+        }
+    )
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     """Run the CLI with bounded failures."""
     args = _parser().parse_args(argv)
@@ -208,11 +245,22 @@ def main(argv: list[str] | None = None) -> int:
                 args.candidate,
                 fail_on_loss_signal_increase=args.fail_on_loss_signal_increase,
             )
+        if args.command == "report":
+            return _report(args.receipt, args.out)
+        if args.command == "normalize-directus-canary":
+            _print_json(normalize_directus_canary(args.manifest, args.out_dir))
+            return 0
+        if args.command == "normalize-civicrm-target-canary":
+            _print_json(normalize_civicrm_target_canary(args.manifest, args.out_dir))
+            return 0
     except (
+        CiviCRMTargetCanaryError,
+        DirectusCanaryError,
         DrillError,
         ExercisePlanError,
         PackageError,
         ReceiptError,
+        ReportError,
         OSError,
         json.JSONDecodeError,
     ) as exc:

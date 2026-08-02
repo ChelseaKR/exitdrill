@@ -22,6 +22,7 @@ from exitdrill.models import (
     JsonScalar,
     Permission,
     Relationship,
+    matches_field_type,
 )
 from exitdrill.strict_json import StrictJsonError, load_strict_json
 from exitdrill.timestamps import TimestampError, parse_timestamp
@@ -154,14 +155,18 @@ def _parse_expected_entity(raw: object, context: str) -> ExpectedEntity:
     for index, item in enumerate(_items(value["required_fields"], f"{context}.required_fields")):
         item_context = f"{context}.required_fields[{index}]"
         field = _mapping(item, item_context)
-        _exact_keys(field, {"name", "type"}, item_context)
+        _exact_keys(field, {"name", "type", "expected_value"}, item_context)
         value_type = _string(field, "type", item_context)
         if value_type not in _SCALAR_TYPES:
             raise PackageError(f"{item_context}.type is unsupported")
+        expected_value = field["expected_value"]
+        if not matches_field_type(value_type, expected_value):
+            raise PackageError(f"{item_context}.expected_value does not match its declared type")
         requirements.append(
             FieldRequirement(
                 name=_identifier(field, "name", item_context),
                 value_type=value_type,
+                expected_value=cast(JsonScalar, expected_value),
             )
         )
     if len({item.name for item in requirements}) != len(requirements):
@@ -266,7 +271,7 @@ def load_baseline(path: Path) -> Baseline:
     """Load and validate an independently captured exit baseline."""
     raw, source_sha256 = _load_object(path)
     _exact_keys(raw, _BASELINE_KEYS, "baseline")
-    if raw["schema_version"] != "exitdrill/baseline/v0.2":
+    if raw["schema_version"] != "exitdrill/baseline/v0.3":
         raise PackageError("unsupported baseline schema")
     coverage_raw = _mapping(raw["coverage"], "coverage")
     expected_dimensions = {item.value for item in Dimension}

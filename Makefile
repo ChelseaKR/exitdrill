@@ -1,4 +1,4 @@
-.PHONY: install format lint type test verify package demo demo-lossy demo-compare demo-compare-policy
+.PHONY: install format lint type test verify package demo demo-lossy demo-compare demo-compare-policy demo-directus-canary demo-civicrm-target-canary
 
 install:
 	uv sync --frozen
@@ -28,6 +28,7 @@ demo:
 	uv run exitdrill validate examples/synthetic-crm/baseline.json examples/synthetic-crm/export.json
 	uv run exitdrill drill examples/synthetic-crm/baseline.json examples/synthetic-crm/export.json --attachment-root examples/synthetic-crm/export-files --out examples/synthetic-crm/out/receipt.json --claimed-generated-at 2026-07-22T20:00:00Z
 	uv run exitdrill verify examples/synthetic-crm/out/receipt.json --baseline examples/synthetic-crm/baseline.json --export examples/synthetic-crm/export.json --attachment-root examples/synthetic-crm/export-files
+	uv run exitdrill report examples/synthetic-crm/out/receipt.json --out examples/synthetic-crm/out/report.html
 
 demo-lossy:
 	@mkdir -p examples/synthetic-crm-lossy/out
@@ -45,3 +46,9 @@ demo-compare-policy: demo-compare
 	@status=0; \
 	uv run exitdrill compare examples/synthetic-crm/out/receipt.json examples/synthetic-crm-lossy/out/receipt.json --fail-on-loss-signal-increase || status=$$?; \
 	test $$status -eq 3
+
+demo-directus-canary:
+	uv run python scripts/check_directus_canary_demo.py
+
+demo-civicrm-target-canary:
+	uv run python scripts/check_civicrm_target_roundtrip_demo.py

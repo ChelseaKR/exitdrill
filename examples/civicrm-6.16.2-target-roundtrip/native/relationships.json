@@ -1,0 +1,1 @@
+{"count":2,"countFetched":2,"values":[{"case_id":1,"contact_id_a":7,"contact_id_b":8,"description":"ExitDrill assigned_to","id":1,"is_active":true,"relationship_type_id.name_a_b":"Case Coordinator is"},{"case_id":2,"contact_id_a":7,"contact_id_b":9,"description":"ExitDrill assigned_to","id":2,"is_active":true,"relationship_type_id.name_a_b":"Case Coordinator is"}]}

@@ -6,6 +6,11 @@ All notable changes will be documented here.
 
 ### Changed
 
+- Advanced the independent baseline to `v0.3`; every declared required entity
+  field now binds an exact expected scalar value as well as its type.
+- Advanced drill-result and receipt contracts to `v0.3` so their limitations
+  accurately state that field-value equivalence is bounded to declared required
+  fields.
 - Advanced the independent baseline to `v0.2`, binding audit action and
   occurrence time as well as event identity.
 - Renamed the aggregate remediation field to `observed_remediation_signals`;
@@ -15,8 +20,20 @@ All notable changes will be documented here.
 
 ### Added
 
-- Canonical `docs/adr/` decision index linking the two existing accepted ADRs
-  without moving or rewriting their history; new decisions continue there.
+- Canonical `docs/adr/` compatibility index linking all accepted ADRs without
+  moving or rewriting their durable `docs/decisions/` history.
+- A real-process, synthetic-only Directus 11.17.4 API-response canary captured
+  from a pinned local sandbox, with schema, content, relationships, attachment
+  bytes, permissions, activity, and a closed hash manifest.
+- A bounded source-specific Directus normalizer that verifies the custom capture
+  bundle and atomically emits the existing normalized export and attachment
+  contracts without entering the evaluator's trust algebra.
+- A one-command Directus-canary acceptance demonstration: deterministic
+  normalization, clean replay, an equal-row-and-file-count six-mutation
+  derivative, exact five-dimension loss assertions, aggregate-only reports,
+  receipt comparison, and comparison-policy exit verification.
+- Fail-closed detection and replay evidence for same-type critical-field value
+  loss without placing raw field values in aggregate receipts.
 - Strict independent baseline and normalized-export contracts.
 - Structural comparison across entities, relationships, attachments,
   permissions, and audit history.
@@ -56,3 +73,6 @@ All notable changes will be documented here.
 - Installed source-bound comparison verifier that recomputes every derived field
   from two fully verified receipts; JSON Schema remains the structural and
   locally expressible contract.
+- Deterministic, accessible, script-free offline HTML evidence reports generated
+  only from semantically verified aggregate receipts, with mandatory trust
+  limitations and no operational-equivalence claim.

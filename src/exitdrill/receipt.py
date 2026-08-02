@@ -38,7 +38,7 @@ def build_receipt(
         },
         "payload": payload,
         "payload_sha256": sha256_bytes(canonical_json_bytes(payload)),
-        "schema_version": "exitdrill/receipt/v0.2",
+        "schema_version": "exitdrill/receipt/v0.3",
     }
 
 
@@ -97,7 +97,7 @@ def verify_receipt(receipt: dict[str, JsonValue]) -> str:
     except StrictJsonError as exc:
         raise ReceiptError(str(exc)) from exc
     _require_exact_fields(cast(dict[str, object], receipt), _RECEIPT_KEYS, "receipt")
-    if receipt.get("schema_version") != "exitdrill/receipt/v0.2":
+    if receipt.get("schema_version") != "exitdrill/receipt/v0.3":
         raise ReceiptError("unsupported receipt schema")
     payload = receipt.get("payload")
     claimed_hash = receipt.get("payload_sha256")

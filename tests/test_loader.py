@@ -23,6 +23,7 @@ def test_loads_strict_baseline_and_export(example_root: Path) -> None:
     package = load_export(example_root / "export.json")
     assert baseline.drill_id == package.drill_id
     assert baseline.coverage[Dimension.ENTITIES] is Coverage.COMPLETE
+    assert baseline.entities[0].required_fields[0].expected_value == "Synthetic Person"
     assert len(package.entities) == 2
 
 
@@ -57,6 +58,21 @@ def test_loads_strict_baseline_and_export(example_root: Path) -> None:
             "unsupported",
         ),
         (
+            "baseline",
+            lambda raw: raw["entities"][0]["required_fields"][0].update({"expected_value": 42}),
+            "does not match",
+        ),
+        (
+            "baseline",
+            lambda raw: raw["entities"][0]["required_fields"][0].pop("expected_value"),
+            "missing field",
+        ),
+        (
+            "baseline",
+            lambda raw: raw["entities"][0]["required_fields"][0].update({"comparison": "casefold"}),
+            "unknown field",
+        ),
+        (
             "export",
             lambda raw: raw["attachments"][0].update({"content_sha256": "bad"}),
             "SHA-256",
@@ -87,6 +103,33 @@ def test_rejects_duplicate_keys(copied_example: Path) -> None:
     _write(path, raw)
     with pytest.raises(PackageError, match="unique"):
         load_export(path)
+
+
+@pytest.mark.parametrize(
+    ("entity_index", "field_index", "expected_value"),
+    [
+        (0, 0, " "),
+        (0, 1, 1),
+        (1, 1, True),
+        (1, 1, None),
+        (1, 1, {"nested": "value"}),
+    ],
+)
+def test_rejects_expected_values_outside_declared_scalar_type(
+    copied_example: Path,
+    entity_index: int,
+    field_index: int,
+    expected_value: object,
+) -> None:
+    path = copied_example / "baseline.json"
+    raw = _json(path)
+    raw["entities"][entity_index]["required_fields"][field_index][  # type: ignore[index]
+        "expected_value"
+    ] = expected_value
+    _write(path, raw)
+
+    with pytest.raises(PackageError, match="expected_value does not match"):
+        load_baseline(path)
 
 
 @pytest.mark.parametrize(

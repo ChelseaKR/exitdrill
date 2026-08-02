@@ -106,6 +106,131 @@ def test_validate_cli(example_root: Path, capsys: pytest.CaptureFixture[str]) ->
     assert _stdout(capsys)["status"] == "valid"
 
 
+def test_normalize_directus_canary_cli(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    project = Path(__file__).parents[1]
+    native = project / "examples" / "directus-11.17.4-civic-case" / "native"
+    out_dir = tmp_path / "normalized"
+
+    assert (
+        main(
+            [
+                "normalize-directus-canary",
+                str(native / "capture-manifest.json"),
+                "--out-dir",
+                str(out_dir),
+            ]
+        )
+        == 0
+    )
+    raw_output = capsys.readouterr().out
+    output = json.loads(raw_output)
+    assert output["adapter_profile"] == "directus-11.17.4-civic-case/v0.1"
+    assert output["counts"] == {
+        "attachment_bytes": 56,
+        "attachments": 2,
+        "audit_events": 2,
+        "entities": 7,
+        "permissions": 2,
+        "relationships": 2,
+    }
+    assert (out_dir / "export.json").is_file()
+    assert (out_dir / "normalization-manifest.json").is_file()
+    assert str(native) not in raw_output
+    assert str(out_dir) not in raw_output
+    assert "Synthetic Person Alpha" not in raw_output
+    assert "11111111-1111-4111-8111-111111111111" not in raw_output
+
+
+def test_normalize_directus_canary_cli_error_does_not_disclose_path(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    marker = "private-native-source-location"
+    manifest = tmp_path / marker / "capture-manifest.json"
+    out_dir = tmp_path / "normalized"
+
+    assert (
+        main(
+            [
+                "normalize-directus-canary",
+                str(manifest),
+                "--out-dir",
+                str(out_dir),
+            ]
+        )
+        == 2
+    )
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert marker not in captured.err
+    assert str(tmp_path) not in captured.err
+    assert not out_dir.exists()
+
+
+def test_normalize_civicrm_target_canary_cli(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    project = Path(__file__).parents[1]
+    native = project / "examples" / "civicrm-6.16.2-target-roundtrip" / "native"
+    out_dir = tmp_path / "normalized-target"
+
+    assert (
+        main(
+            [
+                "normalize-civicrm-target-canary",
+                str(native / "capture-manifest.json"),
+                "--out-dir",
+                str(out_dir),
+            ]
+        )
+        == 0
+    )
+    raw_output = capsys.readouterr().out
+    output = json.loads(raw_output)
+    assert output["target_profile"] == (
+        "directus-11.17.4-civic-case-to-civicrm-standalone-6.16.2/v0.1"
+    )
+    assert [item["state"] for item in output["probe_results"]] == ["pass"] * 5
+    assert (out_dir / "export.json").is_file()
+    assert (out_dir / "target-result.json").is_file()
+    assert (out_dir / "ui-surface-result.json").is_file()
+    assert (out_dir / "browser-workflow-result.json").is_file()
+    assert str(native) not in raw_output
+    assert str(out_dir) not in raw_output
+    assert "Synthetic Person Alpha" not in raw_output
+    assert "11111111-1111-4111-8111-111111111111" not in raw_output
+
+
+def test_normalize_civicrm_target_canary_cli_error_does_not_disclose_path(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    marker = "private-target-capture-location"
+    manifest = tmp_path / marker / "capture-manifest.json"
+    out_dir = tmp_path / "normalized-target"
+
+    assert (
+        main(
+            [
+                "normalize-civicrm-target-canary",
+                str(manifest),
+                "--out-dir",
+                str(out_dir),
+            ]
+        )
+        == 2
+    )
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert marker not in captured.err
+    assert str(tmp_path) not in captured.err
+    assert not out_dir.exists()
+
+
 def test_validate_exercise_cli(capsys: pytest.CaptureFixture[str]) -> None:
     plan = Path(__file__).parents[1] / "examples" / "synthetic-exercise" / "plan.json"
     assert main(["validate-exercise", str(plan)]) == 0
@@ -499,6 +624,73 @@ def test_drill_and_replay_cli(
         == 0
     )
     assert _stdout(capsys)["replayed"] is True
+
+
+def test_same_type_value_loss_fails_drill_and_clean_receipt_replay(
+    copied_example: Path,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    baseline = copied_example / "baseline.json"
+    export = copied_example / "export.json"
+    attachment_root = copied_example / "export-files"
+    clean_receipt = tmp_path / "clean-receipt.json"
+    common = [str(baseline), str(export)]
+    assert (
+        main(
+            [
+                "drill",
+                *common,
+                "--attachment-root",
+                str(attachment_root),
+                "--out",
+                str(clean_receipt),
+            ]
+        )
+        == 0
+    )
+    _stdout(capsys)
+
+    raw = json.loads(export.read_text(encoding="utf-8"))
+    raw["entities"][0]["fields"]["display_name"] = "Different synthetic string"
+    export.write_text(json.dumps(raw), encoding="utf-8")
+
+    assert (
+        main(
+            [
+                "verify",
+                str(clean_receipt),
+                "--baseline",
+                common[0],
+                "--export",
+                common[1],
+                "--attachment-root",
+                str(attachment_root),
+            ]
+        )
+        == 2
+    )
+    assert "does not match a fresh drill replay" in capsys.readouterr().err
+
+    failed_receipt = tmp_path / "failed-receipt.json"
+    assert (
+        main(
+            [
+                "drill",
+                *common,
+                "--attachment-root",
+                str(attachment_root),
+                "--out",
+                str(failed_receipt),
+            ]
+        )
+        == 2
+    )
+    output = _stdout(capsys)
+    assert output["overall_status"] == "not_structurally_restorable"
+    encoded = failed_receipt.read_text(encoding="utf-8")
+    assert "Synthetic Person" not in encoded
+    assert "Different synthetic string" not in encoded
 
 
 def test_verify_without_replay(

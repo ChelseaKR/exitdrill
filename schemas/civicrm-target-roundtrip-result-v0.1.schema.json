@@ -1,0 +1,233 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ChelseaKR/exitdrill/blob/main/schemas/civicrm-target-roundtrip-result-v0.1.schema.json",
+  "title": "ExitDrill closed CiviCRM target-roundtrip result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "target_profile",
+    "source_profile",
+    "decision_scope",
+    "probe_results",
+    "represented_counts",
+    "unmapped_counts",
+    "target_generated_counts",
+    "limitations"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "exitdrill/civicrm-target-roundtrip-result/v0.1"
+    },
+    "target_profile": {
+      "const": "directus-11.17.4-civic-case-to-civicrm-standalone-6.16.2/v0.1"
+    },
+    "source_profile": {
+      "const": "directus-11.17.4-civic-case/v0.1"
+    },
+    "decision_scope": {
+      "const": "pinned_synthetic_target_roundtrip_only"
+    },
+    "probe_results": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "prefixItems": [
+        {
+          "$ref": "#/$defs/record_lookup"
+        },
+        {
+          "$ref": "#/$defs/relationship_traversal"
+        },
+        {
+          "$ref": "#/$defs/attachment_retrieval"
+        },
+        {
+          "$ref": "#/$defs/authorized_access"
+        },
+        {
+          "$ref": "#/$defs/unauthorized_denial"
+        }
+      ],
+      "items": false
+    },
+    "represented_counts": {
+      "$ref": "#/$defs/represented_counts"
+    },
+    "unmapped_counts": {
+      "$ref": "#/$defs/unmapped_counts"
+    },
+    "target_generated_counts": {
+      "$ref": "#/$defs/target_generated_counts"
+    },
+    "limitations": {
+      "type": "array",
+      "minItems": 10,
+      "maxItems": 10,
+      "prefixItems": [
+        {"const": "synthetic_fixture_only"},
+        {"const": "target_evidence_is_unsigned_and_unauthenticated"},
+        {"const": "source_capture_is_not_a_vendor_native_export"},
+        {"const": "does_not_prove_operational_equivalence"},
+        {"const": "does_not_prove_cutover_or_source_deletion"},
+        {"const": "does_not_prove_permission_principal_equivalence"},
+        {"const": "source_permissions_and_audit_history_are_not_restored"},
+        {"const": "target_scaffolding_is_not_source_data"},
+        {"const": "api_probes_do_not_prove_ui_usability"},
+        {"const": "target_version_and_execution_context_are_operator_asserted"}
+      ],
+      "items": false
+    }
+  },
+  "$defs": {
+    "probe": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "state", "evidence_kind"],
+      "properties": {
+        "id": {"type": "string"},
+        "state": {"enum": ["pass", "fail"]},
+        "evidence_kind": {"type": "string"}
+      }
+    },
+    "record_lookup": {
+      "allOf": [
+        {"$ref": "#/$defs/probe"},
+        {
+          "properties": {
+            "id": {"const": "record_lookup"},
+            "evidence_kind": {"const": "independent_api_v4_readback"}
+          }
+        }
+      ]
+    },
+    "relationship_traversal": {
+      "allOf": [
+        {"$ref": "#/$defs/probe"},
+        {
+          "properties": {
+            "id": {"const": "relationship_traversal"},
+            "evidence_kind": {"const": "independent_api_v4_relationship_readback"}
+          }
+        }
+      ]
+    },
+    "attachment_retrieval": {
+      "allOf": [
+        {"$ref": "#/$defs/probe"},
+        {
+          "properties": {
+            "id": {"const": "attachment_retrieval"},
+            "evidence_kind": {"const": "authenticated_private_file_bytes"}
+          }
+        }
+      ]
+    },
+    "authorized_access": {
+      "allOf": [
+        {"$ref": "#/$defs/probe"},
+        {
+          "properties": {
+            "id": {"const": "authorized_access"},
+            "evidence_kind": {"const": "permission_enforced_api_v4_contact_get"}
+          }
+        }
+      ]
+    },
+    "unauthorized_denial": {
+      "allOf": [
+        {"$ref": "#/$defs/probe"},
+        {
+          "properties": {
+            "id": {"const": "unauthorized_denial"},
+            "evidence_kind": {"const": "permission_enforced_api_v4_contact_get"}
+          }
+        }
+      ]
+    },
+    "dimension_counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "entities",
+        "relationships",
+        "attachments",
+        "permissions",
+        "audit_events"
+      ],
+      "properties": {
+        "entities": {"type": "integer", "minimum": 0},
+        "relationships": {"type": "integer", "minimum": 0},
+        "attachments": {"type": "integer", "minimum": 0},
+        "permissions": {"type": "integer", "minimum": 0},
+        "audit_events": {"type": "integer", "minimum": 0}
+      }
+    },
+    "represented_counts": {
+      "allOf": [
+        {"$ref": "#/$defs/dimension_counts"},
+        {
+          "properties": {
+            "entities": {"const": 5},
+            "relationships": {"const": 2},
+            "attachments": {"const": 2},
+            "permissions": {"const": 0},
+            "audit_events": {"const": 0}
+          }
+        }
+      ]
+    },
+    "unmapped_counts": {
+      "allOf": [
+        {"$ref": "#/$defs/dimension_counts"},
+        {
+          "properties": {
+            "entities": {"const": 2},
+            "relationships": {"const": 0},
+            "attachments": {"const": 0},
+            "permissions": {"const": 2},
+            "audit_events": {"const": 2}
+          }
+        }
+      ]
+    },
+    "target_generated_counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "acl_entity_roles",
+        "acl_group_contacts",
+        "acl_groups",
+        "acl_roles",
+        "acls",
+        "case_activities",
+        "case_contacts",
+        "case_types",
+        "custom_field_groups",
+        "custom_fields",
+        "helper_contacts",
+        "principals",
+        "relationship_types_created",
+        "relationship_types_referenced",
+        "roles"
+      ],
+      "properties": {
+        "acl_entity_roles": {"const": 2},
+        "acl_group_contacts": {"const": 4},
+        "acl_groups": {"const": 3},
+        "acl_roles": {"const": 2},
+        "acls": {"const": 2},
+        "case_activities": {"const": 2},
+        "case_contacts": {"const": 2},
+        "case_types": {"const": 1},
+        "custom_field_groups": {"const": 2},
+        "custom_fields": {"const": 7},
+        "helper_contacts": {"const": 1},
+        "principals": {"const": 4},
+        "relationship_types_created": {"const": 0},
+        "relationship_types_referenced": {"const": 1},
+        "roles": {"const": 4}
+      }
+    }
+  }
+}

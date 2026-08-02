@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://exitdrill.example/schemas/civicrm-browser-workflow-result-v0.1.schema.json",
+  "title": "ExitDrill CiviCRM browser workflow result v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "decision_scope",
+    "known_runtime_errors",
+    "limitations",
+    "schema_version",
+    "target_profile",
+    "workflow_results"
+  ],
+  "properties": {
+    "decision_scope": {"const": "pinned_synthetic_browser_workflow_only"},
+    "known_runtime_errors": {
+      "const": [
+        {
+          "error_key": "jquery_notify_unavailable",
+          "occurrence_count": 2
+        }
+      ]
+    },
+    "limitations": {
+      "const": [
+        "synthetic_fixture_only",
+        "target_evidence_is_unsigned_and_unauthenticated",
+        "single_case_browser_workflow_only",
+        "browser_workflow_observed_with_known_jquery_notify_runtime_errors",
+        "does_not_prove_accessibility",
+        "does_not_prove_operational_equivalence",
+        "target_version_and_execution_context_are_operator_asserted"
+      ]
+    },
+    "schema_version": {"const": "exitdrill/civicrm-browser-workflow-result/v0.1"},
+    "target_profile": {
+      "const": "directus-11.17.4-civic-case-to-civicrm-standalone-6.16.2/v0.1"
+    },
+    "workflow_results": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1,
+      "prefixItems": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["evidence_kind", "id", "state"],
+          "properties": {
+            "evidence_kind": {"const": "isolated_headless_chromium_interaction"},
+            "id": {"const": "case_dashboard_to_manage_case"},
+            "state": {"const": "observed"}
+          }
+        }
+      ],
+      "items": false
+    }
+  }
+}
