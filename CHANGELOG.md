@@ -20,6 +20,8 @@ All notable changes will be documented here.
 
 ### Added
 
+- Canonical `docs/adr/` compatibility index linking all accepted ADRs without
+  moving or rewriting their durable `docs/decisions/` history.
 - A real-process, synthetic-only Directus 11.17.4 API-response canary captured
   from a pinned local sandbox, with schema, content, relationships, attachment
   bytes, permissions, activity, and a closed hash manifest.

@@ -387,6 +387,6 @@ beyond these target-interface probes.
 | Performance | N/A — offline CLI with no latency contract; input and attachment work remain bounded |
 | Internationalization | N/A — English-only expert operator workflow |
 | AI evaluation | N/A — deterministic evaluator with no model or AI SDK |
-| Documentation | Applies |
+| Documentation | Applies; the canonical [ADR index](docs/adr/0000-record-architecture-decisions.md) links accepted history without breaking its original paths |
 | Responsible-Tech Framework | Applies; see the current responsible-technology audit |
 | Incident response and data governance | Applies; synthetic-only data gate remains mandatory |
