@@ -35,10 +35,11 @@ non-fatal CiviCRM `jquery_notify_unavailable` errors and retains no browser
 artifacts. Separate artifacts record one automated accessibility scan, one
 bounded keyboard interaction, and one read-only Activity View observation. A
 machine-readable evidence index catalogs the normalized export and six result
-families without composing their scopes or adding a verdict. This is a bounded
-target-process experiment, not a completed migration, accessibility-conformance
-assessment, customer result, employer deliverable, or claim of CiviCRM-wide
-portability.
+families without composing their scopes or adding a verdict. Byte lengths and
+SHA-256 digests bind the exact generated set for internal consistency without
+claiming authenticity. This is a bounded target-process experiment, not a
+completed migration, accessibility-conformance assessment, customer result,
+employer deliverable, or claim of CiviCRM-wide portability.
 
 ## Evidence in the repository
 
@@ -67,7 +68,7 @@ portability.
   [`scripts/check_civicrm_target_roundtrip_demo.py`](../scripts/check_civicrm_target_roundtrip_demo.py)
   verifies the frozen clean capture, intentional structural failure, and five
   adversarial controls offline. The normalizer also emits a closed
-  `evidence-index.json` catalog with no composite status or score.
+  digest-bound `evidence-index.json` catalog with no composite status or score.
 - Aggregate-only receipts, semantic verification, and offline replay are covered
   by [`src/exitdrill/receipt.py`](../src/exitdrill/receipt.py),
   [`tests/test_receipt.py`](../tests/test_receipt.py), and the end-to-end CLI tests

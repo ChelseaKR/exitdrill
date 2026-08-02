@@ -19,7 +19,7 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
-from exitdrill.canonical import canonical_json_bytes
+from exitdrill.canonical import canonical_json_bytes, sha256_bytes
 
 if TYPE_CHECKING:
     from exitdrill.models import JsonValue
@@ -33,7 +33,7 @@ _BROWSER_RESULT_SCHEMA = "exitdrill/civicrm-browser-workflow-result/v0.1"
 _ACCESSIBILITY_RESULT_SCHEMA = "exitdrill/civicrm-accessibility-result/v0.1"
 _KEYBOARD_RESULT_SCHEMA = "exitdrill/civicrm-keyboard-result/v0.1"
 _ACTIVITY_VIEW_RESULT_SCHEMA = "exitdrill/civicrm-activity-view-result/v0.1"
-_EVIDENCE_INDEX_SCHEMA = "exitdrill/civicrm-evidence-index/v0.1"
+_EVIDENCE_INDEX_SCHEMA = "exitdrill/civicrm-evidence-index/v0.2"
 _SOURCE_SYSTEM = "Directus 11.17.4 synthetic civic-case sandbox"
 _TARGET_SYSTEM = "CiviCRM Standalone"
 _TARGET_VERSION = "6.16.2"
@@ -261,6 +261,7 @@ _EVIDENCE_INDEX_LIMITATIONS = (
     "entries_have_independent_decision_scopes",
     "normalized_export_requires_separate_baseline_evaluation",
     "each_result_must_be_interpreted_with_its_own_limitations",
+    "digests_prove_internal_consistency_not_authenticity",
     "target_version_and_execution_context_are_operator_asserted",
 )
 _CONTACT_KEYS = frozenset(
@@ -974,8 +975,8 @@ def _activity_view_result() -> dict[str, JsonValue]:
     }
 
 
-def _evidence_index() -> dict[str, JsonValue]:
-    entries = [
+def _evidence_index(artifacts: Mapping[str, bytes]) -> dict[str, JsonValue]:
+    entries: list[dict[str, JsonValue]] = [
         {
             "artifact_id": "normalized_target_readback",
             "decision_scope": "normalized_target_readback_for_structural_evaluation",
@@ -1019,6 +1020,10 @@ def _evidence_index() -> dict[str, JsonValue]:
             "schema_version": _ACTIVITY_VIEW_RESULT_SCHEMA,
         },
     ]
+    for entry in entries:
+        content = artifacts[cast("str", entry["filename"])]
+        entry["bytes"] = len(content)
+        entry["sha256"] = sha256_bytes(content)
     return {
         "decision_scope": "separate_non_composite_evidence_families",
         "entries": cast("list[JsonValue]", entries),
@@ -1242,25 +1247,21 @@ def _write_output(
     try:
         attachment_dir = temporary / "export-files" / "attachments"
         attachment_dir.mkdir(parents=True)
-        (temporary / "export.json").write_bytes(export_document)
+        artifacts = {
+            "export.json": export_document,
+            "target-result.json": canonical_json_bytes(result) + b"\n",
+            "ui-surface-result.json": canonical_json_bytes(ui_result) + b"\n",
+            "browser-workflow-result.json": canonical_json_bytes(browser_result) + b"\n",
+            "accessibility-result.json": canonical_json_bytes(accessibility_result) + b"\n",
+            "keyboard-result.json": canonical_json_bytes(keyboard_result) + b"\n",
+            "activity-view-result.json": canonical_json_bytes(activity_view_result) + b"\n",
+        }
+        for filename, content in artifacts.items():
+            (temporary / filename).write_bytes(content)
         for source_id, content in copies:
             (attachment_dir / f"{source_id}.txt").write_bytes(content)
-        (temporary / "target-result.json").write_bytes(canonical_json_bytes(result) + b"\n")
-        (temporary / "ui-surface-result.json").write_bytes(canonical_json_bytes(ui_result) + b"\n")
-        (temporary / "browser-workflow-result.json").write_bytes(
-            canonical_json_bytes(browser_result) + b"\n"
-        )
-        (temporary / "accessibility-result.json").write_bytes(
-            canonical_json_bytes(accessibility_result) + b"\n"
-        )
-        (temporary / "keyboard-result.json").write_bytes(
-            canonical_json_bytes(keyboard_result) + b"\n"
-        )
-        (temporary / "activity-view-result.json").write_bytes(
-            canonical_json_bytes(activity_view_result) + b"\n"
-        )
         (temporary / "evidence-index.json").write_bytes(
-            canonical_json_bytes(_evidence_index()) + b"\n"
+            canonical_json_bytes(_evidence_index(artifacts)) + b"\n"
         )
         if out_dir.exists() or out_dir.is_symlink():
             raise _fail("output directory already exists")

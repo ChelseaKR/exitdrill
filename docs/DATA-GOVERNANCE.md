@@ -47,8 +47,10 @@ excludes the synthetic subject, route parameters, activity/contact/case IDs,
 HTML, screenshots, traces, and credentials.
 The generated evidence index contains only fixed artifact identifiers,
 filenames, schema identifiers, decision scopes, the pinned profile, and fixed
-limitations. It contains no raw record fields, identifiers, credentials,
-browser content, paths, probe states, findings, scores, or conclusions.
+limitations, plus artifact byte lengths and SHA-256 digests. It contains no raw
+record fields, identifiers, credentials, browser content, paths, probe states,
+findings, scores, or conclusions. The digests can still disclose whether a
+holder has an exact known synthetic artifact, but they are not keyed or signed.
 
 Receipts contain aggregates and input digests, not record fields or attachment
 content. Normalized exports necessarily contain the synthetic record fields and

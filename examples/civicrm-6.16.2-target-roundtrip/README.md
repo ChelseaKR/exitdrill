@@ -162,9 +162,11 @@ verdicts. None modifies the target probe algebra or structural result.
 
 `evidence-index.json` is a seventh, non-evaluative artifact: a closed catalog of
 `export.json` and the six result files. It records only each artifact's fixed
-identifier, filename, schema, and independent decision scope. It contains no
-status, score, pass count, priority, or inferred conclusion, and it does not
-replace schema validation or the structural evaluator.
+identifier, filename, schema, independent decision scope, byte length, and
+SHA-256 digest. It contains no status, score, pass count, priority, or inferred
+conclusion, and it does not replace schema validation or the structural
+evaluator. The unsigned digests detect internal inconsistency but do not
+authenticate who produced the files or whether the lab assertions are true.
 
 The live capture gate and offline acceptance gate are distinct. The live harness
 may publish a bundle only after its fresh sandbox, source normalization, target
