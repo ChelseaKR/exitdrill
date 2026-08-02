@@ -32,8 +32,9 @@ permission model.
 - `paths.py` is the single attachment-root boundary. Attachment size checks and
   hashing share one open descriptor, so a path replacement after open cannot
   change the bytes being measured.
-- `evaluator.py` compares independent denominators, validates field shapes and
-  attachment bytes, and loads a foreign-key-enforced reference model.
+- `evaluator.py` compares independent denominators, validates declared critical
+  field values and attachment bytes, and loads a foreign-key-enforced reference
+  model.
 - `models.py` defines dimension and overall result algebra.
 - `receipt.py` builds aggregate-only deterministic payloads through
   collision-resistant temporary files and verifies exact, closed
@@ -61,9 +62,9 @@ The canonical model is an adapter boundary, not proof of successful exit.
 
 ## Data contracts
 
-The baseline records expected identities, required field shapes, and exact
-audit action/time tuples. It is an operator assertion, not ground truth. The
-normalized export records:
+The baseline records expected identities, exact scalar values for its declared
+required fields, and exact audit action/time tuples. It is an operator
+assertion, not ground truth. The normalized export records:
 
 - entities with scalar fields;
 - directed typed relationships;
@@ -75,6 +76,11 @@ The receipt emits none of those record-level identifiers or values. It emits
 aggregate counts, dimension statuses, source-document hashes, and limitations.
 `observed_remediation_signals` sums observed missing and invalid conditions; it
 is deliberately not called a minimum task count, cost, or RTO estimate.
+
+Entity value comparison is exact and bounded to the baseline's required-field
+assertions. Each entity contributes at most one invalid count even if several
+declared fields are missing, mistyped, or unequal. Undeclared fields remain
+outside the denominator.
 
 ## Result algebra
 
@@ -143,6 +149,7 @@ signals, and assessments.
 The current evaluator records:
 
 - exact baseline and normalized-export digests;
+- exact equality for baseline-declared required entity fields;
 - observed attachment-byte fidelity;
 - dimension numerators and denominators;
 - reference restore success; and

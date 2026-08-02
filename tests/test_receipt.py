@@ -53,6 +53,8 @@ def _replace_first_dimension(payload: dict[str, object]) -> None:
 def test_receipt_checksum_and_untrusted_envelope(example_root: Path) -> None:
     receipt = _receipt(example_root)
     assert verify_receipt(receipt) == receipt["payload_sha256"]  # type: ignore[arg-type]
+    assert receipt["schema_version"] == "exitdrill/receipt/v0.3"
+    assert receipt["payload"]["schema_version"] == "exitdrill/drill-result/v0.3"  # type: ignore[index]
     assert receipt["envelope"]["trusted_time"] is False  # type: ignore[index]
 
 
@@ -118,7 +120,7 @@ def test_write_and_load_receipt(tmp_path: Path, example_root: Path) -> None:
 def test_write_rejects_invalid_receipt_before_filesystem_mutation(tmp_path: Path) -> None:
     parent = tmp_path / "not-created"
     path = parent / "receipt.json"
-    forged = {"schema_version": "exitdrill/receipt/v0.2"}
+    forged = {"schema_version": "exitdrill/receipt/v0.3"}
 
     with pytest.raises(ReceiptError, match="missing field"):
         write_receipt(path, forged)  # type: ignore[arg-type]
@@ -259,8 +261,8 @@ def test_load_rejects_duplicate_receipt_key(tmp_path: Path, example_root: Path) 
     receipt = _receipt(example_root)
     content = json.dumps(receipt)
     content = content.replace(
-        '"schema_version": "exitdrill/receipt/v0.2"',
-        ('"schema_version": "exitdrill/receipt/v0.2", "schema_version": "exitdrill/receipt/v0.2"'),
+        '"schema_version": "exitdrill/receipt/v0.3"',
+        ('"schema_version": "exitdrill/receipt/v0.3", "schema_version": "exitdrill/receipt/v0.3"'),
         1,
     )
     path = tmp_path / "receipt.json"

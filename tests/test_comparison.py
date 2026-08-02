@@ -499,8 +499,8 @@ def test_files_are_strictly_validated_and_paths_are_not_serialized(
     assert candidate_path.name not in encoded
 
     malformed = json.dumps(_good_receipt(example_root)).replace(
-        '"schema_version": "exitdrill/receipt/v0.2"',
-        '"schema_version": "exitdrill/receipt/v0.2", "schema_version": "exitdrill/receipt/v0.2"',
+        '"schema_version": "exitdrill/receipt/v0.3"',
+        '"schema_version": "exitdrill/receipt/v0.3", "schema_version": "exitdrill/receipt/v0.3"',
         1,
     )
     candidate_path.write_text(malformed, encoding="utf-8")

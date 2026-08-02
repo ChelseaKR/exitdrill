@@ -3,9 +3,10 @@
 ## Current permitted data
 
 The current release permits only invented synthetic baselines, exports,
-identities, cases, permissions, history, and attachment bytes. Those fixtures
-are non-sensitive and committed for reproducibility. No production-derived or
-merely “deidentified” vendor export is permitted.
+identities, cases, critical-field expected values, permissions, history, and
+attachment bytes. Those fixtures are non-sensitive and committed for
+reproducibility. No production-derived or merely “deidentified” vendor export
+is permitted.
 
 Receipts contain aggregates and input digests, not record fields or attachment
 content. Generated receipts are disposable local artifacts and ignored by

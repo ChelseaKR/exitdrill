@@ -501,6 +501,73 @@ def test_drill_and_replay_cli(
     assert _stdout(capsys)["replayed"] is True
 
 
+def test_same_type_value_loss_fails_drill_and_clean_receipt_replay(
+    copied_example: Path,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    baseline = copied_example / "baseline.json"
+    export = copied_example / "export.json"
+    attachment_root = copied_example / "export-files"
+    clean_receipt = tmp_path / "clean-receipt.json"
+    common = [str(baseline), str(export)]
+    assert (
+        main(
+            [
+                "drill",
+                *common,
+                "--attachment-root",
+                str(attachment_root),
+                "--out",
+                str(clean_receipt),
+            ]
+        )
+        == 0
+    )
+    _stdout(capsys)
+
+    raw = json.loads(export.read_text(encoding="utf-8"))
+    raw["entities"][0]["fields"]["display_name"] = "Different synthetic string"
+    export.write_text(json.dumps(raw), encoding="utf-8")
+
+    assert (
+        main(
+            [
+                "verify",
+                str(clean_receipt),
+                "--baseline",
+                common[0],
+                "--export",
+                common[1],
+                "--attachment-root",
+                str(attachment_root),
+            ]
+        )
+        == 2
+    )
+    assert "does not match a fresh drill replay" in capsys.readouterr().err
+
+    failed_receipt = tmp_path / "failed-receipt.json"
+    assert (
+        main(
+            [
+                "drill",
+                *common,
+                "--attachment-root",
+                str(attachment_root),
+                "--out",
+                str(failed_receipt),
+            ]
+        )
+        == 2
+    )
+    output = _stdout(capsys)
+    assert output["overall_status"] == "not_structurally_restorable"
+    encoded = failed_receipt.read_text(encoding="utf-8")
+    assert "Synthetic Person" not in encoded
+    assert "Different synthetic string" not in encoded
+
+
 def test_verify_without_replay(
     tmp_path: Path,
     example_root: Path,
