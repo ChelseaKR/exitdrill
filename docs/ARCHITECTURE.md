@@ -281,6 +281,11 @@ the normalized export through the existing strict loader. Its bounded export
 attachment reads verify every declared content digest. It does not run the
 structural evaluator or interpret the observations, and its success scope is
 explicitly `catalog_bindings_artifact_schemas_and_export_attachments_only`.
+The command emits a separate closed
+`exitdrill/civicrm-evidence-verification/v0.1` document. Its own
+`schema_version` is distinct from `index_schema_version`, and fixed limitations
+prevent a binding/schema success from being represented as authenticated,
+complete, interpreted, or structurally restorable evidence.
 
 ## Data contracts
 

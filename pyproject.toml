@@ -45,6 +45,7 @@ packages = ["src/exitdrill"]
 "schemas/civicrm-activity-view-result-v0.1.schema.json" = "exitdrill/schemas/civicrm-activity-view-result-v0.1.schema.json"
 "schemas/civicrm-evidence-index-v0.1.schema.json" = "exitdrill/schemas/civicrm-evidence-index-v0.1.schema.json"
 "schemas/civicrm-evidence-index-v0.2.schema.json" = "exitdrill/schemas/civicrm-evidence-index-v0.2.schema.json"
+"schemas/civicrm-evidence-verification-v0.1.schema.json" = "exitdrill/schemas/civicrm-evidence-verification-v0.1.schema.json"
 
 [tool.ruff]
 line-length = 100

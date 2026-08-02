@@ -179,6 +179,10 @@ The command's success scope is
 the packaged index and result schemas, the normalized export contract, and its
 declared attachment bytes. It does not interpret any finding, run the structural
 evaluator, authenticate the files, or prove live execution.
+Its stdout uses the separate closed
+`exitdrill/civicrm-evidence-verification/v0.1` schema, identifies the verified
+v0.2 index in `index_schema_version`, and carries fixed limitations with the
+success status.
 
 The live capture gate and offline acceptance gate are distinct. The live harness
 may publish a bundle only after its fresh sandbox, source normalization, target

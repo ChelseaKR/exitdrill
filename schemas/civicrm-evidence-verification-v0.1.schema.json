@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://exitdrill.example/schemas/civicrm-evidence-verification-v0.1.schema.json",
+  "title": "ExitDrill CiviCRM evidence verification v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "artifact_count",
+    "attachment_count",
+    "decision_scope",
+    "index_schema_version",
+    "limitations",
+    "schema_version",
+    "status",
+    "target_profile"
+  ],
+  "properties": {
+    "artifact_count": {"const": 7},
+    "attachment_count": {"const": 2},
+    "decision_scope": {
+      "const": "catalog_bindings_artifact_schemas_and_export_attachments_only"
+    },
+    "index_schema_version": {"const": "exitdrill/civicrm-evidence-index/v0.2"},
+    "limitations": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "prefixItems": [
+        {"const": "verification_is_unsigned_and_unauthenticated"},
+        {"const": "does_not_interpret_or_compose_artifact_results"},
+        {"const": "does_not_run_structural_evaluator"},
+        {"const": "does_not_prove_live_execution_or_completeness"},
+        {"const": "digests_prove_internal_consistency_not_authenticity"}
+      ],
+      "items": false
+    },
+    "schema_version": {"const": "exitdrill/civicrm-evidence-verification/v0.1"},
+    "status": {"const": "evidence_artifact_contracts_verified"},
+    "target_profile": {
+      "const": "directus-11.17.4-civic-case-to-civicrm-standalone-6.16.2/v0.1"
+    }
+  }
+}
