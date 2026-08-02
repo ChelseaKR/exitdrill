@@ -88,6 +88,7 @@ const capturePaths = [
   "ui-contact-summary.json",
   "browser-workflow.json",
   "browser-accessibility.json",
+  "browser-keyboard.json",
   `assets/${firstAssetId}.txt`,
   `assets/${secondAssetId}.txt`,
 ];
@@ -1953,7 +1954,11 @@ async function captureReadback(runtime, fixture, principals, stageDir) {
   }
 
   const browserRun = await runtime.browserWorkflow(reader);
-  requireExact(Object.keys(browserRun).sort(), ["accessibility", "workflow"], "browser run fields");
+  requireExact(
+    Object.keys(browserRun).sort(),
+    ["accessibility", "keyboard", "workflow"],
+    "browser run fields",
+  );
   const browserObservation = requireObject(browserRun.workflow, "browser workflow observation");
   requireExact(
     browserObservation,
@@ -2002,6 +2007,24 @@ async function captureReadback(runtime, fixture, principals, stageDir) {
       ],
     },
     "browser accessibility observation",
+  );
+  const keyboardObservation = requireObject(browserRun.keyboard, "browser keyboard observation");
+  requireExact(
+    keyboardObservation,
+    {
+      browser_engine: "chromium",
+      data_mode: "synthetic_only",
+      retained_artifacts: [],
+      schema_version: "exitdrill/civicrm-keyboard-observation/v0.1",
+      steps: [
+        "roles_summary_reached_by_tab",
+        "roles_summary_closed_by_enter",
+        "roles_summary_reopened_by_space",
+      ],
+      tab_steps_to_roles_summary: 69,
+      target_profile: targetProfile,
+    },
+    "browser keyboard observation",
   );
 
   const downloadedAssets = new Map();
@@ -2052,6 +2075,7 @@ async function captureReadback(runtime, fixture, principals, stageDir) {
     ],
     ["browser-workflow.json", jsonDocument(browserObservation)],
     ["browser-accessibility.json", jsonDocument(accessibilityObservation)],
+    ["browser-keyboard.json", jsonDocument(keyboardObservation)],
     [`assets/${firstAssetId}.txt`, downloadedAssets.get(firstAssetId)],
     [`assets/${secondAssetId}.txt`, downloadedAssets.get(secondAssetId)],
   ]);
@@ -2126,7 +2150,7 @@ function buildManifest(metadata, sourceNormalization) {
       database: databaseImage,
     },
     acquisition_surface:
-      "supported_api_v4_authenticated_private_file_readback_authenticated_server_rendered_ui_isolated_browser_workflow_and_automated_accessibility_scan",
+      "supported_api_v4_authenticated_private_file_readback_authenticated_server_rendered_ui_isolated_browser_workflow_automated_accessibility_scan_and_keyboard_interaction",
     source_normalization: sourceNormalization,
     sandbox: {
       application_empty_before_write: true,
@@ -2196,6 +2220,7 @@ function buildManifest(metadata, sourceNormalization) {
       "browser_workflow_observed_with_known_jquery_notify_runtime_errors",
       "browser_workflow_does_not_prove_accessibility",
       "automated_accessibility_scan_does_not_establish_wcag_conformance",
+      "single_programmatic_keyboard_interaction_does_not_establish_keyboard_accessibility",
     ],
   };
 }

@@ -20,6 +20,9 @@ All notable changes will be documented here.
 
 ### Added
 
+- A fifth CiviCRM evidence family that records one bounded keyboard interaction:
+  the Roles disclosure is reached after 69 Tab presses, closes with Enter, and
+  reopens with Space, without claiming complete keyboard accessibility.
 - A fourth CiviCRM evidence family: pinned axe-core 4.12.1 scans the isolated
   synthetic Manage Case document, retains only aggregate rule counts and
   sanitized violation IDs/impacts/node counts, reports two serious findings,

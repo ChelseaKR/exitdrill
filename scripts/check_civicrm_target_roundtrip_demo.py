@@ -33,6 +33,7 @@ TARGET_RESULT_NAME = "target-result.json"
 UI_RESULT_NAME = "ui-surface-result.json"
 BROWSER_RESULT_NAME = "browser-workflow-result.json"
 ACCESSIBILITY_RESULT_NAME = "accessibility-result.json"
+KEYBOARD_RESULT_NAME = "keyboard-result.json"
 PROBE_IDS = (
     "record_lookup",
     "relationship_traversal",
@@ -421,6 +422,39 @@ def _assert_clean_accessibility_result(document: Mapping[str, object]) -> None:
     )
 
 
+def _assert_clean_keyboard_result(document: Mapping[str, object]) -> None:
+    _require(
+        document
+        == {
+            "decision_scope": "pinned_synthetic_manage_case_keyboard_interaction_only",
+            "limitations": [
+                "synthetic_fixture_only",
+                "target_evidence_is_unsigned_and_unauthenticated",
+                "single_manage_case_roles_disclosure_only",
+                "programmatic_keyboard_events_only",
+                "does_not_cover_complete_tab_order",
+                "does_not_assess_visible_focus_indicator",
+                "does_not_cover_screen_reader_behavior",
+                "does_not_establish_keyboard_accessibility",
+                "does_not_establish_wcag_conformance",
+                "target_version_and_execution_context_are_operator_asserted",
+            ],
+            "observation": {
+                "browser_engine": "chromium",
+                "steps": [
+                    "roles_summary_reached_by_tab",
+                    "roles_summary_closed_by_enter",
+                    "roles_summary_reopened_by_space",
+                ],
+                "tab_steps_to_roles_summary": 69,
+            },
+            "schema_version": "exitdrill/civicrm-keyboard-result/v0.1",
+            "target_profile": TARGET_PROFILE,
+        },
+        "clean keyboard result was not exact",
+    )
+
+
 def _assert_aggregate_privacy(value: object, roots: tuple[Path, ...]) -> None:
     def walk(item: object) -> None:
         if isinstance(item, dict):
@@ -522,6 +556,8 @@ def main() -> None:
         _assert_clean_browser_result(clean_browser_result)
         clean_accessibility_result = _json_object(clean_a / ACCESSIBILITY_RESULT_NAME)
         _assert_clean_accessibility_result(clean_accessibility_result)
+        clean_keyboard_result = _json_object(clean_a / KEYBOARD_RESULT_NAME)
+        _assert_clean_keyboard_result(clean_keyboard_result)
 
         committed_target_digest = _tree_digest(TARGET_NATIVE)
         builder_stderr = _build_adversaries(TARGET_NATIVE, adversaries)
@@ -620,6 +656,7 @@ def main() -> None:
             "clean_ui_surface": clean_ui_result,
             "clean_browser_workflow": clean_browser_result,
             "clean_accessibility": clean_accessibility_result,
+            "clean_keyboard": clean_keyboard_result,
             "directus_normalization": directus_result,
             "permission_escalation_target": permission_result,
         }
@@ -634,6 +671,7 @@ def main() -> None:
                     "clean_target_probe_passes": 5,
                     "clean_browser_workflow_observations": 1,
                     "clean_accessibility_serious_violations": 2,
+                    "clean_keyboard_tab_steps_to_roles_summary": 69,
                     "clean_ui_surface_observations": 1,
                     "source_profile": SOURCE_PROFILE,
                     "status": "civicrm_target_roundtrip_canary_verified",

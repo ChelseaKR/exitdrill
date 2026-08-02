@@ -11,8 +11,8 @@ The accepted profile is
 source-to-target lab, not a generic CiviCRM adapter. Its `native/` bundle
 contains fixed API read-back envelopes, identity-separation evidence,
 permission-probe outcomes, and attachment bytes from the disposable target.
-It also contains separate sanitized browser-workflow and automated-accessibility
-observations.
+It also contains separate sanitized browser-workflow, automated-accessibility,
+and keyboard-interaction observations.
 The profile verifier must reject any other version, file inventory, sandbox
 posture, identity shape, or response shape rather than infer a mapping.
 
@@ -58,6 +58,13 @@ passing rules, 0 incomplete, 29 inapplicable, and two serious violations:
 `color-contrast` on four nodes and `link-in-text-block` on two nodes. Automated
 coverage is partial and does not establish WCAG conformance; keyboard,
 screen-reader, focus, and zoom/reflow testing remain unperformed.
+
+`browser-keyboard.json` separately records one programmatic keyboard path from
+the document start. The Roles disclosure receives focus after 69 Tab presses,
+closes with Enter, and reopens with Space. The projection retains no focused
+element labels, selectors, DOM paths, screenshots, or HTML. This is not a
+complete tab-order, visible-focus, keyboard-accessibility, screen-reader, or
+WCAG-conformance result.
 
 Source-mapped business-state read-back never uses the writer credential or its
 in-memory mutation responses. A separate AuthX identity envelope records writer
@@ -139,11 +146,12 @@ result. The generated `target-result.json` records only bounded probe
 observations and represented, unmapped, or target-generated counts; it has no
 composite restoration status.
 
-The generated `ui-surface-result.json`, `browser-workflow-result.json`, and
-`accessibility-result.json` are separate evidence families. The browser result
-supports only the single task described above. The accessibility result reports
-only the bounded automated findings and is not a conformance verdict. Neither
-modifies the target probe algebra or structural result.
+The generated `ui-surface-result.json`, `browser-workflow-result.json`,
+`accessibility-result.json`, and `keyboard-result.json` are separate evidence
+families. The browser result supports only the single task described above. The
+accessibility and keyboard results report only their bounded observations and
+are not conformance verdicts. None modifies the target probe algebra or
+structural result.
 
 The live capture gate and offline acceptance gate are distinct. The live harness
 may publish a bundle only after its fresh sandbox, source normalization, target
@@ -178,8 +186,9 @@ This evidence supports only the statement that one pinned synthetic Directus
 API-response profile was mapped into one pinned CiviCRM 6.16.2 sandbox, five
 declared target-interface probes and one Dashboard → Manage Case browser task
 were observed, one bounded automated accessibility scan reported the exact
-findings above, and the unchanged structural evaluator reported the six known
-source-to-target gaps.
+findings above, one disclosure's programmatic keyboard behavior was observed,
+and the unchanged structural evaluator reported the six known source-to-target
+gaps.
 
 It does **not** establish:
 

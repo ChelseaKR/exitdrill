@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://exitdrill.example/schemas/civicrm-keyboard-result-v0.1.schema.json",
+  "title": "ExitDrill CiviCRM keyboard interaction result v0.1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["decision_scope", "limitations", "observation", "schema_version", "target_profile"],
+  "properties": {
+    "decision_scope": {"const": "pinned_synthetic_manage_case_keyboard_interaction_only"},
+    "limitations": {
+      "const": [
+        "synthetic_fixture_only",
+        "target_evidence_is_unsigned_and_unauthenticated",
+        "single_manage_case_roles_disclosure_only",
+        "programmatic_keyboard_events_only",
+        "does_not_cover_complete_tab_order",
+        "does_not_assess_visible_focus_indicator",
+        "does_not_cover_screen_reader_behavior",
+        "does_not_establish_keyboard_accessibility",
+        "does_not_establish_wcag_conformance",
+        "target_version_and_execution_context_are_operator_asserted"
+      ]
+    },
+    "observation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["browser_engine", "steps", "tab_steps_to_roles_summary"],
+      "properties": {
+        "browser_engine": {"const": "chromium"},
+        "steps": {
+          "const": [
+            "roles_summary_reached_by_tab",
+            "roles_summary_closed_by_enter",
+            "roles_summary_reopened_by_space"
+          ]
+        },
+        "tab_steps_to_roles_summary": {"const": 69}
+      }
+    },
+    "schema_version": {"const": "exitdrill/civicrm-keyboard-result/v0.1"},
+    "target_profile": {
+      "const": "directus-11.17.4-civic-case-to-civicrm-standalone-6.16.2/v0.1"
+    }
+  }
+}

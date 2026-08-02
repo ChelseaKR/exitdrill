@@ -146,6 +146,24 @@ try {
       };
     })
     .sort((left, right) => left.rule_id.localeCompare(right.rule_id));
+  currentStep = "keyboard_roles_summary_navigation";
+  const rolesSummary = roles.locator("summary");
+  await page.evaluate(() => document.activeElement?.blur());
+  let tabStepsToRolesSummary = null;
+  for (let tabStep = 1; tabStep <= 80; tabStep += 1) {
+    await page.keyboard.press("Tab");
+    if (await rolesSummary.evaluate((element) => element === document.activeElement)) {
+      tabStepsToRolesSummary = tabStep;
+      break;
+    }
+  }
+  if (tabStepsToRolesSummary === null) fail();
+  currentStep = "keyboard_roles_summary_enter";
+  await page.keyboard.press("Enter");
+  if (await roles.evaluate((element) => element.open)) fail();
+  currentStep = "keyboard_roles_summary_space";
+  await page.keyboard.press("Space");
+  if (!(await roles.evaluate((element) => element.open))) fail();
   currentStep = "runtime_integrity";
   const expectedPageErrors = [
     {
@@ -184,6 +202,20 @@ try {
         target_profile:
           "directus-11.17.4-civic-case-to-civicrm-standalone-6.16.2/v0.1",
         violations,
+      },
+      keyboard: {
+        browser_engine: "chromium",
+        data_mode: "synthetic_only",
+        retained_artifacts: [],
+        schema_version: "exitdrill/civicrm-keyboard-observation/v0.1",
+        steps: [
+          "roles_summary_reached_by_tab",
+          "roles_summary_closed_by_enter",
+          "roles_summary_reopened_by_space",
+        ],
+        tab_steps_to_roles_summary: tabStepsToRolesSummary,
+        target_profile:
+          "directus-11.17.4-civic-case-to-civicrm-standalone-6.16.2/v0.1",
       },
       workflow: {
         browser_engine: "chromium",

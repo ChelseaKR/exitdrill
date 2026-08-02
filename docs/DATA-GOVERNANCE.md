@@ -37,6 +37,10 @@ fixed rule tags, aggregate rule counts, and sanitized violation rule IDs,
 impacts, and node counts. It excludes selectors, HTML snippets, help text, URLs,
 screenshots, and traces. Its aggregate result adds fixed scope limitations but
 no record values or browser artifacts.
+The native keyboard projection contains only fixed semantic step keys, the
+Chromium engine key, an aggregate Tab count, and an empty artifact list. It
+retains no focused-element labels, accessible names, selectors, DOM paths, HTML,
+screenshots, or traces.
 
 Receipts contain aggregates and input digests, not record fields or attachment
 content. Normalized exports necessarily contain the synthetic record fields and

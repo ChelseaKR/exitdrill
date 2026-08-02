@@ -139,7 +139,9 @@ one bounded task, not general UI proof. A separate axe-core observation reports
 32 passing automated rules and two serious findings—color contrast and links
 distinguished only by color—without retaining selectors or HTML. It is not a
 WCAG conformance claim, and keyboard, screen-reader, focus, and zoom/reflow
-testing remain undone. Crucially, those
+testing remain undone. A following bounded check reaches the Roles disclosure
+after 69 Tab presses and activates it with Enter and Space; the unusually deep
+position is evidence, not a keyboard-accessibility pass. Crucially, those
 observations do not hide the result: the unchanged evaluator still reports six
 source permission, audit, and collection-scope gaps and remains
 `not_structurally_restorable`. The next credible milestone is a second real

@@ -67,6 +67,9 @@ general usability or unobserved-workflow claim. A fourth result reports one
 sanitized automated accessibility scan, including two serious findings, while
 explicitly withholding any WCAG conformance claim and naming the keyboard,
 screen-reader, focus, and zoom/reflow work that automation cannot replace.
+A fifth result makes one programmatic keyboard path visible—including the 69
+Tab presses needed to reach the Roles disclosure—without labeling that path a
+pass or general keyboard-accessibility result.
 
 ## Accountability
 
