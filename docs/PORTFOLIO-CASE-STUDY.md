@@ -13,6 +13,15 @@ structural losses, and the evaluator detects those losses. This is a synthetic
 engineering case study—not a client engagement, employer deliverable, corporate
 past-performance claim, or proof of an operational migration.
 
+The next evidence slice uses a pinned, local Directus 11.17.4 process with an
+invented civic-case schema. A reviewed capture script collected documented
+first-party API responses and attachment bytes; a closed source-specific
+normalizer verifies that manifest and maps it into the existing evaluator
+contract. A deterministic equal-row-and-file-count derivative introduces six
+different mutations, and the drill reports exactly six observed missing/invalid
+signals. This remains a personal synthetic lab, not Directus-wide or
+nonprofit-CRM validation.
+
 ## Evidence in the repository
 
 - Five-dimension evaluation, exact comparisons for baseline-declared critical
@@ -22,6 +31,14 @@ past-performance claim, or proof of an operational migration.
 - The equal-row-count adversarial scenario is encoded in
   [`examples/synthetic-crm-lossy/`](../examples/synthetic-crm-lossy/) and asserted
   in [`tests/test_lossy_demo.py`](../tests/test_lossy_demo.py).
+- The real-process synthetic source fixture, independent baseline, capture
+  boundary, and claim limits are documented in
+  [`examples/directus-11.17.4-civic-case/`](../examples/directus-11.17.4-civic-case/).
+- The closed Directus capture normalization seam is implemented in
+  [`src/exitdrill/directus_canary.py`](../src/exitdrill/directus_canary.py). The
+  one-command clean-vs-lossy acceptance demonstration is
+  [`scripts/check_directus_canary_demo.py`](../scripts/check_directus_canary_demo.py)
+  and is enforced by [`tests/test_directus_demo.py`](../tests/test_directus_demo.py).
 - Aggregate-only receipts, semantic verification, and offline replay are covered
   by [`src/exitdrill/receipt.py`](../src/exitdrill/receipt.py),
   [`tests/test_receipt.py`](../tests/test_receipt.py), and the end-to-end CLI tests
@@ -43,15 +60,18 @@ data into a neutral reference model, and produces replayable aggregate evidence.
 It does **not** support claims of production use, customer adoption, client
 delivery, a completed migration, portability, exit readiness, operational
 equivalence, authenticated evidence, legal compliance, savings, or successful
-cutover to another SaaS product. It currently has no live source connector,
-native-export proof, production-capable target adapter, or workflow read-back.
+cutover to another SaaS product. The Directus evidence supports only one frozen
+11.17.4 synthetic source profile captured through documented APIs. ExitDrill
+still has no supported live connector, production-capable target adapter, or
+workflow read-back.
 
 ## Resume bullet
 
 - Built ExitDrill, an offline Python technical alpha that tests synthetic SaaS
-  exports across five structural dimensions, verifies baseline-declared critical
-  field values, and detects adversarial data loss hidden by unchanged row counts,
-  with replayable aggregate receipts and a standalone evidence report.
+  exports across five structural dimensions; added a pinned Directus 11.17.4
+  synthetic API-response capture canary that reproducibly detects six declared
+  adversarial losses hidden by unchanged row and file counts, with replayable
+  aggregate receipts and standalone evidence reports.
 
 ## 60-second interview version
 
@@ -69,6 +89,11 @@ while replacing an entity, rewiring a relationship, corrupting an attachment,
 collapsing a permission, and replacing an audit event; the drill surfaces the
 losses. I also added a deterministic, script-free HTML evidence report and strict
 quality gates. The boundary matters: this demonstrates a synthetic structural
-test, not a production migration or operational exit readiness. The next
-credible milestone is one lawful native-format export generated from an isolated
-synthetic sandbox, followed by target read-back and workflow probes.
+test, not a production migration or operational exit readiness. I then moved one
+seam closer to a real source: a capture program collected documented first-party
+API responses and attachment bytes from a pinned local Directus 11.17.4 sandbox
+and assembled the committed custom capture bundle. A closed normalizer verifies
+those bytes and an equal-count derivative creates six exact loss signals without
+changing the evaluator. That evidence is limited to the frozen synthetic
+profile. The next credible milestone is a nonprofit-relevant source such as an
+isolated CiviCRM lab, followed by target read-back and workflow probes.

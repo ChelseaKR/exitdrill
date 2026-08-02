@@ -1,7 +1,7 @@
 # Threat model
 
-**Scope:** current synthetic, offline structural evaluator
-**Reviewed:** 2026-07-22
+**Scope:** current synthetic, offline structural evaluator and bounded Directus canary normalizer
+**Reviewed:** 2026-08-01
 
 | Threat or failure | Current control | Residual risk |
 |---|---|---|
@@ -27,6 +27,16 @@
 | Aggregate movement is attributed to vendor change | fixed limitation states that receipts do not bind export-generation or evaluator versions | a tooling or preparation change can alter aggregates without a vendor change |
 | CI assigns ordinal meaning to an uncertain or nonordinal transition | opt-in policy exit inspects only explicit missing/invalid increases and leaves JSON unchanged | partial coverage can still directly observe an increase, so exit 3 does not make the overall assessment certain |
 | Export formula/script payload | fields are treated as scalar data and never rendered or executed | future target adapters could introduce injection |
+| Capture manifest omits or substitutes a declared file | closed profile, exact file set, byte sizes, per-file SHA-256, and aggregate bundle digest are checked before mapping | hashes are unauthenticated and cannot prove the source produced a complete export |
+| Capture path traversal or symlink substitution | fixed relative-path allowlist, regular-file/no-follow checks, bounded reads, and fresh atomic output directory | an operator can still select a fabricated but internally consistent bundle; concurrent parent-directory replacement remains platform-dependent |
+| Hash-refreshed schema drift stays inside the profile | the adapter pins the exact captured schema-document SHA-256 and also validates its closed structural shape | the pinned synthetic schema does not establish semantics for other Directus configurations |
+| Normalization output corrupts its own source bundle | resolved output paths equal to or beneath the capture root are rejected | concurrent parent-path replacement remains platform-dependent |
+| Concurrent output collision bypasses no-clobber intent | sequential preflight checks and same-filesystem atomic directory rename | the normalizer or builder can still replace a concurrently created empty output directory or symlink; both are single-operator local tools |
+| Source adapter changes evaluator meaning | Directus mapping is a separate normalization-only module that emits the existing closed export contract | mapping choices can still be wrong or incomplete for real Directus semantics |
+| Permission-record mutation hides behind a stable label | permission role binds a canonical semantic digest of action, fields, filters, presets, and validation | principal identity and effective authorization behavior are not proven |
+| Captured record values leak into evidence artifacts | receipts, reports, CLI summary, and normalization manifest are aggregate/hash-only; acceptance checks fixture sentinels | normalized exports necessarily contain source record values and must remain local |
+| Adversarial builder recursively copies, aliases, or mislabels its source/output | the clean manifest and bundle hashes are pinned, each mutation has a fixed precondition, the resolved source must be disjoint from both sibling outputs, and source/copy/derivative each pass the closed normalizer | concurrent filesystem replacement remains platform-dependent |
+| Adversarial derivative is mistaken for a captured API-response bundle | the validated aggregate statement is atomically linked outside the refreshed capture manifest before the derivative is published and labels all six synthetic mutations | a hash alone cannot establish provenance or intent; a process crash can leave a harmless statement without its derivative |
 | Production target receives messages/payments | no target integration in the current evaluator | a future target exercise needs a sandbox marker, egress block, and disabled automation |
 | Synthetic preflight is mistaken for a target drill | plan-only CLI status and no load/read-back/result code path | readers may still overlook the label |
 | Successful normalization presented as safe exit | structural-only labels and limitations | marketing pressure remains |
@@ -42,6 +52,8 @@
 - Vendor-funded testing presented as independent without payer disclosure.
 - Calling unchanged aggregate comparison evidence proof that the same records
   survived.
+- Calling the Directus canary proof of production migration, general CRM
+  portability, or nonprofit case-management behavior.
 
 Production-derived work is blocked until encryption, ephemeral workspace,
 retention/deletion, operator authorization, incident response, and target

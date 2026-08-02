@@ -27,6 +27,23 @@ escape every receipt-derived string, contain no scripts or external assets, and
 carry the receipt's complete limitations. They remain unsigned summaries of
 unauthenticated aggregate evidence.
 
+The Directus canary normalizer accepts only the closed 11.17.4 synthetic
+civic-case profile. It verifies the manifest, fixed captured file set, sizes, and
+hashes before reading mapped records; pins the exact captured schema digest;
+rejects links, unsafe paths, and output nesting beneath the source; applies
+strict resource bounds and shapes; and creates output through a fresh temporary
+directory followed by an atomic rename. Its summary and normalization manifest
+contain aggregates and hashes only. These controls detect inconsistent local
+bytes, not a fabricated but internally consistent bundle, incomplete source
+acquisition, or effective permission equivalence.
+
+The repository's adversarial builder accepts only a bundle that already passes
+that normalizer and matches the committed clean manifest and bundle hashes,
+validates a no-symlink copied snapshot, checks each of its six mutation
+preconditions, validates the derivative again, and requires disjoint sibling
+output paths. It publishes the aggregate derivative statement before the capture
+directory so a normal runtime failure cannot leave an unlabeled derivative.
+
 Use GitHub's
 [private vulnerability reporting](https://github.com/ChelseaKR/exitdrill/security/advisories/new).
 Do not include production exports, credentials, personal information, or

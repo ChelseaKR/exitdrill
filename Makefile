@@ -1,4 +1,4 @@
-.PHONY: install format lint type test verify package demo demo-lossy demo-compare demo-compare-policy
+.PHONY: install format lint type test verify package demo demo-lossy demo-compare demo-compare-policy demo-directus-canary
 
 install:
 	uv sync --frozen
@@ -46,3 +46,6 @@ demo-compare-policy: demo-compare
 	@status=0; \
 	uv run exitdrill compare examples/synthetic-crm/out/receipt.json examples/synthetic-crm-lossy/out/receipt.json --fail-on-loss-signal-increase || status=$$?; \
 	test $$status -eq 3
+
+demo-directus-canary:
+	uv run python scripts/check_directus_canary_demo.py
