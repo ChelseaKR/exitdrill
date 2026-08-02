@@ -27,9 +27,11 @@ CiviCRM Standalone 6.16.2 lab through supported target interfaces. Four distinct
 synthetic principals separate writes, independent read-back, allowed access, and
 denied access. The clean capture passes five target-interface probes while the
 unchanged structural evaluator still reports six explicit source-to-target gaps.
-This is a bounded target-process experiment, not a completed migration, UI
-workflow test, customer result, employer deliverable, or claim of CiviCRM-wide
-portability.
+The independent reader also observes one authenticated server-rendered Contact
+Summary surface containing the exact synthetic contact and Cases tab. This is a
+bounded target-process experiment, not a completed migration, Manage Case or
+browser workflow test, customer result, employer deliverable, or claim of
+CiviCRM-wide portability.
 
 ## Evidence in the repository
 
@@ -80,16 +82,18 @@ equivalence, authenticated evidence, legal compliance, savings, or successful
 cutover to another SaaS product. The Directus evidence supports only one frozen
 11.17.4 synthetic source profile captured through documented APIs. The CiviCRM
 evidence supports only one frozen 6.16.2 target profile and five target-interface
-probe observations. ExitDrill still has no supported production connector,
-production data path, completed UI workflow exercise, or cutover evidence.
+probe observations plus one Contact Summary UI-surface observation. ExitDrill
+still has no supported production connector, production data path, completed UI
+workflow exercise, or cutover evidence.
 
 ## Resume bullet
 
 - Built ExitDrill, an offline Python technical alpha that tests synthetic SaaS
   exports across five structural dimensions; added pinned Directus 11.17.4 source
   and CiviCRM 6.16.2 target canaries with independent API read-back, five bounded
-  target-interface probes, adversarial controls, and replayable aggregate
-  evidence that keeps six known source-to-target gaps explicit.
+  target-interface probes, one authenticated Contact Summary observation,
+  adversarial controls, and replayable aggregate evidence that keeps six known
+  source-to-target gaps explicit.
 
 ## 60-second interview version
 
@@ -116,9 +120,11 @@ changing the evaluator. That evidence is limited to the frozen synthetic
 profile. I then loaded that one fixed profile into a digest-pinned, no-egress
 CiviCRM Standalone 6.16.2 lab. Separate writer, reader, allowed, and denied
 identities produced five target-interface observations, including private attachment
-byte retrieval and a real permission-filtered denial. Crucially, those five
-passes do not hide the result: the unchanged evaluator still reports six source
-permission, audit, and collection-scope gaps and remains
+byte retrieval and a real permission-filtered denial. The same reader observed
+one authenticated Contact Summary surface with the exact synthetic contact and
+Cases tab; Manage Case and a browser workflow remain unproven. Crucially, those
+observations do not hide the result: the unchanged evaluator still reports six
+source permission, audit, and collection-scope gaps and remains
 `not_structurally_restorable`. The next credible milestone is a second real
-source-target pair and user-visible workflow evidence, not a generic connector
-SDK inferred from one lab.
+source-target pair and a complete browser workflow exercise, not a generic
+connector SDK inferred from one lab.

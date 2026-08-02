@@ -167,6 +167,20 @@ inherits the attached case's row-level ACL. Attachment retrieval proves only byt
 fidelity in this profile; the Contact ACL query supplies the separate allow/deny
 observation. Neither probe proves UI usability or source-permission equivalence.
 
+## CiviCRM UI-surface boundary
+
+A separate closed observation requests one fixed local Contact Summary route
+with the independent reader. The live harness checks HTTP 200, the exact
+synthetic contact label, the contact-page container, and the Cases tab, then
+stores only a sanitized projection. The offline verifier emits a separate
+aggregate `ui-surface-result.json`; it never changes the structural evaluator or
+the five target-interface probes.
+
+This server-rendered observation does not prove Manage Case, browser
+interaction, JavaScript behavior, accessibility, or end-to-end task completion.
+Discovery did not establish the Manage Case surface, so that gap remains an
+explicit limitation rather than an inferred success.
+
 ## Data contracts
 
 The baseline records expected identities, exact scalar values for its declared

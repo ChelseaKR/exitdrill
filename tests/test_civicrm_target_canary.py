@@ -34,6 +34,7 @@ _FILE_PATHS = (
     "identity-deny.json",
     "permission-allow.json",
     "permission-deny.json",
+    "ui-contact-summary.json",
     f"assets/{_FILE_IDS[0]}.txt",
     f"assets/{_FILE_IDS[1]}.txt",
 )
@@ -100,6 +101,8 @@ _BUNDLE_LIMITATIONS = [
     "synthetic_fixture_only",
     "source_capture_is_not_a_vendor_native_export",
     "does_not_prove_operational_equivalence",
+    "server_rendered_ui_does_not_prove_browser_interaction",
+    "manage_case_and_case_workflow_not_observed",
 ]
 _RESULT_LIMITATIONS = [
     "synthetic_fixture_only",
@@ -250,6 +253,14 @@ def _responses() -> dict[str, object]:
         "permission-allow.json": _api([permission_value]),
         "permission-deny.json": _api([]),
         "relationships.json": _api(relationships),
+        "ui-contact-summary.json": {
+            "authenticated_identity": "reader",
+            "http_status": 200,
+            "observed_labels": ["Cases", "Synthetic Person Alpha"],
+            "observed_regions": ["contact_summary"],
+            "route": "civicrm/contact/view",
+            "surface": "contact_summary",
+        },
     }
 
 
@@ -277,7 +288,10 @@ def _inventory(root: Path) -> list[dict[str, object]]:
 
 def _base_manifest(files: list[dict[str, object]]) -> dict[str, object]:
     return {
-        "acquisition_surface": "supported_api_v4_and_authenticated_private_file_readback",
+        "acquisition_surface": (
+            "supported_api_v4_authenticated_private_file_readback_"
+            "and_authenticated_server_rendered_ui"
+        ),
         "bundle_sha256": hashlib.sha256(canonical_json_bytes(files)).hexdigest(),
         "data_mode": "synthetic_only",
         "disposition_counts": {
@@ -360,8 +374,13 @@ def test_normalizes_closed_target_bundle_and_schema_validates(tmp_path: Path) ->
     schema = _read_json(
         Path(__file__).parents[1] / "schemas/civicrm-target-roundtrip-result-v0.1.schema.json"
     )
+    ui_schema = _read_json(
+        Path(__file__).parents[1] / "schemas/civicrm-ui-surface-result-v0.1.schema.json"
+    )
+    ui_result = _read_json(out_dir / "ui-surface-result.json")
 
     Draft202012Validator(schema).validate(result)
+    Draft202012Validator(ui_schema).validate(ui_result)
     assert _read_json(out_dir / "target-result.json") == result
     assert result["represented_counts"] == _REPRESENTED
     assert result["unmapped_counts"] == _UNMAPPED
@@ -369,6 +388,7 @@ def test_normalizes_closed_target_bundle_and_schema_validates(tmp_path: Path) ->
     assert result["limitations"] == _RESULT_LIMITATIONS
     probes = cast(list[dict[str, object]], result["probe_results"])
     assert all(item["state"] == "pass" for item in probes)
+    assert [item["state"] for item in ui_result["surface_results"]] == ["observed"]
     assert package.drill_id == "directus-civic-case-exit-001"
     assert package.source_system == "Directus 11.17.4 synthetic civic-case sandbox"
     assert package.exported_at == "2026-08-02T02:38:28.542Z"
@@ -496,6 +516,23 @@ def test_api_capture_projections_accept_optional_exact_count_matched(tmp_path: P
         )
 
     normalize_civicrm_target_canary(manifest, tmp_path / "out")
+
+
+@pytest.mark.parametrize(
+    ("filename", "field", "replacement"),
+    [
+        ("ui-contact-summary.json", "authenticated_identity", "writer"),
+        ("ui-contact-summary.json", "observed_regions", []),
+    ],
+)
+def test_rejects_ui_surface_projection_drift(
+    tmp_path: Path, filename: str, field: str, replacement: object
+) -> None:
+    manifest = _create_bundle(tmp_path / filename.removesuffix(".json"))
+    _mutate_json(manifest, filename, lambda raw: raw.update({field: replacement}))
+
+    with pytest.raises(CiviCRMTargetCanaryError, match="pinned profile"):
+        normalize_civicrm_target_canary(manifest, tmp_path / "out")
 
 
 def test_aggregate_result_never_contains_raw_values_ids_paths_or_bytes(tmp_path: Path) -> None:
@@ -983,7 +1020,7 @@ def test_rejects_manifest_list_file_list_and_digest_primitive_drift(tmp_path: Pa
     raw = _read_json(file_count)
     raw["files"].pop()
     _write_json(file_count, raw)
-    with pytest.raises(CiviCRMTargetCanaryError, match="exactly 13"):
+    with pytest.raises(CiviCRMTargetCanaryError, match="exactly 14"):
         normalize_civicrm_target_canary(file_count, tmp_path / "file-count-out")
 
     digest = _create_bundle(tmp_path / "digest")
@@ -1055,14 +1092,15 @@ def test_existing_nested_and_missing_parent_destinations_are_rejected(tmp_path: 
     assert not missing_parent.parent.exists()
 
 
+@pytest.mark.parametrize("result_name", ["target-result.json", "ui-surface-result.json"])
 def test_failed_materialization_removes_temporary_output(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, result_name: str
 ) -> None:
     manifest = _create_bundle(tmp_path / "capture")
     original = Path.write_bytes
 
     def fail_on_result(path: Path, data: bytes) -> int:
-        if path.name == "target-result.json":
+        if path.name == result_name:
             raise OSError("injected write failure")
         return original(path, data)
 

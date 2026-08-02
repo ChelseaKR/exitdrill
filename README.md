@@ -198,6 +198,12 @@ target-interface probes do not override the five-dimension structural result,
 prove UI usability, preserve source principals or history, establish a completed
 migration, or support a general Directus/CiviCRM connector claim.
 
+The same live harness also exercises one authenticated server-rendered Contact
+Summary surface with the independent reader. Its separate aggregate
+`ui-surface-result.json` records that the exact synthetic contact and Cases-tab
+affordance were observed. It does not prove Manage Case, browser interaction,
+JavaScript behavior, accessibility, or an end-to-end casework task.
+
 ## Compare recurring receipts
 
 After creating two receipts, compare their aggregate evidence offline:
@@ -358,6 +364,7 @@ beyond these target-interface probes.
 - [Synthetic preflight decision](docs/decisions/0002-synthetic-exercise-preflight.md)
 - [Directus canary boundary decision](docs/decisions/0004-normalize-one-directus-canary-outside-evaluator.md)
 - [CiviCRM target-roundtrip decision](docs/decisions/0005-exercise-one-civicrm-target-roundtrip-canary.md)
+- [CiviCRM UI-surface decision](docs/decisions/0006-observe-one-authenticated-civicrm-ui-surface.md)
 - [Threat model](docs/THREAT-MODEL.md)
 - [Responsible-technology audit](docs/RESPONSIBLE-TECH-AUDITS.md)
 - [Data governance](docs/DATA-GOVERNANCE.md)

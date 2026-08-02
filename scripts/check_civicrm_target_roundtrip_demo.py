@@ -30,6 +30,7 @@ TARGET_NATIVE = TARGET / "native"
 TARGET_PROFILE = "directus-11.17.4-civic-case-to-civicrm-standalone-6.16.2/v0.1"
 SOURCE_PROFILE = "directus-11.17.4-civic-case/v0.1"
 TARGET_RESULT_NAME = "target-result.json"
+UI_RESULT_NAME = "ui-surface-result.json"
 PROBE_IDS = (
     "record_lookup",
     "relationship_traversal",
@@ -315,6 +316,35 @@ def _assert_clean_target_result(document: Mapping[str, object]) -> None:
     )
 
 
+def _assert_clean_ui_result(document: Mapping[str, object]) -> None:
+    _require(
+        document
+        == {
+            "decision_scope": "pinned_synthetic_ui_surface_only",
+            "limitations": [
+                "synthetic_fixture_only",
+                "target_evidence_is_unsigned_and_unauthenticated",
+                "server_rendered_html_projection_only",
+                "does_not_prove_browser_interaction_or_javascript_behavior",
+                "does_not_prove_accessibility_or_end_to_end_task_completion",
+                "manage_case_and_case_workflow_not_observed",
+                "does_not_prove_operational_equivalence",
+                "target_version_and_execution_context_are_operator_asserted",
+            ],
+            "schema_version": "exitdrill/civicrm-ui-surface-result/v0.1",
+            "surface_results": [
+                {
+                    "evidence_kind": "authenticated_server_rendered_html_projection",
+                    "id": "contact_summary",
+                    "state": "observed",
+                }
+            ],
+            "target_profile": TARGET_PROFILE,
+        },
+        "clean UI-surface result was not exact",
+    )
+
+
 def _assert_aggregate_privacy(value: object, roots: tuple[Path, ...]) -> None:
     def walk(item: object) -> None:
         if isinstance(item, dict):
@@ -410,6 +440,8 @@ def main() -> None:
             "returned clean aggregate did not match target-result.json",
         )
         _assert_clean_target_result(clean_target_result)
+        clean_ui_result = _json_object(clean_a / UI_RESULT_NAME)
+        _assert_clean_ui_result(clean_ui_result)
 
         committed_target_digest = _tree_digest(TARGET_NATIVE)
         builder_stderr = _build_adversaries(TARGET_NATIVE, adversaries)
@@ -505,6 +537,7 @@ def main() -> None:
             "clean_normalization": clean_result_a,
             "clean_structural": clean_payload,
             "clean_target": clean_target_result,
+            "clean_ui_surface": clean_ui_result,
             "directus_normalization": directus_result,
             "permission_escalation_target": permission_result,
         }
@@ -517,6 +550,7 @@ def main() -> None:
                     "clean_observed_remediation_signals": 6,
                     "clean_overall_status": "not_structurally_restorable",
                     "clean_target_probe_passes": 5,
+                    "clean_ui_surface_observations": 1,
                     "source_profile": SOURCE_PROFILE,
                     "status": "civicrm_target_roundtrip_canary_verified",
                     "target_profile": TARGET_PROFILE,

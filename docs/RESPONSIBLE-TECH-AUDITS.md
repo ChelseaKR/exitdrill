@@ -59,7 +59,9 @@ pass while the structural result fails with six missing signals. Target-created
 roles, fields, users, ACL groups, ACL group memberships, ACL roles and rules,
 helper records, and activities are counted as scaffolding, not relabeled as
 preserved source data. Attachment-byte retrieval is explicitly not presented as
-case-level attachment authorization.
+case-level attachment authorization. One separate server-rendered Contact
+Summary observation is reported without claiming Manage Case, browser behavior,
+accessibility, or a completed workflow.
 
 ## Accountability
 

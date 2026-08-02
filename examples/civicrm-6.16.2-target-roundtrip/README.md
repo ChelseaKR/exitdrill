@@ -28,6 +28,13 @@ supported APIv4 and AuthX responses. They preserve the selected values used by
 this profile while omitting unrelated transport metadata. They are not
 byte-raw HTTP response bodies.
 
+`ui-contact-summary.json` is a sanitized projection of one authenticated,
+server-rendered Contact Summary response. The live harness publishes it only
+when the independent reader sees the exact synthetic contact, the contact-page
+container, and the Cases tab. The bundle does not contain raw HTML, cookies, or
+tokens, and it explicitly does not claim that Manage Case or a browser workflow
+was observed.
+
 Source-mapped business-state read-back never uses the writer credential or its
 in-memory mutation responses. A separate AuthX identity envelope records writer
 authentication for identity-separation evidence; it is not business-state

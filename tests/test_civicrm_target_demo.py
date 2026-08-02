@@ -53,6 +53,7 @@ def test_civicrm_target_roundtrip_canary_acceptance() -> None:
         "clean_observed_remediation_signals": 6,
         "clean_overall_status": "not_structurally_restorable",
         "clean_target_probe_passes": 5,
+        "clean_ui_surface_observations": 1,
         "source_profile": "directus-11.17.4-civic-case/v0.1",
         "status": "civicrm_target_roundtrip_canary_verified",
         "target_profile": ("directus-11.17.4-civic-case-to-civicrm-standalone-6.16.2/v0.1"),
