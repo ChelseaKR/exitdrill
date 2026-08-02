@@ -355,6 +355,14 @@ def _create_bundle(root: Path) -> Path:
     (root / f"assets/{_FILE_IDS[1]}.txt").write_bytes(b"Invented intake note bravo.\n")
     for name, value in _responses().items():
         _write_json(root / name, value)
+    committed_schema = (
+        Path(__file__).parents[1]
+        / "examples"
+        / "directus-11.17.4-civic-case"
+        / "native"
+        / "schema.json"
+    )
+    (root / "schema.json").write_bytes(committed_schema.read_bytes())
     manifest = root / "capture-manifest.json"
     _write_json(manifest, _base_manifest(_inventory(root)))
     return manifest
@@ -699,6 +707,32 @@ def test_directus_integer_booleans_are_strict(tmp_path: Path, value: object) -> 
         normalize_directus_canary(manifest, tmp_path / "out")
 
 
+@pytest.mark.parametrize(
+    ("filename", "index", "field"),
+    [
+        ("people.json", 2, "id"),
+        ("cases.json", 1, "id"),
+        ("case-people.json", 1, "id"),
+        ("activity.json", 1, "id"),
+    ],
+)
+def test_native_ids_must_fit_the_supported_sqlite_range(
+    tmp_path: Path,
+    filename: str,
+    index: int,
+    field: str,
+) -> None:
+    manifest = _create_bundle(tmp_path / "native")
+    _mutate_json(
+        manifest,
+        filename,
+        lambda raw: raw["data"][index].update({field: 10**40}),
+    )
+
+    with pytest.raises(DirectusCanaryError, match="supported SQLite range"):
+        normalize_directus_canary(manifest, tmp_path / "out")
+
+
 def test_rejects_unknown_api_fields_duplicate_keys_and_wrong_cardinality(tmp_path: Path) -> None:
     manifest = _create_bundle(tmp_path / "unknown-native")
     _mutate_json(
@@ -725,15 +759,32 @@ def test_rejects_unknown_api_fields_duplicate_keys_and_wrong_cardinality(tmp_pat
 @pytest.mark.parametrize(
     ("mutate", "message"),
     [
-        (lambda raw: raw["data"].update({"vendor": "postgres"}), "database vendor"),
-        (lambda raw: raw["data"].update({"directus": "11.17.5"}), "source version"),
-        (lambda raw: raw["data"]["collections"].pop(), "exactly 3"),
-        (lambda raw: raw["data"]["fields"][0].update({"type": "string"}), "schema fields"),
+        (lambda raw: raw["data"].update({"vendor": "postgres"}), "pinned profile"),
+        (lambda raw: raw["data"].update({"directus": "11.17.5"}), "pinned profile"),
+        (lambda raw: raw["data"]["collections"].pop(), "pinned profile"),
+        (
+            lambda raw: raw["data"]["fields"][0].update({"type": "string"}),
+            "pinned profile",
+        ),
+        (
+            lambda raw: raw["data"]["fields"][1]["meta"].update({"required": False}),
+            "pinned profile",
+        ),
         (
             lambda raw: raw["data"]["relations"][0].update(
                 {"related_collection": "exitdrill_people"}
             ),
-            "relation metadata|relations",
+            "pinned profile",
+        ),
+        (
+            lambda raw: raw["data"]["relations"][0]["meta"].update(
+                {"one_deselect_action": "delete"}
+            ),
+            "pinned profile",
+        ),
+        (
+            lambda raw: raw["data"]["systemFields"][0].update({"collection": "directus_users"}),
+            "pinned profile",
         ),
     ],
 )
@@ -809,6 +860,28 @@ def test_existing_destination_is_never_modified(tmp_path: Path) -> None:
 
     assert sentinel.read_text(encoding="utf-8") == "preserve"
     assert list(out_dir.iterdir()) == [sentinel]
+
+
+def test_output_must_not_be_nested_inside_native_bundle(tmp_path: Path) -> None:
+    manifest = _create_bundle(tmp_path / "native")
+    out_dir = manifest.parent / "normalized"
+
+    with pytest.raises(DirectusCanaryError, match="outside the native bundle"):
+        normalize_directus_canary(manifest, out_dir)
+
+    assert not out_dir.exists()
+    assert set(path.name for path in manifest.parent.iterdir()) == {
+        "activity.json",
+        "assets",
+        "capture-manifest.json",
+        "case-people.json",
+        "cases.json",
+        "files.json",
+        "people.json",
+        "permissions.json",
+        "policies.json",
+        "schema.json",
+    }
 
 
 def test_failed_materialization_removes_temporary_output(

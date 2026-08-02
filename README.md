@@ -84,6 +84,62 @@ under test: “100% of the rows exported” can still conceal an unsafe exit.
 The receipt reports `observed_remediation_signals`, not a cost, task count, or
 minimum remediation estimate.
 
+## Directus native-format canary
+
+The repository also contains a source-specific canary captured from a real,
+local Directus 11.17.4 process. The sandbox used SQLite, an invented civic-case
+schema, fixed synthetic records, local attachment bytes, and documented
+first-party API surfaces for content, file metadata and bytes, permissions, and
+activity. The committed bundle contains no production or customer data. Directus
+is Business Source License software; this local nonproduction experiment does
+not describe it as open source.
+
+The capture boundary follows Directus's official documentation for
+[self-hosting](https://directus.com/docs/self-hosting/deploying),
+[files and assets](https://directus.com/docs/api/files),
+[permissions](https://directus.com/docs/api/permissions), and
+[activity](https://directus.com/docs/api/activity). The fixture
+README pins the exact release, image digest, API surfaces, and license text.
+
+Run the complete synthetic acceptance demonstration without Docker or network
+access:
+
+```sh
+make demo-native-canary
+```
+
+The command verifies the native capture manifest, checks byte-identical
+normalization output across two runs, runs and replays a clean drill, builds an
+equal-row-and-file-count adversarial derivative, runs and replays its failing
+drill, renders both aggregate-only reports, compares the receipts, and checks
+the opt-in comparison policy exit. The clean canary passes all five declared
+dimensions. The derivative produces exactly six observed missing/invalid
+signals after changing a declared critical value, an unreferenced identity, a
+relationship, same-length attachment bytes, permission semantics, and an audit
+action.
+
+The source adapter is deliberately outside the evaluator's trust algebra:
+
+```sh
+exitdrill normalize-directus-canary \
+  examples/directus-11.17.4-civic-case/native/capture-manifest.json \
+  --out-dir normalized-directus-canary
+```
+
+The normalizer accepts only this bounded canary profile, verifies every declared
+native file before semantically parsing it, and atomically writes the existing
+ExitDrill `export.json` plus attachment layout. Its aggregate normalization
+manifest is out of band. The receipt continues to bind the normalized export, not the
+operator-asserted acquisition process. Neither the manifest hash nor the receipt
+checksum authenticates who produced the native bundle or proves that Directus
+exported everything.
+
+The defensible claim is limited to the exact synthetic lab configuration: a
+pinned Directus 11.17.4 native-format bundle can be reproducibly normalized and
+the declared equal-count losses are detected. This is not evidence of a
+production migration, operational equivalence, vendor deletion, general CRM
+portability, or nonprofit case-management behavior.
+
 ## Compare recurring receipts
 
 After creating two receipts, compare their aggregate evidence offline:
@@ -190,6 +246,8 @@ compliant.
 - Synthetic data only.
 - No live vendor credentials, APIs, destructive operations, or production writes.
 - No arbitrary transforms, commands, plugins, SQL, JQ, or model-generated mapping.
+- The one native adapter accepts only the committed Directus 11.17.4 synthetic
+  canary profile; it is not a generic connector or permission-equivalence engine.
 - No claim that an export proves its own completeness.
 - No claim that file presence proves semantic usability.
 - No claim that a successful neutral import proves operational recovery.
@@ -224,15 +282,17 @@ field values never enter the receipt.
 ## Product direction
 
 The intended wedge is recurring CRM/case-management exit drills for nonprofits
-and local government. The strongest future slice is one lawful native export,
-one real alternate target such as an isolated CiviCRM sandbox, target read-back,
-and operational scenario probes.
+and local government. The Directus canary is the first real source-process lab,
+not domain validation. The strongest next slice remains one lawful native export
+from a nonprofit-relevant system such as an isolated CiviCRM sandbox, one real
+alternate target, target read-back, and operational scenario probes.
 
 ## Project documents
 
 - [Architecture](docs/ARCHITECTURE.md)
 - [Architecture decision](docs/decisions/0001-structural-evaluation-before-target-adapter.md)
 - [Synthetic preflight decision](docs/decisions/0002-synthetic-exercise-preflight.md)
+- [Directus canary boundary decision](docs/decisions/0004-normalize-one-directus-canary-outside-evaluator.md)
 - [Threat model](docs/THREAT-MODEL.md)
 - [Responsible-technology audit](docs/RESPONSIBLE-TECH-AUDITS.md)
 - [Data governance](docs/DATA-GOVERNANCE.md)
@@ -245,8 +305,8 @@ and operational scenario probes.
 | Code Quality | Applies; Python 3.12, strict mypy, Ruff, and pytest |
 | Security & Supply-Chain | Applies; closed local inputs, zero runtime dependencies, pinned CI actions, SAST, secret and dependency scanning are committed |
 | CI/CD | Applies; committed workflows mirror local verification and demo paths |
-| Release/versioning | Applies; build-only candidate workflow, no public or registry publication |
-| Accessibility | N/A — no HTML or graphical interface |
+| Release/versioning | Applies; the build-only candidate workflow publishes no package or registry artifact |
+| Accessibility | Applies; deterministic report tests cover the language declaration, skip link, table caption, aggregate-only content, escaping, and absence of scripts |
 | Observability | Tier C; service telemetry is out of scope because the CLI is offline and emits no operational logs |
 | Performance | N/A — offline CLI with no latency contract; input and attachment work remain bounded |
 | Internationalization | N/A — English-only expert operator workflow |

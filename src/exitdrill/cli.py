@@ -12,6 +12,7 @@ from exitdrill.comparison import (
     _comparison_has_observed_loss_signal_increase,
     compare_receipt_files,
 )
+from exitdrill.directus_canary import DirectusCanaryError, normalize_directus_canary
 from exitdrill.evaluator import DrillError, run_drill
 from exitdrill.exercise import ExercisePlanError, load_exercise_plan
 from exitdrill.loader import PackageError, load_baseline, load_export
@@ -68,6 +69,12 @@ def _parser() -> argparse.ArgumentParser:
     )
     report.add_argument("receipt", type=Path)
     report.add_argument("--out", type=Path, required=True)
+    normalize_directus = commands.add_parser(
+        "normalize-directus-canary",
+        help="verify and normalize the bounded Directus 11.17.4 canary bundle",
+    )
+    normalize_directus.add_argument("manifest", type=Path)
+    normalize_directus.add_argument("--out-dir", type=Path, required=True)
     return parser
 
 
@@ -230,7 +237,11 @@ def main(argv: list[str] | None = None) -> int:
             )
         if args.command == "report":
             return _report(args.receipt, args.out)
+        if args.command == "normalize-directus-canary":
+            _print_json(normalize_directus_canary(args.manifest, args.out_dir))
+            return 0
     except (
+        DirectusCanaryError,
         DrillError,
         ExercisePlanError,
         PackageError,

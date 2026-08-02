@@ -206,6 +206,8 @@ _MAX_ASSET_BYTES = 16 * 1024 * 1024
 _MAX_BUNDLE_BYTES = 32 * 1024 * 1024
 _MAX_JSON_DEPTH = 32
 _MAX_JSON_NODES = 20_000
+_MAX_SQLITE_INTEGER = 9_223_372_036_854_775_807
+_SCHEMA_SHA256 = "8bf86c28c528b46e6065d2790e2b4acf7517ab54ddb409f5afd077e50d9c5b5a"
 
 
 class DirectusCanaryError(ValueError):
@@ -254,8 +256,13 @@ def _identifier(value: object, where: str) -> str:
 
 
 def _integer(value: object, where: str, *, minimum: int = 0) -> int:
-    if not isinstance(value, int) or isinstance(value, bool) or value < minimum:
-        raise _fail(f"{where} must be an integer greater than or equal to {minimum}")
+    if (
+        not isinstance(value, int)
+        or isinstance(value, bool)
+        or value < minimum
+        or value > _MAX_SQLITE_INTEGER
+    ):
+        raise _fail(f"{where} must be an integer in the supported SQLite range")
     return value
 
 
@@ -361,11 +368,23 @@ def _read_regular_file(path: Path, *, max_bytes: int, where: str) -> bytes:
     return document
 
 
-def _directory_entries(path: Path, where: str) -> dict[str, os.DirEntry[str]]:
+def _directory_entries(
+    path: Path,
+    where: str,
+    expected: frozenset[str],
+) -> dict[str, os.DirEntry[str]]:
+    result: dict[str, os.DirEntry[str]] = {}
     try:
-        return {entry.name: entry for entry in os.scandir(path)}
+        with os.scandir(path) as iterator:
+            for entry in iterator:
+                if entry.name not in expected or entry.name in result:
+                    raise _fail(f"{where} has an unexpected entry set")
+                result[entry.name] = entry
     except OSError as exc:
         raise _fail(f"{where} could not be inspected") from exc
+    if set(result) != expected:
+        raise _fail(f"{where} has an unexpected entry set")
+    return result
 
 
 def _validate_root_entries(entries: Mapping[str, os.DirEntry[str]]) -> None:
@@ -388,9 +407,9 @@ def _require_closed_bundle(root: Path, manifest_path: Path) -> None:
         raise _fail("bundle paths must not be symbolic links")
     if not root.is_dir():
         raise _fail("bundle root must be a directory")
-    root_entries = _directory_entries(root, "bundle root")
+    root_entries = _directory_entries(root, "bundle root", _ROOT_ENTRIES)
     _validate_root_entries(root_entries)
-    asset_entries = _directory_entries(root / "assets", "asset directory")
+    asset_entries = _directory_entries(root / "assets", "asset directory", _ASSET_ENTRIES)
     if set(asset_entries) != _ASSET_ENTRIES:
         raise _fail("asset directory has an unexpected entry set")
     if any(
@@ -767,6 +786,8 @@ def _schema_relation(raw: object, index: int) -> tuple[str, str, str]:
 
 
 def _validate_schema(document: bytes) -> None:
+    if hashlib.sha256(document).hexdigest() != _SCHEMA_SHA256:
+        raise _fail("schema snapshot does not match the pinned profile")
     response = _decode_json(document, "schema response")
     _exact_keys(response, {"data"}, "schema response")
     data = _object(response["data"], "schema.data")
@@ -933,6 +954,15 @@ def normalize_directus_canary(manifest_path: Path, out_dir: Path) -> dict[str, J
         raise _fail("output directory already exists")
     root = manifest_path.parent
     _require_closed_bundle(root, manifest_path)
+    try:
+        resolved_root = root.resolve(strict=True)
+        resolved_out = out_dir.resolve(strict=False)
+    except OSError as exc:
+        raise _fail("bundle or output location could not be resolved") from exc
+    if resolved_out == resolved_root or resolved_out.is_relative_to(resolved_root):
+        raise _fail("output directory must be outside the native bundle")
+    if resolved_out.exists() or resolved_out.is_symlink():
+        raise _fail("output directory already exists")
     manifest_document = _read_regular_file(
         manifest_path,
         max_bytes=_MAX_MANIFEST_BYTES,
@@ -943,5 +973,5 @@ def normalize_directus_canary(manifest_path: Path, out_dir: Path) -> dict[str, J
     export, copies = _build_export(manifest, documents)
     export_document = canonical_json_bytes(export) + b"\n"
     result = _normalization_manifest(manifest, export_document, copies)
-    _write_output(out_dir, export_document, copies, result)
+    _write_output(resolved_out, export_document, copies, result)
     return result

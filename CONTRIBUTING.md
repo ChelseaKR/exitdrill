@@ -6,6 +6,7 @@ Read `AGENTS.md`, the PRD, architecture, and threat model first.
 make install
 make verify
 make demo
+make demo-native-canary
 ```
 
 Every input, parser, path, restore, adapter, or receipt change needs a negative

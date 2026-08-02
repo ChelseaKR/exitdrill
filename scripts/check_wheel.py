@@ -55,6 +55,24 @@ def main() -> None:
     )
     if "--fail-on-loss-signal-increase" not in completed.stdout:
         raise SystemExit("wheel CLI does not expose the comparison policy flag")
+    normalized_help = subprocess.run(  # noqa: S603 - fixed executable and locally built wheel
+        [
+            uv,
+            "run",
+            "--isolated",
+            "--no-project",
+            "--with",
+            str(wheels[0]),
+            "exitdrill",
+            "normalize-directus-canary",
+            "--help",
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    if "--out-dir" not in normalized_help.stdout:
+        raise SystemExit("wheel CLI does not expose the Directus canary normalizer")
 
 
 if __name__ == "__main__":

@@ -31,7 +31,9 @@ counts and SHA-256 digests before semantic parsing, and must emit the existing
 The profile fixes all collection names, fields, relationships, attachment
 locations, permission canonicalization, and audit mapping. It cannot accept
 mapping expressions, commands, URLs, plugins, or configuration that changes
-semantics. The independent baseline remains a separate evaluator input. The
+semantics. The exact captured schema snapshot is bound to this profile by its
+SHA-256, so a hash-refreshed manifest cannot authorize schema drift. The
+independent baseline remains a separate evaluator input. The
 vendor-agnostic evaluator remains unchanged.
 
 Acceptance is profile-scoped: no other Directus version, database, schema,
@@ -110,11 +112,11 @@ one source.
 
 1. [x] Freeze the synthetic native bundle, independent baseline, capture notes,
    and permission canonicalization for this profile.
-2. [ ] Implement a bounded, closed profile normalizer outside the evaluator.
-3. [ ] Add negative tests for manifest tampering, traversal, unknown fields,
+2. [x] Implement a bounded, closed profile normalizer outside the evaluator.
+3. [x] Add negative tests for manifest tampering, traversal, unknown fields,
    type drift, relation loss, attachment mismatch, permission-semantic changes,
    and audit changes.
-4. [ ] Run the normalized good fixture through the existing five-dimension
+4. [x] Run the normalized good fixture through the existing five-dimension
    evaluator and preserve aggregate-only receipts.
 5. [ ] Revisit the architecture only after evidence from another real native
    profile or a production-capable target exercise.

@@ -8,9 +8,19 @@ attachment bytes. Those fixtures are non-sensitive and committed for
 reproducibility. No production-derived or merely “deidentified” vendor export
 is permitted.
 
+This includes the committed Directus 11.17.4 civic-case canary. Its people,
+cases, policy, activity, file metadata, and text attachments were invented for
+the lab. The native bundle is a capture from a real local process, but it is not
+customer, employer, client, or production-derived data. Re-capture is permitted
+only in an isolated synthetic sandbox.
+
 Receipts contain aggregates and input digests, not record fields or attachment
-content. Generated receipts are disposable local artifacts and ignored by
-version control.
+content. Normalized exports necessarily contain the synthetic record fields and
+attachment bytes; the normalizer's stdout and manifest contain only fixed labels,
+hashes, and aggregates. The acceptance command creates adversarial bundles,
+normalized outputs, receipts, and reports only in a disposable temporary
+directory. The documented root normalization directory and generated example
+`out/` directories are ignored by version control.
 
 ## Production gate
 

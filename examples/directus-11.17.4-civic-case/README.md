@@ -40,13 +40,14 @@ disposable, no-egress sandbox.
 
 Official references:
 
-- [Directus API overview](https://docs.directus.io/reference/introduction)
-- [Global API query parameters](https://docs.directus.io/reference/query)
-- [Files and asset access](https://docs.directus.io/reference/files)
-- [Policies API](https://docs.directus.io/reference/system/policies)
-- [Permissions API](https://docs.directus.io/reference/system/permissions)
-- [Schema snapshot API](https://docs.directus.io/reference/system/schema)
-- [Official Docker guide](https://docs.directus.io/self-hosted/docker-guide)
+- [Directus API overview](https://directus.com/docs/api)
+- [Global API query parameters](https://directus.com/docs/guides/connect/query-parameters)
+- [Files API](https://directus.com/docs/api/files) and
+  [asset access](https://directus.com/docs/api/assets)
+- [Policies API](https://directus.com/docs/api/policies)
+- [Permissions API](https://directus.com/docs/api/permissions)
+- [Schema snapshot API](https://directus.com/docs/api/schema)
+- [Official self-hosting guide](https://directus.com/docs/self-hosting/deploying)
 - [Directus v11.17.4 release](https://github.com/directus/directus/releases/tag/v11.17.4)
 - [Directus v11.17.4 license text](https://github.com/directus/directus/blob/v11.17.4/license)
 
@@ -80,6 +81,8 @@ authenticated.
 
 The accepted profile is `directus-11.17.4-civic-case/v0.1`:
 
+- the exact captured `schema.json` bytes are pinned by SHA-256 in the adapter,
+  in addition to the manifest inventory and structural schema checks;
 - integer source IDs become decimal strings;
 - `exitdrill_people` rows become `person` entities and SQLite `0`/`1` boolean
   values become JSON booleans;
