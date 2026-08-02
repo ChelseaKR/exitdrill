@@ -12,7 +12,8 @@ source-to-target lab, not a generic CiviCRM adapter. Its `native/` bundle
 contains fixed API read-back envelopes, identity-separation evidence,
 permission-probe outcomes, and attachment bytes from the disposable target.
 It also contains separate sanitized browser-workflow, automated-accessibility,
-keyboard-interaction, activity-view, and contact-summary workflow observations.
+keyboard-interaction, activity-view, contact-summary workflow, and
+target-generated case-client workflow observations.
 The profile verifier must reject any other version, file inventory, sandbox
 posture, identity shape, or response shape rather than infer a mapping.
 
@@ -79,6 +80,15 @@ link into Contact Summary, and observes the contact-page region, exact contact
 name, and Cases affordance. The two exact page-load
 `jquery_notify_unavailable` errors are recorded. The projection retains no
 route parameters, target IDs, HTML, screenshots, traces, or credentials.
+
+`browser-case-client-workflow.json` records a fourth read-only browser task.
+The reader reopens the dashboard, follows the target-generated helper that
+CiviCRM uses as the case client, opens its Contact Summary, activates Cases,
+observes the exact synthetic case, and follows the row's `Manage` action back
+to Manage Case. Three exact page-load `jquery_notify_unavailable` errors are
+recorded. The helper is target scaffolding, not restored source data, and the
+projection retains no route parameters, target IDs, HTML, screenshots, traces,
+or credentials.
 
 Source-mapped business-state read-back never uses the writer credential or its
 in-memory mutation responses. A separate AuthX identity envelope records writer
@@ -162,14 +172,15 @@ composite restoration status.
 
 The generated `ui-surface-result.json`, `browser-workflow-result.json`,
 `accessibility-result.json`, `keyboard-result.json`,
-`activity-view-result.json`, and `contact-summary-workflow-result.json` are
-separate evidence families. The browser results support only the three
+`activity-view-result.json`, `contact-summary-workflow-result.json`, and
+`case-client-workflow-result.json` are separate evidence families. The browser results
+support only the four
 read-only tasks described above. The accessibility and
 keyboard results report only their bounded observations and are not conformance
 verdicts. None modifies the target probe algebra or structural result.
 
-`evidence-index.json` is an eighth, non-evaluative artifact: a closed catalog of
-`export.json` and the seven result files. It records only each artifact's fixed
+`evidence-index.json` is a ninth, non-evaluative artifact: a closed catalog of
+`export.json` and the eight result files. It records only each artifact's fixed
 identifier, filename, schema, independent decision scope, byte length, and
 SHA-256 digest. It contains no status, score, pass count, priority, or inferred
 conclusion, and it does not replace schema validation or the structural
@@ -188,8 +199,8 @@ the packaged index and result schemas, the normalized export contract, and its
 declared attachment bytes. It does not interpret any finding, run the structural
 evaluator, authenticate the files, or prove live execution.
 Its stdout uses the separate closed
-`exitdrill/civicrm-evidence-verification/v0.2` schema, identifies the verified
-v0.3 index in `index_schema_version`, and carries fixed limitations with the
+`exitdrill/civicrm-evidence-verification/v0.3` schema, identifies the verified
+v0.4 index in `index_schema_version`, and carries fixed limitations with the
 success status.
 
 The live capture gate and offline acceptance gate are distinct. The live harness
@@ -227,7 +238,8 @@ declared target-interface probes and one Dashboard → Manage Case browser task
 were observed, one bounded automated accessibility scan reported the exact
 findings above, one disclosure's programmatic keyboard behavior was observed,
 one target-generated activity was viewed read-only, one dashboard-to-contact
-summary browser path was observed read-only, and the unchanged structural
+summary browser path and one target-generated case-client-to-Manage-Case path
+were observed read-only, and the unchanged structural
 evaluator reported the six known source-to-target gaps.
 
 It does **not** establish:
@@ -240,7 +252,7 @@ It does **not** establish:
 - attachment authorization equivalence;
 - WCAG conformance, general CiviCRM UI usability, or any unobserved workflow;
 - activity editing, creation, or restoration of source audit history;
-- contact editing, case navigation from Contact Summary, or other contact
+- contact or case editing, source case-client equivalence, or other contact
   workflows;
 - production safety, customer use, vendor deletion, or legal compliance; or
 - completeness or authenticity of the source capture, target capture, or

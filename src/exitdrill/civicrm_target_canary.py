@@ -40,8 +40,9 @@ _ACCESSIBILITY_RESULT_SCHEMA = "exitdrill/civicrm-accessibility-result/v0.1"
 _KEYBOARD_RESULT_SCHEMA = "exitdrill/civicrm-keyboard-result/v0.1"
 _ACTIVITY_VIEW_RESULT_SCHEMA = "exitdrill/civicrm-activity-view-result/v0.1"
 _CONTACT_SUMMARY_WORKFLOW_RESULT_SCHEMA = "exitdrill/civicrm-contact-summary-workflow-result/v0.1"
-_EVIDENCE_INDEX_SCHEMA = "exitdrill/civicrm-evidence-index/v0.3"
-_EVIDENCE_VERIFICATION_SCHEMA = "exitdrill/civicrm-evidence-verification/v0.2"
+_CASE_CLIENT_WORKFLOW_RESULT_SCHEMA = "exitdrill/civicrm-case-client-workflow-result/v0.1"
+_EVIDENCE_INDEX_SCHEMA = "exitdrill/civicrm-evidence-index/v0.4"
+_EVIDENCE_VERIFICATION_SCHEMA = "exitdrill/civicrm-evidence-verification/v0.3"
 _SOURCE_SYSTEM = "Directus 11.17.4 synthetic civic-case sandbox"
 _TARGET_SYSTEM = "CiviCRM Standalone"
 _TARGET_VERSION = "6.16.2"
@@ -52,7 +53,7 @@ _SOURCE_EXPORTED_AT = "2026-08-02T02:38:28.542Z"
 _ACQUISITION_SURFACE = (
     "supported_api_v4_authenticated_private_file_readback_authenticated_server_rendered_ui_"
     "isolated_browser_workflow_automated_accessibility_scan_keyboard_interaction_and_"
-    "activity_view_and_contact_summary_workflow"
+    "activity_view_contact_summary_workflow_and_case_client_workflow"
 )
 _FILE_IDS = (
     "11111111-1111-4111-8111-111111111111",
@@ -76,6 +77,7 @@ _EXPECTED_FILES = (
     "browser-keyboard.json",
     "browser-activity-view.json",
     "browser-contact-summary-workflow.json",
+    "browser-case-client-workflow.json",
     f"assets/{_FILE_IDS[0]}.txt",
     f"assets/{_FILE_IDS[1]}.txt",
 )
@@ -202,6 +204,9 @@ _BUNDLE_LIMITATIONS = (
     "single_contact_summary_browser_workflow_only",
     "contact_summary_workflow_observed_with_known_jquery_notify_runtime_errors",
     "contact_summary_workflow_does_not_prove_contact_editing_or_case_navigation",
+    "single_target_generated_case_client_browser_workflow_only",
+    "case_client_workflow_observed_with_known_jquery_notify_runtime_errors",
+    "case_client_workflow_does_not_prove_source_case_client_equivalence_or_editing",
 )
 _RESULT_LIMITATIONS = (
     "synthetic_fixture_only",
@@ -278,6 +283,19 @@ _CONTACT_SUMMARY_WORKFLOW_RESULT_LIMITATIONS = (
     "does_not_prove_operational_equivalence",
     "target_version_and_execution_context_are_operator_asserted",
 )
+_CASE_CLIENT_WORKFLOW_RESULT_LIMITATIONS = (
+    "synthetic_fixture_only",
+    "target_evidence_is_unsigned_and_unauthenticated",
+    "single_target_generated_case_client_browser_workflow_only",
+    "case_client_workflow_observed_with_known_jquery_notify_runtime_errors",
+    "target_generated_case_client_is_not_restored_source_data",
+    "read_only_case_navigation_only",
+    "does_not_prove_source_case_client_equivalence",
+    "does_not_prove_contact_or_case_editing",
+    "does_not_prove_accessibility",
+    "does_not_prove_operational_equivalence",
+    "target_version_and_execution_context_are_operator_asserted",
+)
 _EVIDENCE_INDEX_LIMITATIONS = (
     "index_is_unsigned_and_unauthenticated",
     "index_is_not_a_composite_assessment",
@@ -343,9 +361,15 @@ _EVIDENCE_INDEX_ARTIFACTS = (
         "contact-summary-workflow-result.json",
         _CONTACT_SUMMARY_WORKFLOW_RESULT_SCHEMA,
     ),
+    (
+        "case_client_workflow",
+        "pinned_synthetic_target_generated_case_client_browser_workflow_only",
+        "case-client-workflow-result.json",
+        _CASE_CLIENT_WORKFLOW_RESULT_SCHEMA,
+    ),
 )
 _EVIDENCE_SCHEMA_RESOURCES = {
-    _EVIDENCE_INDEX_SCHEMA: "civicrm-evidence-index-v0.3.schema.json",
+    _EVIDENCE_INDEX_SCHEMA: "civicrm-evidence-index-v0.4.schema.json",
     _RESULT_SCHEMA: "civicrm-target-roundtrip-result-v0.1.schema.json",
     _UI_RESULT_SCHEMA: "civicrm-ui-surface-result-v0.1.schema.json",
     _BROWSER_RESULT_SCHEMA: "civicrm-browser-workflow-result-v0.1.schema.json",
@@ -355,6 +379,7 @@ _EVIDENCE_SCHEMA_RESOURCES = {
     _CONTACT_SUMMARY_WORKFLOW_RESULT_SCHEMA: (
         "civicrm-contact-summary-workflow-result-v0.1.schema.json"
     ),
+    _CASE_CLIENT_WORKFLOW_RESULT_SCHEMA: "civicrm-case-client-workflow-result-v0.1.schema.json",
 }
 _CONTACT_KEYS = frozenset(
     {
@@ -1086,6 +1111,23 @@ def _contact_summary_workflow_result() -> dict[str, JsonValue]:
     }
 
 
+def _case_client_workflow_result() -> dict[str, JsonValue]:
+    return {
+        "decision_scope": "pinned_synthetic_target_generated_case_client_browser_workflow_only",
+        "known_runtime_errors": [{"error_key": "jquery_notify_unavailable", "occurrence_count": 3}],
+        "limitations": list(_CASE_CLIENT_WORKFLOW_RESULT_LIMITATIONS),
+        "schema_version": _CASE_CLIENT_WORKFLOW_RESULT_SCHEMA,
+        "target_profile": _PROFILE,
+        "workflow_results": [
+            _probe_result(
+                "target_generated_case_client_to_manage_case",
+                "observed",
+                "isolated_headless_chromium_read_only_interaction",
+            )
+        ],
+    }
+
+
 def _evidence_index(artifacts: Mapping[str, bytes]) -> dict[str, JsonValue]:
     entries: list[dict[str, JsonValue]] = []
     for artifact_id, decision_scope, filename, schema_version in _EVIDENCE_INDEX_ARTIFACTS:
@@ -1295,6 +1337,7 @@ def _build_output(
     dict[str, JsonValue],
     dict[str, JsonValue],
     dict[str, JsonValue],
+    dict[str, JsonValue],
 ]:
     identity_contact_ids = _parse_identities(documents)
     people, person_by_target = _parse_contacts(documents["contacts.json"])
@@ -1438,6 +1481,29 @@ def _build_output(
         },
         "browser contact-summary workflow projection",
     )
+    _parse_ui_surface(
+        documents["browser-case-client-workflow.json"],
+        {
+            "browser_engine": "chromium",
+            "data_mode": "synthetic_only",
+            "known_runtime_errors": [
+                {"error_key": "jquery_notify_unavailable", "occurrence_count": 3}
+            ],
+            "retained_artifacts": [],
+            "schema_version": "exitdrill/civicrm-case-client-workflow-observation/v0.1",
+            "steps": [
+                "case_dashboard_reopened",
+                "target_generated_case_client_opened",
+                "contact_summary_observed",
+                "cases_affordance_activated",
+                "contact_cases_observed",
+                "manage_case_opened_from_contact",
+                "case_subject_reobserved",
+            ],
+            "target_profile": _PROFILE,
+        },
+        "browser case-client workflow projection",
+    )
     export: dict[str, JsonValue] = {
         "attachments": cast("list[JsonValue]", attachments),
         "audit_events": [],
@@ -1460,6 +1526,7 @@ def _build_output(
         _keyboard_result(),
         _activity_view_result(),
         _contact_summary_workflow_result(),
+        _case_client_workflow_result(),
     )
 
 
@@ -1474,6 +1541,7 @@ def _write_output(
     keyboard_result: Mapping[str, JsonValue],
     activity_view_result: Mapping[str, JsonValue],
     contact_summary_workflow_result: Mapping[str, JsonValue],
+    case_client_workflow_result: Mapping[str, JsonValue],
 ) -> None:
     parent = out_dir.parent
     if not parent.exists() or not parent.is_dir():
@@ -1495,6 +1563,9 @@ def _write_output(
             "activity-view-result.json": canonical_json_bytes(activity_view_result) + b"\n",
             "contact-summary-workflow-result.json": (
                 canonical_json_bytes(contact_summary_workflow_result) + b"\n"
+            ),
+            "case-client-workflow-result.json": (
+                canonical_json_bytes(case_client_workflow_result) + b"\n"
             ),
         }
         for filename, content in artifacts.items():
@@ -1555,6 +1626,7 @@ def normalize_civicrm_target_canary(manifest_path: Path, out_dir: Path) -> dict[
         keyboard_result,
         activity_view_result,
         contact_summary_workflow_result,
+        case_client_workflow_result,
     ) = _build_output(documents)
     export_document = canonical_json_bytes(export) + b"\n"
     _write_output(
@@ -1568,5 +1640,6 @@ def normalize_civicrm_target_canary(manifest_path: Path, out_dir: Path) -> dict[
         keyboard_result,
         activity_view_result,
         contact_summary_workflow_result,
+        case_client_workflow_result,
     )
     return result

@@ -6,6 +6,9 @@ All notable changes will be documented here.
 
 ### Changed
 
+- Advanced the CiviCRM evidence index to `v0.4` and the closed verification
+  result to `v0.3` for a ninth indexed artifact: a separate target-generated
+  case-client browser-workflow result.
 - Advanced the CiviCRM evidence index to `v0.3` and the closed verification
   result to `v0.2` for an eighth indexed artifact: a separate bounded
   contact-summary browser-workflow result.
@@ -26,6 +29,10 @@ All notable changes will be documented here.
 
 ### Added
 
+- An eighth CiviCRM evidence family that follows the target-generated case
+  client through Contact Summary and Cases back into Manage Case, while
+  explicitly withholding source case-client equivalence, editing,
+  accessibility, and operational-equivalence claims.
 - A seventh CiviCRM evidence family that reopens the case dashboard, follows
   the exact synthetic contact into Contact Summary, verifies the contact-page
   region and Cases affordance, and explicitly withholds contact-editing,
