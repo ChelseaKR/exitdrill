@@ -8,6 +8,10 @@ import sys
 from pathlib import Path
 
 from exitdrill.canonical import canonical_json_bytes
+from exitdrill.civicrm_target_canary import (
+    CiviCRMTargetCanaryError,
+    normalize_civicrm_target_canary,
+)
 from exitdrill.comparison import (
     _comparison_has_observed_loss_signal_increase,
     compare_receipt_files,
@@ -75,6 +79,12 @@ def _parser() -> argparse.ArgumentParser:
     )
     normalize_directus.add_argument("manifest", type=Path)
     normalize_directus.add_argument("--out-dir", type=Path, required=True)
+    normalize_civicrm = commands.add_parser(
+        "normalize-civicrm-target-canary",
+        help="verify and normalize the bounded CiviCRM 6.16.2 target read-back bundle",
+    )
+    normalize_civicrm.add_argument("manifest", type=Path)
+    normalize_civicrm.add_argument("--out-dir", type=Path, required=True)
     return parser
 
 
@@ -240,7 +250,11 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "normalize-directus-canary":
             _print_json(normalize_directus_canary(args.manifest, args.out_dir))
             return 0
+        if args.command == "normalize-civicrm-target-canary":
+            _print_json(normalize_civicrm_target_canary(args.manifest, args.out_dir))
+            return 0
     except (
+        CiviCRMTargetCanaryError,
         DirectusCanaryError,
         DrillError,
         ExercisePlanError,

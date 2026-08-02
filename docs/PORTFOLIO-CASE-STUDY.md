@@ -22,6 +22,15 @@ different mutations, and the drill reports exactly six observed missing/invalid
 signals. This remains a personal synthetic lab, not Directus-wide or
 nonprofit-CRM validation.
 
+A second evidence slice loads that fixed source profile into a fresh, isolated
+CiviCRM Standalone 6.16.2 lab through supported target interfaces. Four distinct
+synthetic principals separate writes, independent read-back, allowed access, and
+denied access. The clean capture passes five target-interface probes while the
+unchanged structural evaluator still reports six explicit source-to-target gaps.
+This is a bounded target-process experiment, not a completed migration, UI
+workflow test, customer result, employer deliverable, or claim of CiviCRM-wide
+portability.
+
 ## Evidence in the repository
 
 - Five-dimension evaluation, exact comparisons for baseline-declared critical
@@ -39,6 +48,14 @@ nonprofit-CRM validation.
   one-command clean-vs-lossy acceptance demonstration is
   [`scripts/check_directus_canary_demo.py`](../scripts/check_directus_canary_demo.py)
   and is enforced by [`tests/test_directus_demo.py`](../tests/test_directus_demo.py).
+- The closed CiviCRM target read-back verifier is implemented in
+  [`src/exitdrill/civicrm_target_canary.py`](../src/exitdrill/civicrm_target_canary.py).
+  The digest-pinned local harness lives in
+  [`scripts/civicrm_target_roundtrip_lab.mjs`](../scripts/civicrm_target_roundtrip_lab.mjs),
+  while
+  [`scripts/check_civicrm_target_roundtrip_demo.py`](../scripts/check_civicrm_target_roundtrip_demo.py)
+  verifies the frozen clean capture, intentional structural failure, and five
+  adversarial controls offline.
 - Aggregate-only receipts, semantic verification, and offline replay are covered
   by [`src/exitdrill/receipt.py`](../src/exitdrill/receipt.py),
   [`tests/test_receipt.py`](../tests/test_receipt.py), and the end-to-end CLI tests
@@ -61,17 +78,18 @@ It does **not** support claims of production use, customer adoption, client
 delivery, a completed migration, portability, exit readiness, operational
 equivalence, authenticated evidence, legal compliance, savings, or successful
 cutover to another SaaS product. The Directus evidence supports only one frozen
-11.17.4 synthetic source profile captured through documented APIs. ExitDrill
-still has no supported live connector, production-capable target adapter, or
-workflow read-back.
+11.17.4 synthetic source profile captured through documented APIs. The CiviCRM
+evidence supports only one frozen 6.16.2 target profile and five target-interface
+probe observations. ExitDrill still has no supported production connector,
+production data path, completed UI workflow exercise, or cutover evidence.
 
 ## Resume bullet
 
 - Built ExitDrill, an offline Python technical alpha that tests synthetic SaaS
-  exports across five structural dimensions; added a pinned Directus 11.17.4
-  synthetic API-response capture canary that reproducibly detects six declared
-  adversarial losses hidden by unchanged row and file counts, with replayable
-  aggregate receipts and standalone evidence reports.
+  exports across five structural dimensions; added pinned Directus 11.17.4 source
+  and CiviCRM 6.16.2 target canaries with independent API read-back, five bounded
+  target-interface probes, adversarial controls, and replayable aggregate
+  evidence that keeps six known source-to-target gaps explicit.
 
 ## 60-second interview version
 
@@ -95,5 +113,12 @@ API responses and attachment bytes from a pinned local Directus 11.17.4 sandbox
 and assembled the committed custom capture bundle. A closed normalizer verifies
 those bytes and an equal-count derivative creates six exact loss signals without
 changing the evaluator. That evidence is limited to the frozen synthetic
-profile. The next credible milestone is a nonprofit-relevant source such as an
-isolated CiviCRM lab, followed by target read-back and workflow probes.
+profile. I then loaded that one fixed profile into a digest-pinned, no-egress
+CiviCRM Standalone 6.16.2 lab. Separate writer, reader, allowed, and denied
+identities produced five target-interface observations, including private attachment
+byte retrieval and a real permission-filtered denial. Crucially, those five
+passes do not hide the result: the unchanged evaluator still reports six source
+permission, audit, and collection-scope gaps and remains
+`not_structurally_restorable`. The next credible milestone is a second real
+source-target pair and user-visible workflow evidence, not a generic connector
+SDK inferred from one lab.
