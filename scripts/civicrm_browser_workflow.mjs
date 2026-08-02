@@ -28,6 +28,15 @@ async function requireExactText(locator, expectedText) {
   if (observed !== expectedText) fail();
 }
 
+async function requireExactTextLink(page, expectedText) {
+  const label = page.getByText(expectedText, { exact: true }).first();
+  await requireVisible(label);
+  if ((await label.evaluate((element) => element.tagName)) === "A") return label;
+  const parent = label.locator("..");
+  if ((await parent.evaluate((element) => element.tagName)) !== "A") fail();
+  return parent;
+}
+
 const username = requireCredential("EXITDRILL_BROWSER_USERNAME");
 const password = requireCredential("EXITDRILL_BROWSER_PASSWORD");
 
@@ -65,7 +74,7 @@ try {
   page.on("download", (download) => download.cancel());
   page.on("pageerror", (error) => {
     pageErrorCount += 1;
-    if (pageErrors.length < 5) {
+    if (pageErrors.length < 8) {
       pageErrors.push({ step: currentStep, name: error.name, message: error.message });
     }
   });
@@ -198,6 +207,41 @@ try {
   await requireVisible(page.getByText(expected.coordinatorName, { exact: true }));
   currentStep = "contact_cases_affordance";
   await requireVisible(page.getByText("Cases", { exact: true }));
+  currentStep = "case_client_dashboard_navigation";
+  const caseClientDashboardResponse = await page.goto("/civicrm/case?reset=1&all=1", {
+    timeout: 30_000,
+    waitUntil: "load",
+  });
+  if (!caseClientDashboardResponse || caseClientDashboardResponse.status() !== 200) fail();
+  currentStep = "case_client_dashboard_marker";
+  await requireVisible(page.getByText("Case Summary", { exact: true }));
+  currentStep = "case_client_locator";
+  const caseClientLink = await requireExactTextLink(page, "ExitDrill target helper");
+  currentStep = "case_client_summary_navigation";
+  await caseClientLink.click();
+  await page.waitForLoadState("load");
+  if (new URL(page.url()).pathname !== "/civicrm/contact/view") fail();
+  await requireVisible(page.locator(".crm-contact-page"));
+  await requireVisible(page.getByText("ExitDrill target helper", { exact: true }));
+  currentStep = "case_client_cases_affordance";
+  const casesControl = await requireExactTextLink(page, "Cases");
+  currentStep = "case_client_cases_click";
+  await casesControl.click();
+  currentStep = "case_client_cases_load";
+  await page.waitForLoadState("load");
+  currentStep = "case_client_cases_subject";
+  const contactCaseSubject = page.getByText(expected.caseSubject, { exact: true });
+  await requireVisible(contactCaseSubject);
+  currentStep = "case_client_case_locator";
+  const contactManageCase = await requireExactTextLink(page, "Manage");
+  currentStep = "case_client_case_navigation";
+  await contactManageCase.click();
+  await page.waitForLoadState("load");
+  await requireVisible(page.locator(".crm-case-caseview-form-block"));
+  currentStep = "case_client_case_subject_reobserved";
+  await requireVisible(
+    page.locator(".crm-case-caseview-case_subject").getByText(expected.caseSubject, { exact: true }),
+  );
   currentStep = "runtime_integrity";
   const expectedPageErrors = [
     {
@@ -222,6 +266,21 @@ try {
     },
     {
       step: "contact_summary_navigation",
+      name: "TypeError",
+      message: "$(...).notify is not a function",
+    },
+    {
+      step: "case_client_dashboard_navigation",
+      name: "TypeError",
+      message: "$(...).notify is not a function",
+    },
+    {
+      step: "case_client_summary_navigation",
+      name: "TypeError",
+      message: "$(...).notify is not a function",
+    },
+    {
+      step: "case_client_case_navigation",
       name: "TypeError",
       message: "$(...).notify is not a function",
     },
@@ -253,6 +312,29 @@ try {
           "activity_subject_observed",
           "activity_type_observed",
           "activity_status_observed",
+        ],
+        target_profile:
+          "directus-11.17.4-civic-case-to-civicrm-standalone-6.16.2/v0.1",
+      },
+      case_client_workflow: {
+        browser_engine: "chromium",
+        data_mode: "synthetic_only",
+        known_runtime_errors: [
+          {
+            error_key: "jquery_notify_unavailable",
+            occurrence_count: 3,
+          },
+        ],
+        retained_artifacts: [],
+        schema_version: "exitdrill/civicrm-case-client-workflow-observation/v0.1",
+        steps: [
+          "case_dashboard_reopened",
+          "target_generated_case_client_opened",
+          "contact_summary_observed",
+          "cases_affordance_activated",
+          "contact_cases_observed",
+          "manage_case_opened_from_contact",
+          "case_subject_reobserved",
         ],
         target_profile:
           "directus-11.17.4-civic-case-to-civicrm-standalone-6.16.2/v0.1",

@@ -49,6 +49,11 @@ The native contact-summary workflow projection has the same minimized shape:
 fixed semantic step keys, engine label, empty artifact list, and sanitized
 known-error key/count. It excludes the contact name, route parameters, target
 IDs, HTML, screenshots, traces, and credentials.
+The native case-client workflow projection uses the same minimized fields and
+excludes the target-generated helper name, case subject, route parameters,
+target IDs, HTML, screenshots, traces, and credentials. Its aggregate result
+states that the navigated helper is target scaffolding rather than restored
+source data.
 The generated evidence index contains only fixed artifact identifiers,
 filenames, schema identifiers, decision scopes, the pinned profile, and fixed
 limitations, plus artifact byte lengths and SHA-256 digests. It contains no raw

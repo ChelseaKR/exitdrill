@@ -76,8 +76,12 @@ source audit-history records.
 A seventh result verifies one read-only dashboard-to-Contact-Summary path and
 the Cases affordance while explicitly withholding contact-editing,
 case-navigation, accessibility, and broader-usability claims.
+An eighth result follows the target-generated case client through Contact
+Summary and Cases back into Manage Case. It keeps the helper classified as
+target scaffolding and explicitly withholds source case-client equivalence,
+editing, accessibility, and broader-usability claims.
 The accompanying `evidence-index.json` catalogs the normalized export and all
-seven result families without adding a status, score, pass count, or composite
+eight result families without adding a status, score, pass count, or composite
 assessment. Its entries retain independent decision scopes, so proximity in the
 index cannot be read as combined evidence. Per-entry byte lengths and SHA-256
 digests bind the generated set for internal consistency but do not authenticate

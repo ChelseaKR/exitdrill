@@ -19,11 +19,16 @@ ACTIVITY_VIEW_RESULT_SCHEMA = "exitdrill/schemas/civicrm-activity-view-result-v0
 CONTACT_SUMMARY_WORKFLOW_RESULT_SCHEMA = (
     "exitdrill/schemas/civicrm-contact-summary-workflow-result-v0.1.schema.json"
 )
+CASE_CLIENT_WORKFLOW_RESULT_SCHEMA = (
+    "exitdrill/schemas/civicrm-case-client-workflow-result-v0.1.schema.json"
+)
 EVIDENCE_INDEX_V1_SCHEMA = "exitdrill/schemas/civicrm-evidence-index-v0.1.schema.json"
 EVIDENCE_INDEX_V2_SCHEMA = "exitdrill/schemas/civicrm-evidence-index-v0.2.schema.json"
 EVIDENCE_INDEX_V3_SCHEMA = "exitdrill/schemas/civicrm-evidence-index-v0.3.schema.json"
+EVIDENCE_INDEX_V4_SCHEMA = "exitdrill/schemas/civicrm-evidence-index-v0.4.schema.json"
 EVIDENCE_VERIFICATION_V1_SCHEMA = "exitdrill/schemas/civicrm-evidence-verification-v0.1.schema.json"
 EVIDENCE_VERIFICATION_V2_SCHEMA = "exitdrill/schemas/civicrm-evidence-verification-v0.2.schema.json"
+EVIDENCE_VERIFICATION_V3_SCHEMA = "exitdrill/schemas/civicrm-evidence-verification-v0.3.schema.json"
 
 
 def _check_schema(
@@ -117,9 +122,14 @@ def main() -> None:
                 CONTACT_SUMMARY_WORKFLOW_RESULT_SCHEMA,
                 "civicrm-contact-summary-workflow-result-v0.1.schema.json",
             ),
+            (
+                CASE_CLIENT_WORKFLOW_RESULT_SCHEMA,
+                "civicrm-case-client-workflow-result-v0.1.schema.json",
+            ),
             (EVIDENCE_INDEX_V1_SCHEMA, "civicrm-evidence-index-v0.1.schema.json"),
             (EVIDENCE_INDEX_V2_SCHEMA, "civicrm-evidence-index-v0.2.schema.json"),
             (EVIDENCE_INDEX_V3_SCHEMA, "civicrm-evidence-index-v0.3.schema.json"),
+            (EVIDENCE_INDEX_V4_SCHEMA, "civicrm-evidence-index-v0.4.schema.json"),
             (
                 EVIDENCE_VERIFICATION_V1_SCHEMA,
                 "civicrm-evidence-verification-v0.1.schema.json",
@@ -127,6 +137,10 @@ def main() -> None:
             (
                 EVIDENCE_VERIFICATION_V2_SCHEMA,
                 "civicrm-evidence-verification-v0.2.schema.json",
+            ),
+            (
+                EVIDENCE_VERIFICATION_V3_SCHEMA,
+                "civicrm-evidence-verification-v0.3.schema.json",
             ),
         ):
             _check_schema(

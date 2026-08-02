@@ -91,6 +91,7 @@ const capturePaths = [
   "browser-keyboard.json",
   "browser-activity-view.json",
   "browser-contact-summary-workflow.json",
+  "browser-case-client-workflow.json",
   `assets/${firstAssetId}.txt`,
   `assets/${secondAssetId}.txt`,
 ];
@@ -1958,7 +1959,14 @@ async function captureReadback(runtime, fixture, principals, stageDir) {
   const browserRun = await runtime.browserWorkflow(reader);
   requireExact(
     Object.keys(browserRun).sort(),
-    ["accessibility", "activity_view", "contact_summary_workflow", "keyboard", "workflow"],
+    [
+      "accessibility",
+      "activity_view",
+      "case_client_workflow",
+      "contact_summary_workflow",
+      "keyboard",
+      "workflow",
+    ],
     "browser run fields",
   );
   const browserObservation = requireObject(browserRun.workflow, "browser workflow observation");
@@ -2076,6 +2084,33 @@ async function captureReadback(runtime, fixture, principals, stageDir) {
     },
     "browser contact-summary workflow observation",
   );
+  const caseClientWorkflowObservation = requireObject(
+    browserRun.case_client_workflow,
+    "browser case-client workflow observation",
+  );
+  requireExact(
+    caseClientWorkflowObservation,
+    {
+      browser_engine: "chromium",
+      data_mode: "synthetic_only",
+      known_runtime_errors: [
+        { error_key: "jquery_notify_unavailable", occurrence_count: 3 },
+      ],
+      retained_artifacts: [],
+      schema_version: "exitdrill/civicrm-case-client-workflow-observation/v0.1",
+      steps: [
+        "case_dashboard_reopened",
+        "target_generated_case_client_opened",
+        "contact_summary_observed",
+        "cases_affordance_activated",
+        "contact_cases_observed",
+        "manage_case_opened_from_contact",
+        "case_subject_reobserved",
+      ],
+      target_profile: targetProfile,
+    },
+    "browser case-client workflow observation",
+  );
 
   const downloadedAssets = new Map();
   for (const sourceFile of fixture.files) {
@@ -2131,6 +2166,7 @@ async function captureReadback(runtime, fixture, principals, stageDir) {
       "browser-contact-summary-workflow.json",
       jsonDocument(contactSummaryWorkflowObservation),
     ],
+    ["browser-case-client-workflow.json", jsonDocument(caseClientWorkflowObservation)],
     [`assets/${firstAssetId}.txt`, downloadedAssets.get(firstAssetId)],
     [`assets/${secondAssetId}.txt`, downloadedAssets.get(secondAssetId)],
   ]);
@@ -2205,7 +2241,7 @@ function buildManifest(metadata, sourceNormalization) {
       database: databaseImage,
     },
     acquisition_surface:
-      "supported_api_v4_authenticated_private_file_readback_authenticated_server_rendered_ui_isolated_browser_workflow_automated_accessibility_scan_keyboard_interaction_and_activity_view_and_contact_summary_workflow",
+      "supported_api_v4_authenticated_private_file_readback_authenticated_server_rendered_ui_isolated_browser_workflow_automated_accessibility_scan_keyboard_interaction_and_activity_view_contact_summary_workflow_and_case_client_workflow",
     source_normalization: sourceNormalization,
     sandbox: {
       application_empty_before_write: true,
@@ -2281,6 +2317,9 @@ function buildManifest(metadata, sourceNormalization) {
       "single_contact_summary_browser_workflow_only",
       "contact_summary_workflow_observed_with_known_jquery_notify_runtime_errors",
       "contact_summary_workflow_does_not_prove_contact_editing_or_case_navigation",
+      "single_target_generated_case_client_browser_workflow_only",
+      "case_client_workflow_observed_with_known_jquery_notify_runtime_errors",
+      "case_client_workflow_does_not_prove_source_case_client_equivalence_or_editing",
     ],
   };
 }

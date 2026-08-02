@@ -183,12 +183,12 @@ exitdrill verify-civicrm-evidence-index \
   normalized-civicrm-target-canary/evidence-index.json
 ```
 
-That command checks the closed index and seven result schemas, exact bounded
+That command checks the closed index and eight result schemas, exact bounded
 artifact bytes, the normalized export contract, and its declared attachment
 bytes. It does not run the structural evaluator, interpret or compose results,
 authenticate the evidence, or prove that the asserted sandbox execution
 occurred. Its aggregate stdout is a separate closed
-`exitdrill/civicrm-evidence-verification/v0.2` result that identifies the v0.3
+`exitdrill/civicrm-evidence-verification/v0.3` result that identifies the v0.4
 input index and carries those limitations as machine-readable fields.
 
 The five observed target-interface probes cover record lookup, relationship
@@ -249,8 +249,16 @@ exact `jquery_notify_unavailable` errors, retains no browser artifacts, and
 makes no claim about contact editing, navigation into a case, accessibility, or
 other contact workflows.
 
+An eighth evidence family follows the target-generated case-client helper from
+the dashboard into Contact Summary, activates Cases, observes the exact
+synthetic case, and reopens Manage Case through the contact-scoped `Manage`
+action. It reports three exact `jquery_notify_unavailable` errors and proves
+only this read-only target-scaffolding path. The helper is not restored source
+data, and the result does not establish source case-client equivalence, editing,
+accessibility, or operational equivalence.
+
 The normalizer also emits `evidence-index.json`, a machine-readable catalog of
-the normalized export and seven separate result artifacts. Each entry names its
+the normalized export and eight separate result artifacts. Each entry names its
 own schema and decision scope and binds the exact emitted bytes with a length
 and SHA-256 digest. The index deliberately contains no status, score, pass
 count, or inferred outcome; every artifact must be interpreted with its own
@@ -429,6 +437,7 @@ beyond these target-interface probes.
 - [CiviCRM indexed-artifact validation decision](docs/decisions/0014-validate-indexed-civicrm-artifact-contracts.md)
 - [CiviCRM verification-result decision](docs/decisions/0015-publish-a-closed-civicrm-verification-result.md)
 - [CiviCRM contact-summary workflow decision](docs/decisions/0016-observe-one-civicrm-contact-summary-workflow.md)
+- [CiviCRM target-generated case-client workflow decision](docs/decisions/0017-observe-one-target-generated-civicrm-case-client-workflow.md)
 - [Threat model](docs/THREAT-MODEL.md)
 - [Responsible-technology audit](docs/RESPONSIBLE-TECH-AUDITS.md)
 - [Data governance](docs/DATA-GOVERNANCE.md)
