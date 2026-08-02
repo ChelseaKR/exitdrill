@@ -35,6 +35,7 @@ _FILE_PATHS = (
     "permission-allow.json",
     "permission-deny.json",
     "ui-contact-summary.json",
+    "browser-workflow.json",
     f"assets/{_FILE_IDS[0]}.txt",
     f"assets/{_FILE_IDS[1]}.txt",
 )
@@ -72,6 +73,9 @@ _TARGET_GENERATED = {
 _SANDBOX = {
     "application_empty_before_write": True,
     "attachments_private": True,
+    "browser_artifact_retention_disabled": True,
+    "browser_container_read_only": True,
+    "browser_network_internal_only": True,
     "egress_blocked": True,
     "hibp_lookup_disabled": True,
     "mail_disabled": True,
@@ -102,7 +106,9 @@ _BUNDLE_LIMITATIONS = [
     "source_capture_is_not_a_vendor_native_export",
     "does_not_prove_operational_equivalence",
     "server_rendered_ui_does_not_prove_browser_interaction",
-    "manage_case_and_case_workflow_not_observed",
+    "single_case_browser_workflow_only",
+    "browser_workflow_observed_with_known_jquery_notify_runtime_errors",
+    "browser_workflow_does_not_prove_accessibility",
 ]
 _RESULT_LIMITATIONS = [
     "synthetic_fixture_only",
@@ -261,6 +267,25 @@ def _responses() -> dict[str, object]:
             "route": "civicrm/contact/view",
             "surface": "contact_summary",
         },
+        "browser-workflow.json": {
+            "browser_engine": "chromium",
+            "data_mode": "synthetic_only",
+            "known_runtime_errors": [
+                {
+                    "error_key": "jquery_notify_unavailable",
+                    "occurrence_count": 2,
+                }
+            ],
+            "retained_artifacts": [],
+            "schema_version": "exitdrill/civicrm-browser-workflow-observation/v0.1",
+            "steps": [
+                "case_dashboard_opened",
+                "case_located",
+                "manage_case_opened",
+                "case_controls_observed",
+            ],
+            "target_profile": ("directus-11.17.4-civic-case-to-civicrm-standalone-6.16.2/v0.1"),
+        },
     }
 
 
@@ -289,8 +314,8 @@ def _inventory(root: Path) -> list[dict[str, object]]:
 def _base_manifest(files: list[dict[str, object]]) -> dict[str, object]:
     return {
         "acquisition_surface": (
-            "supported_api_v4_authenticated_private_file_readback_"
-            "and_authenticated_server_rendered_ui"
+            "supported_api_v4_authenticated_private_file_readback_authenticated_"
+            "server_rendered_ui_and_isolated_browser_workflow"
         ),
         "bundle_sha256": hashlib.sha256(canonical_json_bytes(files)).hexdigest(),
         "data_mode": "synthetic_only",
@@ -305,6 +330,10 @@ def _base_manifest(files: list[dict[str, object]]) -> dict[str, object]:
             "application": (
                 "civicrm/civicrm:6.16.2-php8.5@"
                 "sha256:cdf062708b054670cc0f9b452e0b883840af71ce6db21615304f9e7ffe44b93f"
+            ),
+            "browser": (
+                "mcr.microsoft.com/playwright:v1.62.0-noble@"
+                "sha256:baed2032d533817f3dbe6425de795788430ba345e819a1201337009ba17c9d07"
             ),
             "database": (
                 "mariadb:10.11.18@"
@@ -377,10 +406,15 @@ def test_normalizes_closed_target_bundle_and_schema_validates(tmp_path: Path) ->
     ui_schema = _read_json(
         Path(__file__).parents[1] / "schemas/civicrm-ui-surface-result-v0.1.schema.json"
     )
+    browser_schema = _read_json(
+        Path(__file__).parents[1] / "schemas/civicrm-browser-workflow-result-v0.1.schema.json"
+    )
     ui_result = _read_json(out_dir / "ui-surface-result.json")
+    browser_result = _read_json(out_dir / "browser-workflow-result.json")
 
     Draft202012Validator(schema).validate(result)
     Draft202012Validator(ui_schema).validate(ui_result)
+    Draft202012Validator(browser_schema).validate(browser_result)
     assert _read_json(out_dir / "target-result.json") == result
     assert result["represented_counts"] == _REPRESENTED
     assert result["unmapped_counts"] == _UNMAPPED
@@ -389,6 +423,10 @@ def test_normalizes_closed_target_bundle_and_schema_validates(tmp_path: Path) ->
     probes = cast(list[dict[str, object]], result["probe_results"])
     assert all(item["state"] == "pass" for item in probes)
     assert [item["state"] for item in ui_result["surface_results"]] == ["observed"]
+    assert [item["state"] for item in browser_result["workflow_results"]] == ["observed"]
+    assert browser_result["known_runtime_errors"] == [
+        {"error_key": "jquery_notify_unavailable", "occurrence_count": 2}
+    ]
     assert package.drill_id == "directus-civic-case-exit-001"
     assert package.source_system == "Directus 11.17.4 synthetic civic-case sandbox"
     assert package.exported_at == "2026-08-02T02:38:28.542Z"
@@ -523,9 +561,17 @@ def test_api_capture_projections_accept_optional_exact_count_matched(tmp_path: P
     [
         ("ui-contact-summary.json", "authenticated_identity", "writer"),
         ("ui-contact-summary.json", "observed_regions", []),
+        ("browser-workflow.json", "browser_engine", "firefox"),
+        ("browser-workflow.json", "retained_artifacts", ["trace.zip"]),
+        (
+            "browser-workflow.json",
+            "known_runtime_errors",
+            [{"error_key": "other", "occurrence_count": 2}],
+        ),
+        ("browser-workflow.json", "steps", ["case_dashboard_opened"]),
     ],
 )
-def test_rejects_ui_surface_projection_drift(
+def test_rejects_ui_projection_drift(
     tmp_path: Path, filename: str, field: str, replacement: object
 ) -> None:
     manifest = _create_bundle(tmp_path / filename.removesuffix(".json"))
@@ -1020,7 +1066,7 @@ def test_rejects_manifest_list_file_list_and_digest_primitive_drift(tmp_path: Pa
     raw = _read_json(file_count)
     raw["files"].pop()
     _write_json(file_count, raw)
-    with pytest.raises(CiviCRMTargetCanaryError, match="exactly 14"):
+    with pytest.raises(CiviCRMTargetCanaryError, match="exactly 15"):
         normalize_civicrm_target_canary(file_count, tmp_path / "file-count-out")
 
     digest = _create_bundle(tmp_path / "digest")
@@ -1092,7 +1138,10 @@ def test_existing_nested_and_missing_parent_destinations_are_rejected(tmp_path: 
     assert not missing_parent.parent.exists()
 
 
-@pytest.mark.parametrize("result_name", ["target-result.json", "ui-surface-result.json"])
+@pytest.mark.parametrize(
+    "result_name",
+    ["target-result.json", "ui-surface-result.json", "browser-workflow-result.json"],
+)
 def test_failed_materialization_removes_temporary_output(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, result_name: str
 ) -> None:

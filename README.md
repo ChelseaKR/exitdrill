@@ -201,8 +201,12 @@ migration, or support a general Directus/CiviCRM connector claim.
 The same live harness also exercises one authenticated server-rendered Contact
 Summary surface with the independent reader. Its separate aggregate
 `ui-surface-result.json` records that the exact synthetic contact and Cases-tab
-affordance were observed. It does not prove Manage Case, browser interaction,
-JavaScript behavior, accessibility, or an end-to-end casework task.
+affordance were observed. A third evidence family drives a digest-pinned,
+isolated Chromium browser from the all-cases dashboard into Manage Case and
+observes the exact synthetic case controls. That single browser task retains no
+browser artifacts and reports two known non-fatal CiviCRM
+`jquery_notify_unavailable` errors. It does not prove accessibility, general UI
+usability, another casework task, or production readiness.
 
 ## Compare recurring receipts
 

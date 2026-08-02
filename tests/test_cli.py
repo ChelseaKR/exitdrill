@@ -197,6 +197,8 @@ def test_normalize_civicrm_target_canary_cli(
     assert [item["state"] for item in output["probe_results"]] == ["pass"] * 5
     assert (out_dir / "export.json").is_file()
     assert (out_dir / "target-result.json").is_file()
+    assert (out_dir / "ui-surface-result.json").is_file()
+    assert (out_dir / "browser-workflow-result.json").is_file()
     assert str(native) not in raw_output
     assert str(out_dir) not in raw_output
     assert "Synthetic Person Alpha" not in raw_output

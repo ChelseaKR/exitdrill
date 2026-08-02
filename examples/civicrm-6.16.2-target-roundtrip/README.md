@@ -11,6 +11,7 @@ The accepted profile is
 source-to-target lab, not a generic CiviCRM adapter. Its `native/` bundle
 contains fixed API read-back envelopes, identity-separation evidence,
 permission-probe outcomes, and attachment bytes from the disposable target.
+It also contains one sanitized browser-workflow observation.
 The profile verifier must reject any other version, file inventory, sandbox
 posture, identity shape, or response shape rather than infer a mapping.
 
@@ -31,9 +32,22 @@ byte-raw HTTP response bodies.
 `ui-contact-summary.json` is a sanitized projection of one authenticated,
 server-rendered Contact Summary response. The live harness publishes it only
 when the independent reader sees the exact synthetic contact, the contact-page
-container, and the Cases tab. The bundle does not contain raw HTML, cookies, or
-tokens, and it explicitly does not claim that Manage Case or a browser workflow
-was observed.
+container, and the Cases tab.
+
+`browser-workflow.json` is a separate sanitized projection of one real Chromium
+task. The same independent reader opens the all-cases dashboard, locates the
+first synthetic case, opens Manage Case, and observes the exact summary, status,
+type, coordinator, Roles, and Activities controls. The read-only,
+capability-dropped browser container uses the internal Docker network and an
+exact digest-pinned Playwright image. It retains no screenshots, traces,
+downloads, HTML, cookies, or credentials and blocks requests outside the local
+application origin.
+
+The pinned CiviCRM Standalone UI raises two exact, non-fatal
+`jquery_notify_unavailable` page errors during this task. The workflow records
+their sanitized key and count and rejects any other page error, failed request,
+or off-origin request. This defect remains part of the evidence, not a hidden
+exception.
 
 Source-mapped business-state read-back never uses the writer credential or its
 in-memory mutation responses. A separate AuthX identity envelope records writer
@@ -115,6 +129,11 @@ result. The generated `target-result.json` records only bounded probe
 observations and represented, unmapped, or target-generated counts; it has no
 composite restoration status.
 
+The generated `ui-surface-result.json` and `browser-workflow-result.json` are
+separate evidence families. The browser result supports only the single task
+described above and does not modify the target probe algebra or structural
+result.
+
 The live capture gate and offline acceptance gate are distinct. The live harness
 may publish a bundle only after its fresh sandbox, source normalization, target
 load, independent business-state read-back, and target-interface probes pass.
@@ -146,8 +165,9 @@ credentials, filesystem paths, or raw API responses.
 
 This evidence supports only the statement that one pinned synthetic Directus
 API-response profile was mapped into one pinned CiviCRM 6.16.2 sandbox, five
-declared target-interface probes were observed, and the unchanged structural
-evaluator reported the six known source-to-target gaps.
+declared target-interface probes and one Dashboard → Manage Case browser task
+were observed, and the unchanged structural evaluator reported the six known
+source-to-target gaps.
 
 It does **not** establish:
 
@@ -157,6 +177,7 @@ It does **not** establish:
 - preservation of source permission principals, effective authorization, or
   audit history;
 - attachment authorization equivalence;
+- accessibility, general CiviCRM UI usability, or any unobserved workflow;
 - production safety, customer use, vendor deletion, or legal compliance; or
 - completeness or authenticity of the source capture, target capture, or
   separately authored baseline.

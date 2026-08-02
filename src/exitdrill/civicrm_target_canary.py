@@ -29,6 +29,7 @@ _SOURCE_PROFILE = "directus-11.17.4-civic-case/v0.1"
 _BUNDLE_SCHEMA = "exitdrill/civicrm-target-roundtrip-bundle/v0.1"
 _RESULT_SCHEMA = "exitdrill/civicrm-target-roundtrip-result/v0.1"
 _UI_RESULT_SCHEMA = "exitdrill/civicrm-ui-surface-result/v0.1"
+_BROWSER_RESULT_SCHEMA = "exitdrill/civicrm-browser-workflow-result/v0.1"
 _SOURCE_SYSTEM = "Directus 11.17.4 synthetic civic-case sandbox"
 _TARGET_SYSTEM = "CiviCRM Standalone"
 _TARGET_VERSION = "6.16.2"
@@ -37,7 +38,8 @@ _DRILL_ID = "directus-civic-case-exit-001"
 # It is not a target capture time and supplies no trusted-time claim.
 _SOURCE_EXPORTED_AT = "2026-08-02T02:38:28.542Z"
 _ACQUISITION_SURFACE = (
-    "supported_api_v4_authenticated_private_file_readback_and_authenticated_server_rendered_ui"
+    "supported_api_v4_authenticated_private_file_readback_authenticated_server_rendered_ui_"
+    "and_isolated_browser_workflow"
 )
 _FILE_IDS = (
     "11111111-1111-4111-8111-111111111111",
@@ -56,6 +58,7 @@ _EXPECTED_FILES = (
     "permission-allow.json",
     "permission-deny.json",
     "ui-contact-summary.json",
+    "browser-workflow.json",
     f"assets/{_FILE_IDS[0]}.txt",
     f"assets/{_FILE_IDS[1]}.txt",
 )
@@ -92,6 +95,10 @@ _IMAGES: dict[str, object] = {
         "civicrm/civicrm:6.16.2-php8.5@"
         "sha256:cdf062708b054670cc0f9b452e0b883840af71ce6db21615304f9e7ffe44b93f"
     ),
+    "browser": (
+        "mcr.microsoft.com/playwright:v1.62.0-noble@"
+        "sha256:baed2032d533817f3dbe6425de795788430ba345e819a1201337009ba17c9d07"
+    ),
     "database": (
         "mariadb:10.11.18@sha256:be981e4113326ada8d6004174dd09eeaefc03094037f811182a52d4f2e737350"
     ),
@@ -99,6 +106,9 @@ _IMAGES: dict[str, object] = {
 _SANDBOX: dict[str, object] = {
     "application_empty_before_write": True,
     "attachments_private": True,
+    "browser_artifact_retention_disabled": True,
+    "browser_container_read_only": True,
+    "browser_network_internal_only": True,
     "egress_blocked": True,
     "hibp_lookup_disabled": True,
     "mail_disabled": True,
@@ -165,7 +175,9 @@ _BUNDLE_LIMITATIONS = (
     "source_capture_is_not_a_vendor_native_export",
     "does_not_prove_operational_equivalence",
     "server_rendered_ui_does_not_prove_browser_interaction",
-    "manage_case_and_case_workflow_not_observed",
+    "single_case_browser_workflow_only",
+    "browser_workflow_observed_with_known_jquery_notify_runtime_errors",
+    "browser_workflow_does_not_prove_accessibility",
 )
 _RESULT_LIMITATIONS = (
     "synthetic_fixture_only",
@@ -186,6 +198,15 @@ _UI_RESULT_LIMITATIONS = (
     "does_not_prove_browser_interaction_or_javascript_behavior",
     "does_not_prove_accessibility_or_end_to_end_task_completion",
     "manage_case_and_case_workflow_not_observed",
+    "does_not_prove_operational_equivalence",
+    "target_version_and_execution_context_are_operator_asserted",
+)
+_BROWSER_RESULT_LIMITATIONS = (
+    "synthetic_fixture_only",
+    "target_evidence_is_unsigned_and_unauthenticated",
+    "single_case_browser_workflow_only",
+    "browser_workflow_observed_with_known_jquery_notify_runtime_errors",
+    "does_not_prove_accessibility",
     "does_not_prove_operational_equivalence",
     "target_version_and_execution_context_are_operator_asserted",
 )
@@ -812,6 +833,29 @@ def _ui_surface_result() -> dict[str, JsonValue]:
     }
 
 
+def _browser_workflow_result() -> dict[str, JsonValue]:
+    workflows = [
+        _probe_result(
+            "case_dashboard_to_manage_case",
+            "observed",
+            "isolated_headless_chromium_interaction",
+        ),
+    ]
+    return {
+        "decision_scope": "pinned_synthetic_browser_workflow_only",
+        "known_runtime_errors": [
+            {
+                "error_key": "jquery_notify_unavailable",
+                "occurrence_count": 2,
+            }
+        ],
+        "limitations": list(_BROWSER_RESULT_LIMITATIONS),
+        "schema_version": _BROWSER_RESULT_SCHEMA,
+        "target_profile": _PROFILE,
+        "workflow_results": cast("list[JsonValue]", workflows),
+    }
+
+
 def _target_result(allow_count: int, deny_count: int) -> dict[str, JsonValue]:
     probes = [
         _probe_result("record_lookup", "pass", "independent_api_v4_readback"),
@@ -854,6 +898,7 @@ def _build_output(
     list[tuple[str, bytes]],
     dict[str, JsonValue],
     dict[str, JsonValue],
+    dict[str, JsonValue],
 ]:
     identity_contact_ids = _parse_identities(documents)
     people, person_by_target = _parse_contacts(documents["contacts.json"])
@@ -888,6 +933,29 @@ def _build_output(
         },
         "contact-summary UI projection",
     )
+    _parse_ui_surface(
+        documents["browser-workflow.json"],
+        {
+            "browser_engine": "chromium",
+            "data_mode": "synthetic_only",
+            "known_runtime_errors": [
+                {
+                    "error_key": "jquery_notify_unavailable",
+                    "occurrence_count": 2,
+                }
+            ],
+            "retained_artifacts": [],
+            "schema_version": "exitdrill/civicrm-browser-workflow-observation/v0.1",
+            "steps": [
+                "case_dashboard_opened",
+                "case_located",
+                "manage_case_opened",
+                "case_controls_observed",
+            ],
+            "target_profile": _PROFILE,
+        },
+        "browser workflow projection",
+    )
     export: dict[str, JsonValue] = {
         "attachments": cast("list[JsonValue]", attachments),
         "audit_events": [],
@@ -905,6 +973,7 @@ def _build_output(
         copies,
         _target_result(len(allow_values), len(deny_values)),
         _ui_surface_result(),
+        _browser_workflow_result(),
     )
 
 
@@ -914,6 +983,7 @@ def _write_output(
     copies: Sequence[tuple[str, bytes]],
     result: Mapping[str, JsonValue],
     ui_result: Mapping[str, JsonValue],
+    browser_result: Mapping[str, JsonValue],
 ) -> None:
     parent = out_dir.parent
     if not parent.exists() or not parent.is_dir():
@@ -930,6 +1000,9 @@ def _write_output(
             (attachment_dir / f"{source_id}.txt").write_bytes(content)
         (temporary / "target-result.json").write_bytes(canonical_json_bytes(result) + b"\n")
         (temporary / "ui-surface-result.json").write_bytes(canonical_json_bytes(ui_result) + b"\n")
+        (temporary / "browser-workflow-result.json").write_bytes(
+            canonical_json_bytes(browser_result) + b"\n"
+        )
         if out_dir.exists() or out_dir.is_symlink():
             raise _fail("output directory already exists")
         temporary.rename(out_dir)
@@ -971,7 +1044,7 @@ def normalize_civicrm_target_canary(manifest_path: Path, out_dir: Path) -> dict[
     )
     _, files = _parse_manifest(manifest_document)
     documents = _read_verified_bundle(root, files)
-    export, copies, result, ui_result = _build_output(documents)
+    export, copies, result, ui_result, browser_result = _build_output(documents)
     export_document = canonical_json_bytes(export) + b"\n"
-    _write_output(resolved_out, export_document, copies, result, ui_result)
+    _write_output(resolved_out, export_document, copies, result, ui_result, browser_result)
     return result
