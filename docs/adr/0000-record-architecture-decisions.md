@@ -36,6 +36,7 @@ Existing accepted records:
 10. [ADR 0010: Observe one CiviCRM activity-view workflow](../decisions/0010-observe-one-civicrm-activity-view-workflow.md)
 11. [ADR 0011: Index CiviCRM evidence without composing it](../decisions/0011-index-civicrm-evidence-without-composing-it.md)
 12. [ADR 0012: Bind indexed CiviCRM artifacts by digest](../decisions/0012-bind-civicrm-indexed-artifacts-by-digest.md)
+13. [ADR 0013: Verify CiviCRM index bindings without composing results](../decisions/0013-verify-civicrm-index-bindings-without-composing-results.md)
 
 ## Consequences
 
