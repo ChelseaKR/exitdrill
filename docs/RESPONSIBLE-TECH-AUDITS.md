@@ -76,7 +76,9 @@ source audit-history records.
 The accompanying `evidence-index.json` catalogs the normalized export and all
 six result families without adding a status, score, pass count, or composite
 assessment. Its entries retain independent decision scopes, so proximity in the
-index cannot be read as combined evidence.
+index cannot be read as combined evidence. Per-entry byte lengths and SHA-256
+digests bind the generated set for internal consistency but do not authenticate
+the operator or prove any observation true.
 
 ## Accountability
 

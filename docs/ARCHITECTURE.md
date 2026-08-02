@@ -260,16 +260,18 @@ source audit events.
 
 The normalizer emits `evidence-index.json` as a closed catalog of the normalized
 export and six independent CiviCRM result artifacts. Each entry fixes only an
-artifact identifier, filename, schema, and decision scope. The index contains
-no status, score, pass count, priority, or inferred conclusion and therefore
-cannot replace validation of an entry's schema or interpretation of its own
-limitations.
+artifact identifier, filename, schema, decision scope, byte length, and SHA-256
+digest. The binding is calculated from the exact byte string written for each
+artifact. The index contains no status, score, pass count, priority, or inferred
+conclusion and therefore cannot replace validation of an entry's schema or
+interpretation of its own limitations.
 
 In particular, listing `export.json` beside the target-interface and browser
 evidence does not compose them. The export remains input to the separate
 five-dimension structural evaluator, while each result remains bounded to its
 own observation. The index is unsigned and authenticates neither the artifacts
-nor the operator-asserted target execution.
+nor the operator-asserted target execution. Its digests detect an internally
+inconsistent artifact set but can be recomputed by a fabricator.
 
 ## Data contracts
 

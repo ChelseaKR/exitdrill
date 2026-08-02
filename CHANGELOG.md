@@ -6,6 +6,9 @@ All notable changes will be documented here.
 
 ### Changed
 
+- Advanced the CiviCRM evidence index to `v0.2`, binding each catalog entry to
+  the exact emitted artifact bytes and length while explicitly withholding any
+  authenticity claim.
 - Advanced the independent baseline to `v0.3`; every declared required entity
   field now binds an exact expected scalar value as well as its type.
 - Advanced drill-result and receipt contracts to `v0.3` so their limitations

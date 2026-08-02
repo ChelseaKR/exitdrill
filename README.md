@@ -229,10 +229,12 @@ editing, creation, source-history equivalence, or other activity types.
 
 The normalizer also emits `evidence-index.json`, a machine-readable catalog of
 the normalized export and six separate result artifacts. Each entry names its
-own schema and decision scope. The index deliberately contains no status,
-score, pass count, or inferred outcome; every artifact must be interpreted with
-its own limitations, and the normalized export still requires the separate
-structural evaluator.
+own schema and decision scope and binds the exact emitted bytes with a length
+and SHA-256 digest. The index deliberately contains no status, score, pass
+count, or inferred outcome; every artifact must be interpreted with its own
+limitations, and the normalized export still requires the separate structural
+evaluator. The unsigned digests detect internal inconsistency, not fabrication
+or an unauthenticated operator.
 
 ## Compare recurring receipts
 
@@ -400,6 +402,7 @@ beyond these target-interface probes.
 - [CiviCRM keyboard-interaction decision](docs/decisions/0009-record-one-keyboard-interaction-observation.md)
 - [CiviCRM activity-view decision](docs/decisions/0010-observe-one-civicrm-activity-view-workflow.md)
 - [CiviCRM non-composite evidence-index decision](docs/decisions/0011-index-civicrm-evidence-without-composing-it.md)
+- [CiviCRM evidence-index digest decision](docs/decisions/0012-bind-civicrm-indexed-artifacts-by-digest.md)
 - [Threat model](docs/THREAT-MODEL.md)
 - [Responsible-technology audit](docs/RESPONSIBLE-TECH-AUDITS.md)
 - [Data governance](docs/DATA-GOVERNANCE.md)

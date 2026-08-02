@@ -473,7 +473,7 @@ def test_normalizes_closed_target_bundle_and_schema_validates(tmp_path: Path) ->
         Path(__file__).parents[1] / "schemas/civicrm-activity-view-result-v0.1.schema.json"
     )
     evidence_index_schema = _read_json(
-        Path(__file__).parents[1] / "schemas/civicrm-evidence-index-v0.1.schema.json"
+        Path(__file__).parents[1] / "schemas/civicrm-evidence-index-v0.2.schema.json"
     )
     ui_result = _read_json(out_dir / "ui-surface-result.json")
     browser_result = _read_json(out_dir / "browser-workflow-result.json")
@@ -482,6 +482,7 @@ def test_normalizes_closed_target_bundle_and_schema_validates(tmp_path: Path) ->
     activity_view_result = _read_json(out_dir / "activity-view-result.json")
     evidence_index = _read_json(out_dir / "evidence-index.json")
 
+    Draft202012Validator.check_schema(evidence_index_schema)
     Draft202012Validator(schema).validate(result)
     Draft202012Validator(ui_schema).validate(ui_result)
     Draft202012Validator(browser_schema).validate(browser_result)
@@ -517,6 +518,10 @@ def test_normalizes_closed_target_bundle_and_schema_validates(tmp_path: Path) ->
         "activity_view",
     ]
     assert evidence_index["decision_scope"] == "separate_non_composite_evidence_families"
+    for item in evidence_index["entries"]:
+        content = (out_dir / item["filename"]).read_bytes()
+        assert item["bytes"] == len(content)
+        assert item["sha256"] == hashlib.sha256(content).hexdigest()
     assert package.drill_id == "directus-civic-case-exit-001"
     assert package.source_system == "Directus 11.17.4 synthetic civic-case sandbox"
     assert package.exported_at == "2026-08-02T02:38:28.542Z"
