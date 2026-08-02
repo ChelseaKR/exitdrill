@@ -28,6 +28,7 @@ demo:
 	uv run exitdrill validate examples/synthetic-crm/baseline.json examples/synthetic-crm/export.json
 	uv run exitdrill drill examples/synthetic-crm/baseline.json examples/synthetic-crm/export.json --attachment-root examples/synthetic-crm/export-files --out examples/synthetic-crm/out/receipt.json --claimed-generated-at 2026-07-22T20:00:00Z
 	uv run exitdrill verify examples/synthetic-crm/out/receipt.json --baseline examples/synthetic-crm/baseline.json --export examples/synthetic-crm/export.json --attachment-root examples/synthetic-crm/export-files
+	uv run exitdrill report examples/synthetic-crm/out/receipt.json --out examples/synthetic-crm/out/report.html
 
 demo-lossy:
 	@mkdir -p examples/synthetic-crm-lossy/out

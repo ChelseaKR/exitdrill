@@ -42,6 +42,9 @@ permission model.
   presence, counts, arithmetic, limitations, and shared result algebra.
 - `comparison.py` reduces two verified receipts to aggregate snapshots, gates
   exact input-scope comparability, and emits deterministic per-dimension deltas.
+- `report.py` renders one semantically verified aggregate receipt as a
+  deterministic, accessible, script-free offline HTML report with the complete
+  claims boundary intact.
 - `cli.py` exposes validation, drill, verification/replay, and comparison.
 
 ## Architecture decision

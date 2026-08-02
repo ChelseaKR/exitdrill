@@ -23,6 +23,7 @@ from exitdrill.receipt import (
     verify_receipt,
     write_receipt,
 )
+from exitdrill.report import ReportError, render_receipt_file, write_report
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -61,6 +62,12 @@ def _parser() -> argparse.ArgumentParser:
         action="store_true",
         help="return 3 for a comparable observed aggregate missing/invalid increase",
     )
+    report = commands.add_parser(
+        "report",
+        help="render an accessible offline report from a verified receipt",
+    )
+    report.add_argument("receipt", type=Path)
+    report.add_argument("--out", type=Path, required=True)
     return parser
 
 
@@ -179,6 +186,19 @@ def _compare(
     return 0
 
 
+def _report(receipt_path: Path, out: Path) -> int:
+    document = render_receipt_file(receipt_path)
+    write_report(out, document)
+    _print_json(
+        {
+            "decision_scope": "verified_aggregate_receipt_report_only",
+            "report": str(out),
+            "status": "report_written",
+        }
+    )
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     """Run the CLI with bounded failures."""
     args = _parser().parse_args(argv)
@@ -208,11 +228,14 @@ def main(argv: list[str] | None = None) -> int:
                 args.candidate,
                 fail_on_loss_signal_increase=args.fail_on_loss_signal_increase,
             )
+        if args.command == "report":
+            return _report(args.receipt, args.out)
     except (
         DrillError,
         ExercisePlanError,
         PackageError,
         ReceiptError,
+        ReportError,
         OSError,
         json.JSONDecodeError,
     ) as exc:

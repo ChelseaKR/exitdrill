@@ -54,3 +54,6 @@ All notable changes will be documented here.
 - Installed source-bound comparison verifier that recomputes every derived field
   from two fully verified receipts; JSON Schema remains the structural and
   locally expressible contract.
+- Deterministic, accessible, script-free offline HTML evidence reports generated
+  only from semantically verified aggregate receipts, with mandatory trust
+  limitations and no operational-equivalence claim.

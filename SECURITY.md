@@ -22,6 +22,11 @@ The synthetic exercise-plan validator checks declared sandbox controls but
 executes no connector or target action. A valid plan is not evidence that any
 control exists or that a restoration occurred.
 
+Offline HTML reports are rendered only after complete receipt verification,
+escape every receipt-derived string, contain no scripts or external assets, and
+carry the receipt's complete limitations. They remain unsigned summaries of
+unauthenticated aggregate evidence.
+
 Use GitHub's
 [private vulnerability reporting](https://github.com/ChelseaKR/exitdrill/security/advisories/new).
 Do not include production exports, credentials, personal information, or

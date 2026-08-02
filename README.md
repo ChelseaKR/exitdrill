@@ -52,12 +52,21 @@ exitdrill verify receipt.json \
   --baseline examples/synthetic-crm/baseline.json \
   --export examples/synthetic-crm/export.json \
   --attachment-root examples/synthetic-crm/export-files
+
+exitdrill report receipt.json --out report.html
 ```
 
 Checksum-only verification reports `checksum_self_consistent`; it does not
 authenticate the receipt. Supplying all replay inputs reports `replay_verified`.
 The receipt payload is a closed contract: recomputing a checksum cannot make
 missing dimensions, impossible counts, or contradictory statuses valid.
+
+The `report` command strict-loads and semantically verifies the receipt before
+writing a deterministic, accessible, standalone HTML summary. The report has no
+scripts or external assets, contains only the aggregate receipt evidence, and
+states the same trust limitations in plain language. It does not turn an
+unsigned checksum into authentication or a structural result into operational
+exit readiness.
 
 The fixture uses only invented people, cases, relationships, roles, events, and
 attachment content.
