@@ -38,9 +38,11 @@ demo-lossy:
 	test $$status -eq 2; \
 	uv run python -c 'import json, sys; receipt = json.load(open(sys.argv[1], encoding="utf-8")); assert receipt["payload"]["overall_status"] == "not_structurally_restorable"' "$$receipt"; \
 	mv "$$receipt" examples/synthetic-crm-lossy/out/receipt.json
+	@uv run exitdrill report examples/synthetic-crm-lossy/out/receipt.json --out examples/synthetic-crm-lossy/out/report.html >/dev/null
 
 demo-compare: demo demo-lossy
-	uv run exitdrill compare examples/synthetic-crm/out/receipt.json examples/synthetic-crm-lossy/out/receipt.json
+	@uv run exitdrill compare examples/synthetic-crm/out/receipt.json examples/synthetic-crm-lossy/out/receipt.json > examples/synthetic-crm/out/comparison.json
+	@uv run python scripts/summarize_synthetic_demo.py
 
 demo-compare-policy: demo-compare
 	@status=0; \
