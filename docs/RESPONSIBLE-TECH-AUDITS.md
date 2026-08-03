@@ -86,8 +86,11 @@ authorization and principal-equivalence claims.
 A tenth result supplies the same-object positive control: the distinct allow
 principal renders the protected Contact Summary directly. It does not convert
 the two bounded observations into a general authorization verdict.
+An eleventh result observes both synthetic cases through Case Summary and then
+records HTTP 500 from one exact-subject filter submission. It exposes a bounded
+defect without claiming root cause or general search behavior.
 The accompanying `evidence-index.json` catalogs the normalized export and all
-ten result families without adding a status, score, pass count, or composite
+eleven result families without adding a status, score, pass count, or composite
 assessment. Its entries retain independent decision scopes, so proximity in the
 index cannot be read as combined evidence. Per-entry byte lengths and SHA-256
 digests bind the generated set for internal consistency but do not authenticate

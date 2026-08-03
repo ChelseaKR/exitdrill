@@ -47,17 +47,20 @@ packages = ["src/exitdrill"]
 "schemas/civicrm-case-client-workflow-result-v0.1.schema.json" = "exitdrill/schemas/civicrm-case-client-workflow-result-v0.1.schema.json"
 "schemas/civicrm-browser-access-denial-result-v0.1.schema.json" = "exitdrill/schemas/civicrm-browser-access-denial-result-v0.1.schema.json"
 "schemas/civicrm-browser-access-allow-control-result-v0.1.schema.json" = "exitdrill/schemas/civicrm-browser-access-allow-control-result-v0.1.schema.json"
+"schemas/civicrm-case-search-workflow-result-v0.1.schema.json" = "exitdrill/schemas/civicrm-case-search-workflow-result-v0.1.schema.json"
 "schemas/civicrm-evidence-index-v0.1.schema.json" = "exitdrill/schemas/civicrm-evidence-index-v0.1.schema.json"
 "schemas/civicrm-evidence-index-v0.2.schema.json" = "exitdrill/schemas/civicrm-evidence-index-v0.2.schema.json"
 "schemas/civicrm-evidence-index-v0.3.schema.json" = "exitdrill/schemas/civicrm-evidence-index-v0.3.schema.json"
 "schemas/civicrm-evidence-index-v0.4.schema.json" = "exitdrill/schemas/civicrm-evidence-index-v0.4.schema.json"
 "schemas/civicrm-evidence-index-v0.5.schema.json" = "exitdrill/schemas/civicrm-evidence-index-v0.5.schema.json"
 "schemas/civicrm-evidence-index-v0.6.schema.json" = "exitdrill/schemas/civicrm-evidence-index-v0.6.schema.json"
+"schemas/civicrm-evidence-index-v0.7.schema.json" = "exitdrill/schemas/civicrm-evidence-index-v0.7.schema.json"
 "schemas/civicrm-evidence-verification-v0.1.schema.json" = "exitdrill/schemas/civicrm-evidence-verification-v0.1.schema.json"
 "schemas/civicrm-evidence-verification-v0.2.schema.json" = "exitdrill/schemas/civicrm-evidence-verification-v0.2.schema.json"
 "schemas/civicrm-evidence-verification-v0.3.schema.json" = "exitdrill/schemas/civicrm-evidence-verification-v0.3.schema.json"
 "schemas/civicrm-evidence-verification-v0.4.schema.json" = "exitdrill/schemas/civicrm-evidence-verification-v0.4.schema.json"
 "schemas/civicrm-evidence-verification-v0.5.schema.json" = "exitdrill/schemas/civicrm-evidence-verification-v0.5.schema.json"
+"schemas/civicrm-evidence-verification-v0.6.schema.json" = "exitdrill/schemas/civicrm-evidence-verification-v0.6.schema.json"
 
 [tool.ruff]
 line-length = 100

@@ -6,6 +6,8 @@ All notable changes will be documented here.
 
 ### Changed
 
+- Advanced the CiviCRM evidence index to `v0.7` and verification result to
+  `v0.6` for a twelfth indexed artifact: a bounded case-search failure result.
 - Advanced the CiviCRM evidence index to `v0.6` and verification result to
   `v0.5` for an eleventh indexed artifact: a same-object browser allow control.
 - Advanced the CiviCRM evidence index to `v0.5` and the closed verification
@@ -34,6 +36,9 @@ All notable changes will be documented here.
 
 ### Added
 
+- An eleventh CiviCRM evidence family that observes both synthetic cases through
+  Case Summary, then records HTTP 500 from one exact-subject filter submission
+  without claiming root cause or general search behavior.
 - A tenth CiviCRM evidence family that confirms the allow principal can render
   the same protected Contact Summary used by the browser denial probe.
 - A ninth CiviCRM evidence family that records one deny-principal browser

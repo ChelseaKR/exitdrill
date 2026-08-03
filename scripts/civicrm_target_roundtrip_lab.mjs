@@ -30,6 +30,11 @@ const browserAccessAllowControlScript = join(
   "scripts",
   "civicrm_browser_access_allow_control.mjs",
 );
+const browserCaseSearchWorkflowScript = join(
+  repositoryRoot,
+  "scripts",
+  "civicrm_browser_case_search_workflow.mjs",
+);
 const browserNodeModules = join(repositoryRoot, "node_modules");
 const sourceNativeDir = join(
   repositoryRoot,
@@ -104,6 +109,7 @@ const capturePaths = [
   "browser-case-client-workflow.json",
   "browser-access-denial.json",
   "browser-access-allow-control.json",
+  "browser-case-search-workflow.json",
   `assets/${firstAssetId}.txt`,
   `assets/${secondAssetId}.txt`,
 ];
@@ -1089,6 +1095,62 @@ function createLabRuntime(envFile, projectName, composeEnvironment) {
     }
   }
 
+  async function browserCaseSearchWorkflow(identityRecord) {
+    browserContainerActive = true;
+    let completedCleanly = false;
+    try {
+      const completed = await docker(
+        [
+          "run",
+          "--rm",
+          "--init",
+          "--pull",
+          "never",
+          "--name",
+          browserContainerName,
+          "--network",
+          `${projectName}_lab`,
+          "--read-only",
+          "--tmpfs",
+          "/tmp:rw,noexec,nosuid,size=268435456",
+          "--shm-size",
+          "1073741824",
+          "--cap-drop",
+          "ALL",
+          "--security-opt",
+          "no-new-privileges:true",
+          "--mount",
+          `type=bind,src=${browserCaseSearchWorkflowScript},dst=/work/civicrm_browser_case_search_workflow.mjs,readonly`,
+          "--mount",
+          `type=bind,src=${browserNodeModules},dst=/work/node_modules,readonly`,
+          "-e",
+          "EXITDRILL_BROWSER_USERNAME",
+          "-e",
+          "EXITDRILL_BROWSER_PASSWORD",
+          browserImage,
+          "node",
+          "/work/civicrm_browser_case_search_workflow.mjs",
+        ],
+        {
+          env: {
+            EXITDRILL_BROWSER_USERNAME: identityRecord.username,
+            EXITDRILL_BROWSER_PASSWORD: identityRecord.password,
+          },
+          timeoutMs: 120_000,
+          label: "isolated CiviCRM browser case-search workflow",
+        },
+      );
+      const observation = requireObject(
+        parseJsonBytes(completed.stdout, "browser case-search workflow observation"),
+        "browser case-search workflow observation",
+      );
+      completedCleanly = true;
+      return observation;
+    } finally {
+      if (completedCleanly) browserContainerActive = false;
+    }
+  }
+
   async function cleanupBrowser() {
     if (!browserContainerActive) return;
     const listed = await docker(
@@ -1120,6 +1182,7 @@ function createLabRuntime(envFile, projectName, composeEnvironment) {
     api4,
     browserAccessAllowControl,
     browserAccessDenial,
+    browserCaseSearchWorkflow,
     browserWorkflow,
     cleanupBrowser,
     compose,
@@ -2089,6 +2152,29 @@ async function captureReadback(runtime, fixture, principals, stageDir) {
     allow,
     readerContactIds.get(1),
   );
+  const browserCaseSearchWorkflowObservation = await runtime.browserCaseSearchWorkflow(reader);
+  requireExact(
+    browserCaseSearchWorkflowObservation,
+    {
+      browser_engine: "chromium",
+      data_mode: "synthetic_only",
+      known_runtime_errors: [
+        { error_key: "jquery_notify_unavailable", occurrence_count: 2 },
+      ],
+      retained_artifacts: [],
+      schema_version: "exitdrill/civicrm-case-search-workflow-observation/v0.1",
+      search_outcome: "exact_subject_filter_http_500_observed",
+      steps: [
+        "case_dashboard_opened",
+        "case_summary_drilldown_activated",
+        "unfiltered_case_results_observed",
+        "case_subject_filter_submitted",
+        "exact_subject_filter_http_500_observed",
+      ],
+      target_profile: targetProfile,
+    },
+    "browser case-search workflow observation",
+  );
   requireExact(
     browserAccessAllowControlObservation,
     {
@@ -2366,6 +2452,7 @@ async function captureReadback(runtime, fixture, principals, stageDir) {
     ["browser-case-client-workflow.json", jsonDocument(caseClientWorkflowObservation)],
     ["browser-access-denial.json", jsonDocument(browserAccessDenialObservation)],
     ["browser-access-allow-control.json", jsonDocument(browserAccessAllowControlObservation)],
+    ["browser-case-search-workflow.json", jsonDocument(browserCaseSearchWorkflowObservation)],
     [`assets/${firstAssetId}.txt`, downloadedAssets.get(firstAssetId)],
     [`assets/${secondAssetId}.txt`, downloadedAssets.get(secondAssetId)],
   ]);
@@ -2440,7 +2527,7 @@ function buildManifest(metadata, sourceNormalization) {
       database: databaseImage,
     },
     acquisition_surface:
-      "supported_api_v4_authenticated_private_file_readback_authenticated_server_rendered_ui_isolated_browser_workflow_automated_accessibility_scan_keyboard_interaction_activity_view_contact_summary_workflow_case_client_workflow_browser_access_denial_and_browser_access_allow_control",
+      "supported_api_v4_authenticated_private_file_readback_authenticated_server_rendered_ui_isolated_browser_workflow_automated_accessibility_scan_keyboard_interaction_activity_view_contact_summary_workflow_case_client_workflow_browser_access_denial_browser_access_allow_control_and_case_search_workflow",
     source_normalization: sourceNormalization,
     sandbox: {
       application_empty_before_write: true,
@@ -2527,6 +2614,9 @@ function buildManifest(metadata, sourceNormalization) {
       "browser_access_allow_control_observed_as_protected_content_presence",
       "browser_access_allow_control_observed_with_known_jquery_notify_runtime_error",
       "browser_access_allow_control_does_not_prove_all_ui_or_api_authorization",
+      "single_case_search_browser_workflow_only",
+      "case_search_workflow_observed_with_known_jquery_notify_runtime_errors",
+      "case_search_workflow_does_not_prove_general_search_or_filter_usability",
     ],
   };
 }

@@ -183,12 +183,12 @@ exitdrill verify-civicrm-evidence-index \
   normalized-civicrm-target-canary/evidence-index.json
 ```
 
-That command checks the closed index and ten result schemas, exact bounded
+That command checks the closed index and eleven result schemas, exact bounded
 artifact bytes, the normalized export contract, and its declared attachment
 bytes. It does not run the structural evaluator, interpret or compose results,
 authenticate the evidence, or prove that the asserted sandbox execution
 occurred. Its aggregate stdout is a separate closed
-`exitdrill/civicrm-evidence-verification/v0.5` result that identifies the v0.6
+`exitdrill/civicrm-evidence-verification/v0.6` result that identifies the v0.7
 input index and carries those limitations as machine-readable fields.
 
 The five observed target-interface probes cover record lookup, relationship
@@ -268,8 +268,14 @@ principal requests that same protected contact and renders its Contact Summary
 and name directly with HTTP 200. The two browser artifacts remain independent,
 bounded observations and do not compose into a universal authorization verdict.
 
+An eleventh family opens the Case Summary drilldown and observes both synthetic
+cases, then submits the exact visible Alpha case subject through Edit Search
+Criteria. On this pinned profile, that submission returns HTTP 500 and an Error
+page. This is a bounded defect observation: it establishes neither root cause,
+behavior of other filters or configurations, nor general search usability.
+
 The normalizer also emits `evidence-index.json`, a machine-readable catalog of
-the normalized export and ten separate result artifacts. Each entry names its
+the normalized export and eleven separate result artifacts. Each entry names its
 own schema and decision scope and binds the exact emitted bytes with a length
 and SHA-256 digest. The index deliberately contains no status, score, pass
 count, or inferred outcome; every artifact must be interpreted with its own
@@ -451,6 +457,7 @@ beyond these target-interface probes.
 - [CiviCRM target-generated case-client workflow decision](docs/decisions/0017-observe-one-target-generated-civicrm-case-client-workflow.md)
 - [CiviCRM browser access-denial decision](docs/decisions/0018-observe-one-authenticated-civicrm-browser-access-denial.md)
 - [CiviCRM browser allow-control decision](docs/decisions/0019-observe-one-authenticated-civicrm-browser-allow-control.md)
+- [CiviCRM case-search workflow decision](docs/decisions/0020-record-one-civicrm-case-search-failure.md)
 - [Threat model](docs/THREAT-MODEL.md)
 - [Responsible-technology audit](docs/RESPONSIBLE-TECH-AUDITS.md)
 - [Data governance](docs/DATA-GOVERNANCE.md)
