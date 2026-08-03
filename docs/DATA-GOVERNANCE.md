@@ -58,6 +58,10 @@ The native browser access-denial projection retains only fixed route names and
 statuses, semantic step keys, the sanitized known-error key/count, and an empty
 artifact list. It excludes the protected name, contact identifier, full URL,
 HTML, screenshots, traces, cookies, and credentials.
+The native browser allow-control projection uses the same minimized boundary.
+It records that the fixed route returned HTTP 200 and the protected page/content
+were observed, but excludes the contact name, identifier, full URL, route
+parameters, HTML, screenshots, traces, cookies, and credentials.
 The generated evidence index contains only fixed artifact identifiers,
 filenames, schema identifiers, decision scopes, the pinned profile, and fixed
 limitations, plus artifact byte lengths and SHA-256 digests. It contains no raw

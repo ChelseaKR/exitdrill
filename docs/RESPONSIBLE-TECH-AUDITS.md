@@ -83,8 +83,11 @@ editing, accessibility, and broader-usability claims.
 A ninth result records one authenticated deny-principal browser redirect and
 protected-content absence while explicitly withholding universal UI/API
 authorization and principal-equivalence claims.
+A tenth result supplies the same-object positive control: the distinct allow
+principal renders the protected Contact Summary directly. It does not convert
+the two bounded observations into a general authorization verdict.
 The accompanying `evidence-index.json` catalogs the normalized export and all
-nine result families without adding a status, score, pass count, or composite
+ten result families without adding a status, score, pass count, or composite
 assessment. Its entries retain independent decision scopes, so proximity in the
 index cannot be read as combined evidence. Per-entry byte lengths and SHA-256
 digests bind the generated set for internal consistency but do not authenticate
