@@ -5,7 +5,7 @@
 Run structural recovery drills for leaving SaaS systems.
 
 **Status:** technical alpha · synthetic data only · offline verifier with an
-optional isolated local capture lab · zero runtime dependencies
+optional isolated local capture lab
 
 ExitDrill asks a question that ordinary backup and native export checks do not:
 
@@ -468,7 +468,7 @@ beyond these target-interface probes.
 |---|---|
 | Quality & Metrics | Applies; ≥90% branch coverage is merge-blocking |
 | Code Quality | Applies; Python 3.12, strict mypy, Ruff, and pytest |
-| Security & Supply-Chain | Applies; closed local inputs, zero runtime dependencies, pinned CI actions, SAST, secret and dependency scanning are committed |
+| Security & Supply-Chain | Applies; closed local inputs, pinned CI actions, SAST, secret and dependency scanning are committed |
 | CI/CD | Applies; committed workflows mirror local verification and demo paths |
 | Release/versioning | Applies; the build-only candidate workflow publishes no package or registry artifact |
 | Accessibility | Applies; deterministic report tests cover the language declaration, skip link, table caption, aggregate-only content, escaping, and absence of scripts; the pinned CiviCRM page has a separate automated finding report that is explicitly not a conformance claim |
