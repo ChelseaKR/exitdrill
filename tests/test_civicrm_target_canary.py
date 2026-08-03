@@ -43,6 +43,7 @@ _FILE_PATHS = (
     "browser-contact-summary-workflow.json",
     "browser-case-client-workflow.json",
     "browser-access-denial.json",
+    "browser-access-allow-control.json",
     f"assets/{_FILE_IDS[0]}.txt",
     f"assets/{_FILE_IDS[1]}.txt",
 )
@@ -130,6 +131,10 @@ _BUNDLE_LIMITATIONS = [
     "browser_access_denial_observed_as_redirect_and_protected_content_absence",
     "browser_access_denial_observed_with_known_jquery_notify_runtime_error",
     "browser_access_denial_does_not_prove_all_ui_or_api_authorization",
+    "single_browser_access_allow_control_probe_only",
+    "browser_access_allow_control_observed_as_protected_content_presence",
+    "browser_access_allow_control_observed_with_known_jquery_notify_runtime_error",
+    "browser_access_allow_control_does_not_prove_all_ui_or_api_authorization",
 ]
 _RESULT_LIMITATIONS = [
     "synthetic_fixture_only",
@@ -409,6 +414,24 @@ def _responses() -> dict[str, object]:
             ],
             "target_profile": ("directus-11.17.4-civic-case-to-civicrm-standalone-6.16.2/v0.1"),
         },
+        "browser-access-allow-control.json": {
+            "allow_signal": "protected_contact_content_present",
+            "authenticated_identity": "allow",
+            "browser_engine": "chromium",
+            "data_mode": "synthetic_only",
+            "known_runtime_errors": [
+                {"error_key": "jquery_notify_unavailable", "occurrence_count": 1}
+            ],
+            "navigation_chain": [{"route": "civicrm/contact/view", "status": 200}],
+            "retained_artifacts": [],
+            "schema_version": "exitdrill/civicrm-browser-access-allow-control-observation/v0.1",
+            "steps": [
+                "protected_contact_requested",
+                "protected_contact_page_observed",
+                "protected_contact_content_observed",
+            ],
+            "target_profile": ("directus-11.17.4-civic-case-to-civicrm-standalone-6.16.2/v0.1"),
+        },
     }
 
 
@@ -455,7 +478,7 @@ def _base_manifest(files: list[dict[str, object]]) -> dict[str, object]:
             "supported_api_v4_authenticated_private_file_readback_authenticated_"
             "server_rendered_ui_isolated_browser_workflow_automated_accessibility_scan_"
             "keyboard_interaction_activity_view_contact_summary_workflow_case_client_"
-            "workflow_and_browser_access_denial"
+            "workflow_browser_access_denial_and_browser_access_allow_control"
         ),
         "bundle_sha256": hashlib.sha256(canonical_json_bytes(files)).hexdigest(),
         "data_mode": "synthetic_only",
@@ -568,8 +591,12 @@ def test_normalizes_closed_target_bundle_and_schema_validates(tmp_path: Path) ->
     browser_access_denial_schema = _read_json(
         Path(__file__).parents[1] / "schemas/civicrm-browser-access-denial-result-v0.1.schema.json"
     )
+    browser_access_allow_control_schema = _read_json(
+        Path(__file__).parents[1]
+        / "schemas/civicrm-browser-access-allow-control-result-v0.1.schema.json"
+    )
     evidence_index_schema = _read_json(
-        Path(__file__).parents[1] / "schemas/civicrm-evidence-index-v0.5.schema.json"
+        Path(__file__).parents[1] / "schemas/civicrm-evidence-index-v0.6.schema.json"
     )
     ui_result = _read_json(out_dir / "ui-surface-result.json")
     browser_result = _read_json(out_dir / "browser-workflow-result.json")
@@ -579,6 +606,9 @@ def test_normalizes_closed_target_bundle_and_schema_validates(tmp_path: Path) ->
     contact_summary_workflow_result = _read_json(out_dir / "contact-summary-workflow-result.json")
     case_client_workflow_result = _read_json(out_dir / "case-client-workflow-result.json")
     browser_access_denial_result = _read_json(out_dir / "browser-access-denial-result.json")
+    browser_access_allow_control_result = _read_json(
+        out_dir / "browser-access-allow-control-result.json"
+    )
     evidence_index = _read_json(out_dir / "evidence-index.json")
 
     Draft202012Validator.check_schema(evidence_index_schema)
@@ -591,6 +621,9 @@ def test_normalizes_closed_target_bundle_and_schema_validates(tmp_path: Path) ->
     Draft202012Validator(contact_summary_workflow_schema).validate(contact_summary_workflow_result)
     Draft202012Validator(case_client_workflow_schema).validate(case_client_workflow_result)
     Draft202012Validator(browser_access_denial_schema).validate(browser_access_denial_result)
+    Draft202012Validator(browser_access_allow_control_schema).validate(
+        browser_access_allow_control_result
+    )
     Draft202012Validator(evidence_index_schema).validate(evidence_index)
     assert _read_json(out_dir / "target-result.json") == result
     assert result["represented_counts"] == _REPRESENTED
@@ -619,6 +652,9 @@ def test_normalizes_closed_target_bundle_and_schema_validates(tmp_path: Path) ->
     assert [item["state"] for item in browser_access_denial_result["denial_results"]] == [
         "observed"
     ]
+    assert [item["state"] for item in browser_access_allow_control_result["allow_results"]] == [
+        "observed"
+    ]
     assert [item["artifact_id"] for item in evidence_index["entries"]] == [
         "normalized_target_readback",
         "target_interface",
@@ -630,6 +666,7 @@ def test_normalizes_closed_target_bundle_and_schema_validates(tmp_path: Path) ->
         "contact_summary_workflow",
         "case_client_workflow",
         "browser_access_denial",
+        "browser_access_allow_control",
     ]
     assert evidence_index["decision_scope"] == "separate_non_composite_evidence_families"
     for item in evidence_index["entries"]:
@@ -660,15 +697,15 @@ def test_verifies_evidence_artifact_contracts_and_attachments(tmp_path: Path) ->
 
     result = verify_civicrm_evidence_index(out_dir / "evidence-index.json")
     schema = _read_json(
-        Path(__file__).parents[1] / "schemas/civicrm-evidence-verification-v0.4.schema.json"
+        Path(__file__).parents[1] / "schemas/civicrm-evidence-verification-v0.5.schema.json"
     )
     Draft202012Validator.check_schema(schema)
     Draft202012Validator(schema).validate(result)
     assert result == {
-        "artifact_count": 10,
+        "artifact_count": 11,
         "attachment_count": 2,
         "decision_scope": "catalog_bindings_artifact_schemas_and_export_attachments_only",
-        "index_schema_version": "exitdrill/civicrm-evidence-index/v0.5",
+        "index_schema_version": "exitdrill/civicrm-evidence-index/v0.6",
         "limitations": [
             "verification_is_unsigned_and_unauthenticated",
             "does_not_interpret_or_compose_artifact_results",
@@ -676,7 +713,7 @@ def test_verifies_evidence_artifact_contracts_and_attachments(tmp_path: Path) ->
             "does_not_prove_live_execution_or_completeness",
             "digests_prove_internal_consistency_not_authenticity",
         ],
-        "schema_version": "exitdrill/civicrm-evidence-verification/v0.4",
+        "schema_version": "exitdrill/civicrm-evidence-verification/v0.5",
         "status": "evidence_artifact_contracts_verified",
         "target_profile": ("directus-11.17.4-civic-case-to-civicrm-standalone-6.16.2/v0.1"),
     }
@@ -903,6 +940,9 @@ def test_api_capture_projections_accept_optional_exact_count_matched(tmp_path: P
         ("browser-access-denial.json", "denial_signal", "explicit_access_denied_page"),
         ("browser-access-denial.json", "known_runtime_errors", []),
         ("browser-access-denial.json", "redirect_chain", []),
+        ("browser-access-allow-control.json", "browser_engine", "firefox"),
+        ("browser-access-allow-control.json", "allow_signal", "redirected"),
+        ("browser-access-allow-control.json", "navigation_chain", []),
     ],
 )
 def test_rejects_ui_projection_drift(
@@ -1400,7 +1440,7 @@ def test_rejects_manifest_list_file_list_and_digest_primitive_drift(tmp_path: Pa
     raw = _read_json(file_count)
     raw["files"].pop()
     _write_json(file_count, raw)
-    with pytest.raises(CiviCRMTargetCanaryError, match="exactly 21"):
+    with pytest.raises(CiviCRMTargetCanaryError, match="exactly 22"):
         normalize_civicrm_target_canary(file_count, tmp_path / "file-count-out")
 
     digest = _create_bundle(tmp_path / "digest")
@@ -1484,6 +1524,7 @@ def test_existing_nested_and_missing_parent_destinations_are_rejected(tmp_path: 
         "contact-summary-workflow-result.json",
         "case-client-workflow-result.json",
         "browser-access-denial-result.json",
+        "browser-access-allow-control-result.json",
         "evidence-index.json",
     ],
 )

@@ -1,0 +1,334 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://exitdrill.example/schemas/civicrm-evidence-index-v0.6.schema.json",
+  "title": "ExitDrill CiviCRM evidence index v0.6",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "decision_scope",
+    "entries",
+    "limitations",
+    "schema_version",
+    "target_profile"
+  ],
+  "$defs": {
+    "bound_artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifact_id",
+        "bytes",
+        "decision_scope",
+        "filename",
+        "schema_version",
+        "sha256"
+      ],
+      "properties": {
+        "artifact_id": {
+          "type": "string"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10485760
+        },
+        "decision_scope": {
+          "type": "string"
+        },
+        "filename": {
+          "type": "string"
+        },
+        "schema_version": {
+          "type": "string"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    }
+  },
+  "properties": {
+    "decision_scope": {
+      "const": "separate_non_composite_evidence_families"
+    },
+    "entries": {
+      "type": "array",
+      "minItems": 11,
+      "maxItems": 11,
+      "items": false,
+      "prefixItems": [
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/bound_artifact"
+            },
+            {
+              "properties": {
+                "artifact_id": {
+                  "const": "normalized_target_readback"
+                },
+                "decision_scope": {
+                  "const": "normalized_target_readback_for_structural_evaluation"
+                },
+                "filename": {
+                  "const": "export.json"
+                },
+                "schema_version": {
+                  "const": "exitdrill/export/v0.1"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/bound_artifact"
+            },
+            {
+              "properties": {
+                "artifact_id": {
+                  "const": "target_interface"
+                },
+                "decision_scope": {
+                  "const": "pinned_synthetic_target_roundtrip_only"
+                },
+                "filename": {
+                  "const": "target-result.json"
+                },
+                "schema_version": {
+                  "const": "exitdrill/civicrm-target-roundtrip-result/v0.1"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/bound_artifact"
+            },
+            {
+              "properties": {
+                "artifact_id": {
+                  "const": "ui_surface"
+                },
+                "decision_scope": {
+                  "const": "pinned_synthetic_ui_surface_only"
+                },
+                "filename": {
+                  "const": "ui-surface-result.json"
+                },
+                "schema_version": {
+                  "const": "exitdrill/civicrm-ui-surface-result/v0.1"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/bound_artifact"
+            },
+            {
+              "properties": {
+                "artifact_id": {
+                  "const": "browser_workflow"
+                },
+                "decision_scope": {
+                  "const": "pinned_synthetic_browser_workflow_only"
+                },
+                "filename": {
+                  "const": "browser-workflow-result.json"
+                },
+                "schema_version": {
+                  "const": "exitdrill/civicrm-browser-workflow-result/v0.1"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/bound_artifact"
+            },
+            {
+              "properties": {
+                "artifact_id": {
+                  "const": "automated_accessibility"
+                },
+                "decision_scope": {
+                  "const": "pinned_synthetic_manage_case_automated_scan_only"
+                },
+                "filename": {
+                  "const": "accessibility-result.json"
+                },
+                "schema_version": {
+                  "const": "exitdrill/civicrm-accessibility-result/v0.1"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/bound_artifact"
+            },
+            {
+              "properties": {
+                "artifact_id": {
+                  "const": "keyboard_interaction"
+                },
+                "decision_scope": {
+                  "const": "pinned_synthetic_manage_case_keyboard_interaction_only"
+                },
+                "filename": {
+                  "const": "keyboard-result.json"
+                },
+                "schema_version": {
+                  "const": "exitdrill/civicrm-keyboard-result/v0.1"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/bound_artifact"
+            },
+            {
+              "properties": {
+                "artifact_id": {
+                  "const": "activity_view"
+                },
+                "decision_scope": {
+                  "const": "pinned_synthetic_generated_activity_view_only"
+                },
+                "filename": {
+                  "const": "activity-view-result.json"
+                },
+                "schema_version": {
+                  "const": "exitdrill/civicrm-activity-view-result/v0.1"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/bound_artifact"
+            },
+            {
+              "properties": {
+                "artifact_id": {
+                  "const": "contact_summary_workflow"
+                },
+                "decision_scope": {
+                  "const": "pinned_synthetic_contact_summary_browser_workflow_only"
+                },
+                "filename": {
+                  "const": "contact-summary-workflow-result.json"
+                },
+                "schema_version": {
+                  "const": "exitdrill/civicrm-contact-summary-workflow-result/v0.1"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/bound_artifact"
+            },
+            {
+              "properties": {
+                "artifact_id": {
+                  "const": "case_client_workflow"
+                },
+                "decision_scope": {
+                  "const": "pinned_synthetic_target_generated_case_client_browser_workflow_only"
+                },
+                "filename": {
+                  "const": "case-client-workflow-result.json"
+                },
+                "schema_version": {
+                  "const": "exitdrill/civicrm-case-client-workflow-result/v0.1"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/bound_artifact"
+            },
+            {
+              "properties": {
+                "artifact_id": {
+                  "const": "browser_access_denial"
+                },
+                "decision_scope": {
+                  "const": "pinned_synthetic_browser_access_denial_only"
+                },
+                "filename": {
+                  "const": "browser-access-denial-result.json"
+                },
+                "schema_version": {
+                  "const": "exitdrill/civicrm-browser-access-denial-result/v0.1"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/$defs/bound_artifact"
+            },
+            {
+              "properties": {
+                "artifact_id": {
+                  "const": "browser_access_allow_control"
+                },
+                "decision_scope": {
+                  "const": "pinned_synthetic_browser_access_allow_control_only"
+                },
+                "filename": {
+                  "const": "browser-access-allow-control-result.json"
+                },
+                "schema_version": {
+                  "const": "exitdrill/civicrm-browser-access-allow-control-result/v0.1"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "limitations": {
+      "const": [
+        "index_is_unsigned_and_unauthenticated",
+        "index_is_not_a_composite_assessment",
+        "entries_have_independent_decision_scopes",
+        "normalized_export_requires_separate_baseline_evaluation",
+        "each_result_must_be_interpreted_with_its_own_limitations",
+        "digests_prove_internal_consistency_not_authenticity",
+        "target_version_and_execution_context_are_operator_asserted"
+      ]
+    },
+    "schema_version": {
+      "const": "exitdrill/civicrm-evidence-index/v0.6"
+    },
+    "target_profile": {
+      "const": "directus-11.17.4-civic-case-to-civicrm-standalone-6.16.2/v0.1"
+    }
+  }
+}

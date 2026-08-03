@@ -6,6 +6,8 @@ All notable changes will be documented here.
 
 ### Changed
 
+- Advanced the CiviCRM evidence index to `v0.6` and verification result to
+  `v0.5` for an eleventh indexed artifact: a same-object browser allow control.
 - Advanced the CiviCRM evidence index to `v0.5` and the closed verification
   result to `v0.4` for a tenth indexed artifact: a separate authenticated
   browser access-denial result.
@@ -32,6 +34,8 @@ All notable changes will be documented here.
 
 ### Added
 
+- A tenth CiviCRM evidence family that confirms the allow principal can render
+  the same protected Contact Summary used by the browser denial probe.
 - A ninth CiviCRM evidence family that records one deny-principal browser
   redirect and protected-content absence while withholding universal UI/API
   authorization and principal-equivalence claims.

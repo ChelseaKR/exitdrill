@@ -183,12 +183,12 @@ exitdrill verify-civicrm-evidence-index \
   normalized-civicrm-target-canary/evidence-index.json
 ```
 
-That command checks the closed index and nine result schemas, exact bounded
+That command checks the closed index and ten result schemas, exact bounded
 artifact bytes, the normalized export contract, and its declared attachment
 bytes. It does not run the structural evaluator, interpret or compose results,
 authenticate the evidence, or prove that the asserted sandbox execution
 occurred. Its aggregate stdout is a separate closed
-`exitdrill/civicrm-evidence-verification/v0.4` result that identifies the v0.5
+`exitdrill/civicrm-evidence-verification/v0.5` result that identifies the v0.6
 input index and carries those limitations as machine-readable fields.
 
 The five observed target-interface probes cover record lookup, relationship
@@ -263,8 +263,13 @@ redirects that request from Contact Summary to `/civicrm`; the protected contact
 page and name are absent. This is a bounded redirect-and-content-absence
 observation, not proof of every UI or API authorization path.
 
+A tenth family supplies the paired positive browser control: the distinct allow
+principal requests that same protected contact and renders its Contact Summary
+and name directly with HTTP 200. The two browser artifacts remain independent,
+bounded observations and do not compose into a universal authorization verdict.
+
 The normalizer also emits `evidence-index.json`, a machine-readable catalog of
-the normalized export and nine separate result artifacts. Each entry names its
+the normalized export and ten separate result artifacts. Each entry names its
 own schema and decision scope and binds the exact emitted bytes with a length
 and SHA-256 digest. The index deliberately contains no status, score, pass
 count, or inferred outcome; every artifact must be interpreted with its own
@@ -445,6 +450,7 @@ beyond these target-interface probes.
 - [CiviCRM contact-summary workflow decision](docs/decisions/0016-observe-one-civicrm-contact-summary-workflow.md)
 - [CiviCRM target-generated case-client workflow decision](docs/decisions/0017-observe-one-target-generated-civicrm-case-client-workflow.md)
 - [CiviCRM browser access-denial decision](docs/decisions/0018-observe-one-authenticated-civicrm-browser-access-denial.md)
+- [CiviCRM browser allow-control decision](docs/decisions/0019-observe-one-authenticated-civicrm-browser-allow-control.md)
 - [Threat model](docs/THREAT-MODEL.md)
 - [Responsible-technology audit](docs/RESPONSIBLE-TECH-AUDITS.md)
 - [Data governance](docs/DATA-GOVERNANCE.md)
