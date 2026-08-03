@@ -6,6 +6,9 @@ All notable changes will be documented here.
 
 ### Changed
 
+- Advanced the CiviCRM evidence index to `v0.5` and the closed verification
+  result to `v0.4` for a tenth indexed artifact: a separate authenticated
+  browser access-denial result.
 - Advanced the CiviCRM evidence index to `v0.4` and the closed verification
   result to `v0.3` for a ninth indexed artifact: a separate target-generated
   case-client browser-workflow result.
@@ -29,6 +32,9 @@ All notable changes will be documented here.
 
 ### Added
 
+- A ninth CiviCRM evidence family that records one deny-principal browser
+  redirect and protected-content absence while withholding universal UI/API
+  authorization and principal-equivalence claims.
 - An eighth CiviCRM evidence family that follows the target-generated case
   client through Contact Summary and Cases back into Manage Case, while
   explicitly withholding source case-client equivalence, editing,

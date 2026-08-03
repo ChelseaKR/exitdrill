@@ -37,7 +37,9 @@ bounded keyboard interaction, one read-only Activity View observation, and one
 read-only dashboard-to-Contact-Summary browser path. A fourth browser task
 follows the target-generated case client through Contact Summary and Cases back
 into Manage Case without relabeling that helper as restored source data. A
-machine-readable evidence index catalogs the normalized export and eight result
+fifth browser task records one deny-principal redirect and protected-content
+absence without treating it as universal authorization proof. A machine-readable
+evidence index catalogs the normalized export and nine result
 families without composing their scopes or adding a verdict. Byte lengths and
 SHA-256 digests bind the exact generated set for internal consistency without
 claiming authenticity. This is a bounded target-process experiment, not a
@@ -100,10 +102,11 @@ equivalence, authenticated evidence, legal compliance, savings, or successful
 cutover to another SaaS product. The Directus evidence supports only one frozen
 11.17.4 synthetic source profile captured through documented APIs. The CiviCRM
 evidence supports only one frozen 6.16.2 target profile and five target-interface
-probe observations plus eight separately bounded result families: target
+probe observations plus nine separately bounded result families: target
 interface, Contact Summary UI surface, Dashboard → Manage Case browser workflow,
 automated accessibility, keyboard interaction, Activity View, and Dashboard →
-Contact Summary browser workflow, and a target-generated case-client workflow.
+Contact Summary browser workflow, a target-generated case-client workflow, and
+an authenticated browser access-denial observation.
 A separate index catalogs those results and the normalized export without
 composing them.
 It still has no supported production connector, production data path, WCAG
@@ -115,11 +118,11 @@ conformance evidence, general UI-workflow coverage, or cutover evidence.
   exports across five structural dimensions; added pinned Directus 11.17.4 source
   and CiviCRM 6.16.2 target canaries with independent API read-back, five bounded
   target-interface probes, one authenticated Contact Summary observation,
-  one isolated Dashboard → Manage Case browser task, five further bounded
-  accessibility/keyboard/activity/contact-summary/case-client observations,
+  one isolated Dashboard → Manage Case browser task, six further bounded
+  accessibility/keyboard/activity/contact-summary/case-client/access-denial observations,
   adversarial controls, and a
   non-composite evidence catalog that keeps six known source-to-target gaps and
-  eight known UI runtime errors explicit.
+  nine known UI runtime errors explicit.
 
 ## 60-second interview version
 

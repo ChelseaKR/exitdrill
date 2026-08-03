@@ -13,7 +13,8 @@ contains fixed API read-back envelopes, identity-separation evidence,
 permission-probe outcomes, and attachment bytes from the disposable target.
 It also contains separate sanitized browser-workflow, automated-accessibility,
 keyboard-interaction, activity-view, contact-summary workflow, and
-target-generated case-client workflow observations.
+target-generated case-client workflow observations, plus one browser
+access-denial observation.
 The profile verifier must reject any other version, file inventory, sandbox
 posture, identity shape, or response shape rather than infer a mapping.
 
@@ -89,6 +90,13 @@ to Manage Case. Three exact page-load `jquery_notify_unavailable` errors are
 recorded. The helper is target scaffolding, not restored source data, and the
 projection retains no route parameters, target IDs, HTML, screenshots, traces,
 or credentials.
+
+`browser-access-denial.json` records a fifth browser task under the distinct
+deny principal. A direct request for the protected Alpha contact redirects from
+Contact Summary to `/civicrm`, and neither the contact page nor protected name
+is present. The projection retains only route names and statuses, semantic
+steps, a sanitized single known-error key/count, and an empty artifact list.
+This one observation does not prove all UI or API authorization behavior.
 
 Source-mapped business-state read-back never uses the writer credential or its
 in-memory mutation responses. A separate AuthX identity envelope records writer
@@ -173,14 +181,14 @@ composite restoration status.
 The generated `ui-surface-result.json`, `browser-workflow-result.json`,
 `accessibility-result.json`, `keyboard-result.json`,
 `activity-view-result.json`, `contact-summary-workflow-result.json`, and
-`case-client-workflow-result.json` are separate evidence families. The browser results
-support only the four
+`case-client-workflow-result.json`, and `browser-access-denial-result.json` are
+separate evidence families. The browser results support only the five
 read-only tasks described above. The accessibility and
 keyboard results report only their bounded observations and are not conformance
 verdicts. None modifies the target probe algebra or structural result.
 
-`evidence-index.json` is a ninth, non-evaluative artifact: a closed catalog of
-`export.json` and the eight result files. It records only each artifact's fixed
+`evidence-index.json` is a tenth, non-evaluative artifact: a closed catalog of
+`export.json` and the nine result files. It records only each artifact's fixed
 identifier, filename, schema, independent decision scope, byte length, and
 SHA-256 digest. It contains no status, score, pass count, priority, or inferred
 conclusion, and it does not replace schema validation or the structural
@@ -199,8 +207,8 @@ the packaged index and result schemas, the normalized export contract, and its
 declared attachment bytes. It does not interpret any finding, run the structural
 evaluator, authenticate the files, or prove live execution.
 Its stdout uses the separate closed
-`exitdrill/civicrm-evidence-verification/v0.3` schema, identifies the verified
-v0.4 index in `index_schema_version`, and carries fixed limitations with the
+`exitdrill/civicrm-evidence-verification/v0.4` schema, identifies the verified
+v0.5 index in `index_schema_version`, and carries fixed limitations with the
 success status.
 
 The live capture gate and offline acceptance gate are distinct. The live harness
