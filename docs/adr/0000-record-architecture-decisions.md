@@ -41,6 +41,7 @@ Existing accepted records:
 15. [ADR 0015: Publish a closed CiviCRM verification result](../decisions/0015-publish-a-closed-civicrm-verification-result.md)
 16. [ADR 0016: Observe one CiviCRM contact-summary browser workflow](../decisions/0016-observe-one-civicrm-contact-summary-workflow.md)
 17. [ADR 0017: Observe one target-generated CiviCRM case-client workflow](../decisions/0017-observe-one-target-generated-civicrm-case-client-workflow.md)
+18. [ADR 0018: Observe one authenticated CiviCRM browser access denial](../decisions/0018-observe-one-authenticated-civicrm-browser-access-denial.md)
 
 ## Consequences
 

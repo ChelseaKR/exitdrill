@@ -80,8 +80,11 @@ An eighth result follows the target-generated case client through Contact
 Summary and Cases back into Manage Case. It keeps the helper classified as
 target scaffolding and explicitly withholds source case-client equivalence,
 editing, accessibility, and broader-usability claims.
+A ninth result records one authenticated deny-principal browser redirect and
+protected-content absence while explicitly withholding universal UI/API
+authorization and principal-equivalence claims.
 The accompanying `evidence-index.json` catalogs the normalized export and all
-eight result families without adding a status, score, pass count, or composite
+nine result families without adding a status, score, pass count, or composite
 assessment. Its entries retain independent decision scopes, so proximity in the
 index cannot be read as combined evidence. Per-entry byte lengths and SHA-256
 digests bind the generated set for internal consistency but do not authenticate

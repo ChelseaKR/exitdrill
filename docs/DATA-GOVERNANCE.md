@@ -54,6 +54,10 @@ excludes the target-generated helper name, case subject, route parameters,
 target IDs, HTML, screenshots, traces, and credentials. Its aggregate result
 states that the navigated helper is target scaffolding rather than restored
 source data.
+The native browser access-denial projection retains only fixed route names and
+statuses, semantic step keys, the sanitized known-error key/count, and an empty
+artifact list. It excludes the protected name, contact identifier, full URL,
+HTML, screenshots, traces, cookies, and credentials.
 The generated evidence index contains only fixed artifact identifiers,
 filenames, schema identifiers, decision scopes, the pinned profile, and fixed
 limitations, plus artifact byte lengths and SHA-256 digests. It contains no raw
