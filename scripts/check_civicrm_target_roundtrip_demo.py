@@ -40,6 +40,7 @@ CONTACT_SUMMARY_WORKFLOW_RESULT_NAME = "contact-summary-workflow-result.json"
 CASE_CLIENT_WORKFLOW_RESULT_NAME = "case-client-workflow-result.json"
 BROWSER_ACCESS_DENIAL_RESULT_NAME = "browser-access-denial-result.json"
 BROWSER_ACCESS_ALLOW_CONTROL_RESULT_NAME = "browser-access-allow-control-result.json"
+CASE_SEARCH_WORKFLOW_RESULT_NAME = "case-search-workflow-result.json"
 EVIDENCE_INDEX_NAME = "evidence-index.json"
 PROBE_IDS = (
     "record_lookup",
@@ -617,6 +618,40 @@ def _assert_clean_browser_access_allow_control_result(document: Mapping[str, obj
     )
 
 
+def _assert_clean_case_search_workflow_result(document: Mapping[str, object]) -> None:
+    _require(
+        document
+        == {
+            "decision_scope": "pinned_synthetic_case_search_browser_workflow_only",
+            "known_runtime_errors": [
+                {"error_key": "jquery_notify_unavailable", "occurrence_count": 2}
+            ],
+            "limitations": [
+                "synthetic_fixture_only",
+                "target_evidence_is_unsigned_and_unauthenticated",
+                "single_case_search_browser_workflow_only",
+                "case_summary_drilldown_succeeded_before_subject_filter_failure",
+                "exact_subject_filter_returned_http_500",
+                "case_search_workflow_observed_with_known_jquery_notify_runtime_errors",
+                "does_not_prove_general_search_or_filter_usability",
+                "does_not_prove_root_cause_or_behavior_in_another_configuration",
+                "does_not_prove_operational_equivalence",
+                "target_version_and_execution_context_are_operator_asserted",
+            ],
+            "schema_version": "exitdrill/civicrm-case-search-workflow-result/v0.1",
+            "search_results": [
+                {
+                    "evidence_kind": "isolated_headless_chromium_read_only_interaction",
+                    "id": "exact_subject_filter",
+                    "state": "http_500_observed",
+                }
+            ],
+            "target_profile": TARGET_PROFILE,
+        },
+        "clean case-search workflow result was not exact",
+    )
+
+
 def _assert_clean_evidence_index(document: Mapping[str, object], root: Path) -> None:
     entries = document.get("entries")
     if not isinstance(entries, list):
@@ -635,6 +670,7 @@ def _assert_clean_evidence_index(document: Mapping[str, object], root: Path) -> 
             "case_client_workflow",
             "browser_access_denial",
             "browser_access_allow_control",
+            "case_search_workflow",
         ],
         "clean evidence index artifact order was not exact",
     )
@@ -668,7 +704,7 @@ def _assert_clean_evidence_index(document: Mapping[str, object], root: Path) -> 
         "clean evidence index limitations were not exact",
     )
     _require(
-        document.get("schema_version") == "exitdrill/civicrm-evidence-index/v0.6"
+        document.get("schema_version") == "exitdrill/civicrm-evidence-index/v0.7"
         and document.get("target_profile") == TARGET_PROFILE,
         "clean evidence index profile was not exact",
     )
@@ -793,6 +829,8 @@ def main() -> None:
             clean_a / BROWSER_ACCESS_ALLOW_CONTROL_RESULT_NAME
         )
         _assert_clean_browser_access_allow_control_result(clean_browser_access_allow_control_result)
+        clean_case_search_workflow_result = _json_object(clean_a / CASE_SEARCH_WORKFLOW_RESULT_NAME)
+        _assert_clean_case_search_workflow_result(clean_case_search_workflow_result)
         clean_evidence_index = _json_object(clean_a / EVIDENCE_INDEX_NAME)
         _assert_clean_evidence_index(clean_evidence_index, clean_a)
         clean_evidence_index_verification = verify_civicrm_evidence_index(
@@ -907,6 +945,7 @@ def main() -> None:
             "clean_case_client_workflow": clean_case_client_workflow_result,
             "clean_browser_access_denial": clean_browser_access_denial_result,
             "clean_browser_access_allow_control": clean_browser_access_allow_control_result,
+            "clean_case_search_workflow": clean_case_search_workflow_result,
             "clean_evidence_index": clean_evidence_index,
             "clean_evidence_index_verification": clean_evidence_index_verification,
             "directus_normalization": directus_result,
@@ -929,7 +968,8 @@ def main() -> None:
                     "clean_case_client_workflow_observations": 1,
                     "clean_browser_access_denial_observations": 1,
                     "clean_browser_access_allow_control_observations": 1,
-                    "clean_evidence_index_entries": 11,
+                    "clean_case_search_http_500_observations": 1,
+                    "clean_evidence_index_entries": 12,
                     "clean_ui_surface_observations": 1,
                     "source_profile": SOURCE_PROFILE,
                     "status": "civicrm_target_roundtrip_canary_verified",

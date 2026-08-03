@@ -43,6 +43,7 @@ Existing accepted records:
 17. [ADR 0017: Observe one target-generated CiviCRM case-client workflow](../decisions/0017-observe-one-target-generated-civicrm-case-client-workflow.md)
 18. [ADR 0018: Observe one authenticated CiviCRM browser access denial](../decisions/0018-observe-one-authenticated-civicrm-browser-access-denial.md)
 19. [ADR 0019: Observe one authenticated CiviCRM browser allow control](../decisions/0019-observe-one-authenticated-civicrm-browser-allow-control.md)
+20. [ADR 0020: Record one CiviCRM case-search failure](../decisions/0020-record-one-civicrm-case-search-failure.md)
 
 ## Consequences
 

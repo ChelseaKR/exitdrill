@@ -105,6 +105,14 @@ distinct allow principal receives HTTP 200 and the protected Contact Summary
 page and name are present. The minimized projection retains neither the name nor
 contact ID and does not establish authorization behavior beyond this one route.
 
+`browser-case-search-workflow.json` records a seventh browser task. The reader
+opens the Case Summary drilldown and observes both exact synthetic cases, then
+opens Edit Search Criteria and submits the exact visible Alpha subject. The
+pinned target returns HTTP 500 and an Error page. The minimized projection
+retains no subject, case ID, route parameters, response body, HTML, screenshot,
+or trace. It does not establish root cause, behavior of other filters or
+configurations, or general search usability.
+
 Source-mapped business-state read-back never uses the writer credential or its
 in-memory mutation responses. A separate AuthX identity envelope records writer
 authentication for identity-separation evidence; it is not business-state
@@ -189,14 +197,14 @@ The generated `ui-surface-result.json`, `browser-workflow-result.json`,
 `accessibility-result.json`, `keyboard-result.json`,
 `activity-view-result.json`, `contact-summary-workflow-result.json`, and
 `case-client-workflow-result.json`, `browser-access-denial-result.json`, and
-`browser-access-allow-control-result.json` are separate evidence families. The
-browser results support only the six
+`browser-access-allow-control-result.json`, and `case-search-workflow-result.json`
+are separate evidence families. The browser results support only the seven
 read-only tasks described above. The accessibility and
 keyboard results report only their bounded observations and are not conformance
 verdicts. None modifies the target probe algebra or structural result.
 
-`evidence-index.json` is an eleventh, non-evaluative artifact: a closed catalog of
-`export.json` and the ten result files. It records only each artifact's fixed
+`evidence-index.json` is a twelfth, non-evaluative artifact: a closed catalog of
+`export.json` and the eleven result files. It records only each artifact's fixed
 identifier, filename, schema, independent decision scope, byte length, and
 SHA-256 digest. It contains no status, score, pass count, priority, or inferred
 conclusion, and it does not replace schema validation or the structural
@@ -215,8 +223,8 @@ the packaged index and result schemas, the normalized export contract, and its
 declared attachment bytes. It does not interpret any finding, run the structural
 evaluator, authenticate the files, or prove live execution.
 Its stdout uses the separate closed
-`exitdrill/civicrm-evidence-verification/v0.5` schema, identifies the verified
-v0.6 index in `index_schema_version`, and carries fixed limitations with the
+`exitdrill/civicrm-evidence-verification/v0.6` schema, identifies the verified
+v0.7 index in `index_schema_version`, and carries fixed limitations with the
 success status.
 
 The live capture gate and offline acceptance gate are distinct. The live harness

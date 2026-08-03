@@ -62,6 +62,11 @@ The native browser allow-control projection uses the same minimized boundary.
 It records that the fixed route returned HTTP 200 and the protected page/content
 were observed, but excludes the contact name, identifier, full URL, route
 parameters, HTML, screenshots, traces, cookies, and credentials.
+The native case-search workflow projection records only semantic step keys, the
+fixed HTTP-500 outcome key, sanitized known-error key/count, and an empty
+artifact list. It excludes the entered subject, case names and identifiers,
+full URL, route parameters, response body, HTML, screenshots, traces, cookies,
+and credentials.
 The generated evidence index contains only fixed artifact identifiers,
 filenames, schema identifiers, decision scopes, the pinned profile, and fixed
 limitations, plus artifact byte lengths and SHA-256 digests. It contains no raw

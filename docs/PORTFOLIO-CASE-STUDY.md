@@ -40,7 +40,10 @@ into Manage Case without relabeling that helper as restored source data. A
 fifth browser task records one deny-principal redirect and protected-content
 absence; a sixth confirms that the distinct allow principal can render the same
 protected route and object. Neither is treated as universal authorization proof.
-A machine-readable evidence index catalogs the normalized export and ten result
+A seventh opens Case Summary, observes both synthetic cases, and records the
+pinned target's HTTP 500 response to one exact-subject filter submission without
+claiming root cause or general search behavior.
+A machine-readable evidence index catalogs the normalized export and eleven result
 families without composing their scopes or adding a verdict. Byte lengths and
 SHA-256 digests bind the exact generated set for internal consistency without
 claiming authenticity. This is a bounded target-process experiment, not a
@@ -103,7 +106,7 @@ equivalence, authenticated evidence, legal compliance, savings, or successful
 cutover to another SaaS product. The Directus evidence supports only one frozen
 11.17.4 synthetic source profile captured through documented APIs. The CiviCRM
 evidence supports only one frozen 6.16.2 target profile and five target-interface
-probe observations plus ten separately bounded result families: target
+probe observations plus eleven separately bounded result families: target
 interface, Contact Summary UI surface, Dashboard → Manage Case browser workflow,
 automated accessibility, keyboard interaction, Activity View, and Dashboard →
 Contact Summary browser workflow, a target-generated case-client workflow, an
@@ -121,11 +124,11 @@ conformance evidence, general UI-workflow coverage, or cutover evidence.
   and CiviCRM 6.16.2 target canaries with independent API read-back, five bounded
   target-interface probes, one authenticated Contact Summary observation,
   one isolated Dashboard → Manage Case browser task, seven further bounded
-  accessibility/keyboard/activity/contact-summary/case-client/access-denial/allow-control
+  accessibility/keyboard/activity/contact-summary/case-client/access-denial/allow-control/case-search
   observations,
   adversarial controls, and a
   non-composite evidence catalog that keeps six known source-to-target gaps and
-  ten known UI runtime errors explicit.
+  twelve known UI runtime errors explicit.
 
 ## 60-second interview version
 
