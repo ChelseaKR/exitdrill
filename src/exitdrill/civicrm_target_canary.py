@@ -42,8 +42,11 @@ _ACTIVITY_VIEW_RESULT_SCHEMA = "exitdrill/civicrm-activity-view-result/v0.1"
 _CONTACT_SUMMARY_WORKFLOW_RESULT_SCHEMA = "exitdrill/civicrm-contact-summary-workflow-result/v0.1"
 _CASE_CLIENT_WORKFLOW_RESULT_SCHEMA = "exitdrill/civicrm-case-client-workflow-result/v0.1"
 _BROWSER_ACCESS_DENIAL_RESULT_SCHEMA = "exitdrill/civicrm-browser-access-denial-result/v0.1"
-_EVIDENCE_INDEX_SCHEMA = "exitdrill/civicrm-evidence-index/v0.5"
-_EVIDENCE_VERIFICATION_SCHEMA = "exitdrill/civicrm-evidence-verification/v0.4"
+_BROWSER_ACCESS_ALLOW_CONTROL_RESULT_SCHEMA = (
+    "exitdrill/civicrm-browser-access-allow-control-result/v0.1"
+)
+_EVIDENCE_INDEX_SCHEMA = "exitdrill/civicrm-evidence-index/v0.6"
+_EVIDENCE_VERIFICATION_SCHEMA = "exitdrill/civicrm-evidence-verification/v0.5"
 _SOURCE_SYSTEM = "Directus 11.17.4 synthetic civic-case sandbox"
 _TARGET_SYSTEM = "CiviCRM Standalone"
 _TARGET_VERSION = "6.16.2"
@@ -54,7 +57,8 @@ _SOURCE_EXPORTED_AT = "2026-08-02T02:38:28.542Z"
 _ACQUISITION_SURFACE = (
     "supported_api_v4_authenticated_private_file_readback_authenticated_server_rendered_ui_"
     "isolated_browser_workflow_automated_accessibility_scan_keyboard_interaction_activity_"
-    "view_contact_summary_workflow_case_client_workflow_and_browser_access_denial"
+    "view_contact_summary_workflow_case_client_workflow_browser_access_denial_and_browser_"
+    "access_allow_control"
 )
 _FILE_IDS = (
     "11111111-1111-4111-8111-111111111111",
@@ -80,6 +84,7 @@ _EXPECTED_FILES = (
     "browser-contact-summary-workflow.json",
     "browser-case-client-workflow.json",
     "browser-access-denial.json",
+    "browser-access-allow-control.json",
     f"assets/{_FILE_IDS[0]}.txt",
     f"assets/{_FILE_IDS[1]}.txt",
 )
@@ -213,6 +218,10 @@ _BUNDLE_LIMITATIONS = (
     "browser_access_denial_observed_as_redirect_and_protected_content_absence",
     "browser_access_denial_observed_with_known_jquery_notify_runtime_error",
     "browser_access_denial_does_not_prove_all_ui_or_api_authorization",
+    "single_browser_access_allow_control_probe_only",
+    "browser_access_allow_control_observed_as_protected_content_presence",
+    "browser_access_allow_control_observed_with_known_jquery_notify_runtime_error",
+    "browser_access_allow_control_does_not_prove_all_ui_or_api_authorization",
 )
 _RESULT_LIMITATIONS = (
     "synthetic_fixture_only",
@@ -314,6 +323,18 @@ _BROWSER_ACCESS_DENIAL_RESULT_LIMITATIONS = (
     "does_not_prove_operational_equivalence",
     "target_version_and_execution_context_are_operator_asserted",
 )
+_BROWSER_ACCESS_ALLOW_CONTROL_RESULT_LIMITATIONS = (
+    "synthetic_fixture_only",
+    "target_evidence_is_unsigned_and_unauthenticated",
+    "single_browser_access_allow_control_probe_only",
+    "browser_access_allow_control_observed_as_protected_content_presence",
+    "browser_access_allow_control_observed_with_known_jquery_notify_runtime_error",
+    "does_not_prove_all_ui_or_api_authorization",
+    "protected_contact_binding_is_operator_asserted",
+    "does_not_prove_permission_principal_equivalence",
+    "does_not_prove_operational_equivalence",
+    "target_version_and_execution_context_are_operator_asserted",
+)
 _EVIDENCE_INDEX_LIMITATIONS = (
     "index_is_unsigned_and_unauthenticated",
     "index_is_not_a_composite_assessment",
@@ -391,9 +412,15 @@ _EVIDENCE_INDEX_ARTIFACTS = (
         "browser-access-denial-result.json",
         _BROWSER_ACCESS_DENIAL_RESULT_SCHEMA,
     ),
+    (
+        "browser_access_allow_control",
+        "pinned_synthetic_browser_access_allow_control_only",
+        "browser-access-allow-control-result.json",
+        _BROWSER_ACCESS_ALLOW_CONTROL_RESULT_SCHEMA,
+    ),
 )
 _EVIDENCE_SCHEMA_RESOURCES = {
-    _EVIDENCE_INDEX_SCHEMA: "civicrm-evidence-index-v0.5.schema.json",
+    _EVIDENCE_INDEX_SCHEMA: "civicrm-evidence-index-v0.6.schema.json",
     _RESULT_SCHEMA: "civicrm-target-roundtrip-result-v0.1.schema.json",
     _UI_RESULT_SCHEMA: "civicrm-ui-surface-result-v0.1.schema.json",
     _BROWSER_RESULT_SCHEMA: "civicrm-browser-workflow-result-v0.1.schema.json",
@@ -405,6 +432,9 @@ _EVIDENCE_SCHEMA_RESOURCES = {
     ),
     _CASE_CLIENT_WORKFLOW_RESULT_SCHEMA: "civicrm-case-client-workflow-result-v0.1.schema.json",
     _BROWSER_ACCESS_DENIAL_RESULT_SCHEMA: "civicrm-browser-access-denial-result-v0.1.schema.json",
+    _BROWSER_ACCESS_ALLOW_CONTROL_RESULT_SCHEMA: (
+        "civicrm-browser-access-allow-control-result-v0.1.schema.json"
+    ),
 }
 _CONTACT_KEYS = frozenset(
     {
@@ -1170,6 +1200,23 @@ def _browser_access_denial_result() -> dict[str, JsonValue]:
     }
 
 
+def _browser_access_allow_control_result() -> dict[str, JsonValue]:
+    return {
+        "allow_results": [
+            _probe_result(
+                "protected_contact_access_allow_control",
+                "observed",
+                "authenticated_headless_chromium_protected_content_presence",
+            )
+        ],
+        "decision_scope": "pinned_synthetic_browser_access_allow_control_only",
+        "known_runtime_errors": [{"error_key": "jquery_notify_unavailable", "occurrence_count": 1}],
+        "limitations": list(_BROWSER_ACCESS_ALLOW_CONTROL_RESULT_LIMITATIONS),
+        "schema_version": _BROWSER_ACCESS_ALLOW_CONTROL_RESULT_SCHEMA,
+        "target_profile": _PROFILE,
+    }
+
+
 def _evidence_index(artifacts: Mapping[str, bytes]) -> dict[str, JsonValue]:
     entries: list[dict[str, JsonValue]] = []
     for artifact_id, decision_scope, filename, schema_version in _EVIDENCE_INDEX_ARTIFACTS:
@@ -1381,6 +1428,7 @@ def _build_output(
     dict[str, JsonValue],
     dict[str, JsonValue],
     dict[str, JsonValue],
+    dict[str, JsonValue],
 ]:
     identity_contact_ids = _parse_identities(documents)
     people, person_by_target = _parse_contacts(documents["contacts.json"])
@@ -1572,6 +1620,28 @@ def _build_output(
         },
         "browser access-denial projection",
     )
+    _parse_ui_surface(
+        documents["browser-access-allow-control.json"],
+        {
+            "allow_signal": "protected_contact_content_present",
+            "authenticated_identity": "allow",
+            "browser_engine": "chromium",
+            "data_mode": "synthetic_only",
+            "known_runtime_errors": [
+                {"error_key": "jquery_notify_unavailable", "occurrence_count": 1}
+            ],
+            "navigation_chain": [{"route": "civicrm/contact/view", "status": 200}],
+            "retained_artifacts": [],
+            "schema_version": "exitdrill/civicrm-browser-access-allow-control-observation/v0.1",
+            "steps": [
+                "protected_contact_requested",
+                "protected_contact_page_observed",
+                "protected_contact_content_observed",
+            ],
+            "target_profile": _PROFILE,
+        },
+        "browser access allow-control projection",
+    )
     export: dict[str, JsonValue] = {
         "attachments": cast("list[JsonValue]", attachments),
         "audit_events": [],
@@ -1596,6 +1666,7 @@ def _build_output(
         _contact_summary_workflow_result(),
         _case_client_workflow_result(),
         _browser_access_denial_result(),
+        _browser_access_allow_control_result(),
     )
 
 
@@ -1612,6 +1683,7 @@ def _write_output(
     contact_summary_workflow_result: Mapping[str, JsonValue],
     case_client_workflow_result: Mapping[str, JsonValue],
     browser_access_denial_result: Mapping[str, JsonValue],
+    browser_access_allow_control_result: Mapping[str, JsonValue],
 ) -> None:
     parent = out_dir.parent
     if not parent.exists() or not parent.is_dir():
@@ -1639,6 +1711,9 @@ def _write_output(
             ),
             "browser-access-denial-result.json": (
                 canonical_json_bytes(browser_access_denial_result) + b"\n"
+            ),
+            "browser-access-allow-control-result.json": (
+                canonical_json_bytes(browser_access_allow_control_result) + b"\n"
             ),
         }
         for filename, content in artifacts.items():
@@ -1701,6 +1776,7 @@ def normalize_civicrm_target_canary(manifest_path: Path, out_dir: Path) -> dict[
         contact_summary_workflow_result,
         case_client_workflow_result,
         browser_access_denial_result,
+        browser_access_allow_control_result,
     ) = _build_output(documents)
     export_document = canonical_json_bytes(export) + b"\n"
     _write_output(
@@ -1716,5 +1792,6 @@ def normalize_civicrm_target_canary(manifest_path: Path, out_dir: Path) -> dict[
         contact_summary_workflow_result,
         case_client_workflow_result,
         browser_access_denial_result,
+        browser_access_allow_control_result,
     )
     return result

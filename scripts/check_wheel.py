@@ -25,15 +25,20 @@ CASE_CLIENT_WORKFLOW_RESULT_SCHEMA = (
 BROWSER_ACCESS_DENIAL_RESULT_SCHEMA = (
     "exitdrill/schemas/civicrm-browser-access-denial-result-v0.1.schema.json"
 )
+BROWSER_ACCESS_ALLOW_CONTROL_RESULT_SCHEMA = (
+    "exitdrill/schemas/civicrm-browser-access-allow-control-result-v0.1.schema.json"
+)
 EVIDENCE_INDEX_V1_SCHEMA = "exitdrill/schemas/civicrm-evidence-index-v0.1.schema.json"
 EVIDENCE_INDEX_V2_SCHEMA = "exitdrill/schemas/civicrm-evidence-index-v0.2.schema.json"
 EVIDENCE_INDEX_V3_SCHEMA = "exitdrill/schemas/civicrm-evidence-index-v0.3.schema.json"
 EVIDENCE_INDEX_V4_SCHEMA = "exitdrill/schemas/civicrm-evidence-index-v0.4.schema.json"
 EVIDENCE_INDEX_V5_SCHEMA = "exitdrill/schemas/civicrm-evidence-index-v0.5.schema.json"
+EVIDENCE_INDEX_V6_SCHEMA = "exitdrill/schemas/civicrm-evidence-index-v0.6.schema.json"
 EVIDENCE_VERIFICATION_V1_SCHEMA = "exitdrill/schemas/civicrm-evidence-verification-v0.1.schema.json"
 EVIDENCE_VERIFICATION_V2_SCHEMA = "exitdrill/schemas/civicrm-evidence-verification-v0.2.schema.json"
 EVIDENCE_VERIFICATION_V3_SCHEMA = "exitdrill/schemas/civicrm-evidence-verification-v0.3.schema.json"
 EVIDENCE_VERIFICATION_V4_SCHEMA = "exitdrill/schemas/civicrm-evidence-verification-v0.4.schema.json"
+EVIDENCE_VERIFICATION_V5_SCHEMA = "exitdrill/schemas/civicrm-evidence-verification-v0.5.schema.json"
 
 
 def _check_schema(
@@ -135,11 +140,16 @@ def main() -> None:
                 BROWSER_ACCESS_DENIAL_RESULT_SCHEMA,
                 "civicrm-browser-access-denial-result-v0.1.schema.json",
             ),
+            (
+                BROWSER_ACCESS_ALLOW_CONTROL_RESULT_SCHEMA,
+                "civicrm-browser-access-allow-control-result-v0.1.schema.json",
+            ),
             (EVIDENCE_INDEX_V1_SCHEMA, "civicrm-evidence-index-v0.1.schema.json"),
             (EVIDENCE_INDEX_V2_SCHEMA, "civicrm-evidence-index-v0.2.schema.json"),
             (EVIDENCE_INDEX_V3_SCHEMA, "civicrm-evidence-index-v0.3.schema.json"),
             (EVIDENCE_INDEX_V4_SCHEMA, "civicrm-evidence-index-v0.4.schema.json"),
             (EVIDENCE_INDEX_V5_SCHEMA, "civicrm-evidence-index-v0.5.schema.json"),
+            (EVIDENCE_INDEX_V6_SCHEMA, "civicrm-evidence-index-v0.6.schema.json"),
             (
                 EVIDENCE_VERIFICATION_V1_SCHEMA,
                 "civicrm-evidence-verification-v0.1.schema.json",
@@ -155,6 +165,10 @@ def main() -> None:
             (
                 EVIDENCE_VERIFICATION_V4_SCHEMA,
                 "civicrm-evidence-verification-v0.4.schema.json",
+            ),
+            (
+                EVIDENCE_VERIFICATION_V5_SCHEMA,
+                "civicrm-evidence-verification-v0.5.schema.json",
             ),
         ):
             _check_schema(
