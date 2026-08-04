@@ -9,7 +9,10 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def _read(relative_path: str) -> dict[str, Any]:
     path = ROOT / relative_path
-    return json.loads(path.read_text(encoding="utf-8"))
+    document = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(document, dict):
+        raise SystemExit(f"{relative_path} is not a JSON object")
+    return document
 
 
 def main() -> None:

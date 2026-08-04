@@ -1,4 +1,4 @@
-"""Fail if the local wheel omits typing metadata or leaks repository fixtures."""
+"""Fail if the local wheel omits typing metadata, drops a schema, or leaks fixtures."""
 
 from __future__ import annotations
 
@@ -9,58 +9,65 @@ from shutil import which
 from tempfile import TemporaryDirectory
 from zipfile import ZipFile
 
-COMPARISON_SCHEMA = "exitdrill/schemas/receipt-comparison-v0.1.schema.json"
-TARGET_RESULT_SCHEMA = "exitdrill/schemas/civicrm-target-roundtrip-result-v0.1.schema.json"
-UI_RESULT_SCHEMA = "exitdrill/schemas/civicrm-ui-surface-result-v0.1.schema.json"
-BROWSER_RESULT_SCHEMA = "exitdrill/schemas/civicrm-browser-workflow-result-v0.1.schema.json"
-ACCESSIBILITY_RESULT_SCHEMA = "exitdrill/schemas/civicrm-accessibility-result-v0.1.schema.json"
-KEYBOARD_RESULT_SCHEMA = "exitdrill/schemas/civicrm-keyboard-result-v0.1.schema.json"
-ACTIVITY_VIEW_RESULT_SCHEMA = "exitdrill/schemas/civicrm-activity-view-result-v0.1.schema.json"
-CONTACT_SUMMARY_WORKFLOW_RESULT_SCHEMA = (
-    "exitdrill/schemas/civicrm-contact-summary-workflow-result-v0.1.schema.json"
+PROJECT = Path(__file__).resolve().parents[1]
+SCHEMA_SOURCE_DIR = "schemas"
+SCHEMA_SUFFIX = ".schema.json"
+PACKAGED_SCHEMA_PREFIX = "exitdrill/schemas/"
+CANONICAL_SCHEMA_ID_FORMAT = "https://exitdrill.example/schemas/{name}"
+LEGACY_SCHEMA_ID_FORMAT = "https://github.com/ChelseaKR/exitdrill/blob/main/schemas/{name}"
+LEGACY_SCHEMA_ID_NAMES = frozenset(
+    {
+        "receipt-comparison-v0.1.schema.json",
+        "civicrm-target-roundtrip-result-v0.1.schema.json",
+    }
 )
-CASE_CLIENT_WORKFLOW_RESULT_SCHEMA = (
-    "exitdrill/schemas/civicrm-case-client-workflow-result-v0.1.schema.json"
-)
-BROWSER_ACCESS_DENIAL_RESULT_SCHEMA = (
-    "exitdrill/schemas/civicrm-browser-access-denial-result-v0.1.schema.json"
-)
-BROWSER_ACCESS_ALLOW_CONTROL_RESULT_SCHEMA = (
-    "exitdrill/schemas/civicrm-browser-access-allow-control-result-v0.1.schema.json"
-)
-CASE_SEARCH_WORKFLOW_RESULT_SCHEMA = (
-    "exitdrill/schemas/civicrm-case-search-workflow-result-v0.1.schema.json"
-)
-EVIDENCE_INDEX_V1_SCHEMA = "exitdrill/schemas/civicrm-evidence-index-v0.1.schema.json"
-EVIDENCE_INDEX_V2_SCHEMA = "exitdrill/schemas/civicrm-evidence-index-v0.2.schema.json"
-EVIDENCE_INDEX_V3_SCHEMA = "exitdrill/schemas/civicrm-evidence-index-v0.3.schema.json"
-EVIDENCE_INDEX_V4_SCHEMA = "exitdrill/schemas/civicrm-evidence-index-v0.4.schema.json"
-EVIDENCE_INDEX_V5_SCHEMA = "exitdrill/schemas/civicrm-evidence-index-v0.5.schema.json"
-EVIDENCE_INDEX_V6_SCHEMA = "exitdrill/schemas/civicrm-evidence-index-v0.6.schema.json"
-EVIDENCE_INDEX_V7_SCHEMA = "exitdrill/schemas/civicrm-evidence-index-v0.7.schema.json"
-EVIDENCE_VERIFICATION_V1_SCHEMA = "exitdrill/schemas/civicrm-evidence-verification-v0.1.schema.json"
-EVIDENCE_VERIFICATION_V2_SCHEMA = "exitdrill/schemas/civicrm-evidence-verification-v0.2.schema.json"
-EVIDENCE_VERIFICATION_V3_SCHEMA = "exitdrill/schemas/civicrm-evidence-verification-v0.3.schema.json"
-EVIDENCE_VERIFICATION_V4_SCHEMA = "exitdrill/schemas/civicrm-evidence-verification-v0.4.schema.json"
-EVIDENCE_VERIFICATION_V5_SCHEMA = "exitdrill/schemas/civicrm-evidence-verification-v0.5.schema.json"
-EVIDENCE_VERIFICATION_V6_SCHEMA = "exitdrill/schemas/civicrm-evidence-verification-v0.6.schema.json"
 
 
-def _check_schema(
-    archive: ZipFile,
-    names: set[str],
-    packaged_path: str,
-    source_path: Path,
-    expected_id: str,
-) -> None:
-    if packaged_path not in names:
-        raise SystemExit(f"wheel does not contain {packaged_path}")
+def expected_schema_id(name: str) -> str:
+    """Return the single `$id` this schema name is pinned to.
+
+    Every schema is pinned to exactly one accepted `$id`, so a schema cannot
+    silently adopt another schema's published form. Two schemas predate the
+    canonical form and stay pinned to their legacy one; anything added later
+    must use the canonical form without touching this gate.
+    """
+    form = LEGACY_SCHEMA_ID_FORMAT if name in LEGACY_SCHEMA_ID_NAMES else CANONICAL_SCHEMA_ID_FORMAT
+    return form.format(name=name)
+
+
+def committed_schemas(project: Path) -> tuple[Path, ...]:
+    """Return every committed JSON Schema the wheel is required to carry."""
+    schemas = tuple(sorted((project / SCHEMA_SOURCE_DIR).glob(f"*{SCHEMA_SUFFIX}")))
+    if not schemas:
+        raise SystemExit("no committed JSON Schemas were found")
+    return schemas
+
+
+def _check_schema(archive: ZipFile, packaged_path: str, source_path: Path) -> None:
     packaged = archive.read(packaged_path)
     if packaged != source_path.read_bytes():
         raise SystemExit(f"wheel schema differs from {source_path}")
     document = json.loads(packaged)
-    if document.get("$id") != expected_id:
+    expected = expected_schema_id(source_path.name)
+    if not isinstance(document, dict) or document.get("$id") != expected:
         raise SystemExit(f"wheel contains an unexpected schema id for {packaged_path}")
+
+
+def check_packaged_schemas(archive: ZipFile, names: set[str], project: Path) -> int:
+    """Require the wheel to carry exactly the committed schema set, byte for byte."""
+    expected = {
+        PACKAGED_SCHEMA_PREFIX + source.name: source for source in committed_schemas(project)
+    }
+    packaged = {name for name in names if name.startswith(PACKAGED_SCHEMA_PREFIX)}
+    missing = sorted(set(expected) - packaged)
+    if missing:
+        raise SystemExit(f"wheel does not contain committed schemas: {missing}")
+    unexpected = sorted(packaged - set(expected))
+    if unexpected:
+        raise SystemExit(f"wheel contains unexpected packaged schemas: {unexpected}")
+    for packaged_path, source_path in sorted(expected.items()):
+        _check_schema(archive, packaged_path, source_path)
+    return len(expected)
 
 
 def _command_help(uv: str, wheel: Path, command: str) -> str:
@@ -119,103 +126,7 @@ def main() -> None:
         raise SystemExit(f"expected one ExitDrill wheel, found {len(wheels)}")
     with ZipFile(wheels[0]) as archive:
         names = set(archive.namelist())
-        _check_schema(
-            archive,
-            names,
-            COMPARISON_SCHEMA,
-            Path("schemas/receipt-comparison-v0.1.schema.json"),
-            (
-                "https://github.com/ChelseaKR/exitdrill/blob/main/"
-                "schemas/receipt-comparison-v0.1.schema.json"
-            ),
-        )
-        for packaged_path, source_name in (
-            (ACCESSIBILITY_RESULT_SCHEMA, "civicrm-accessibility-result-v0.1.schema.json"),
-            (KEYBOARD_RESULT_SCHEMA, "civicrm-keyboard-result-v0.1.schema.json"),
-            (ACTIVITY_VIEW_RESULT_SCHEMA, "civicrm-activity-view-result-v0.1.schema.json"),
-            (
-                CONTACT_SUMMARY_WORKFLOW_RESULT_SCHEMA,
-                "civicrm-contact-summary-workflow-result-v0.1.schema.json",
-            ),
-            (
-                CASE_CLIENT_WORKFLOW_RESULT_SCHEMA,
-                "civicrm-case-client-workflow-result-v0.1.schema.json",
-            ),
-            (
-                BROWSER_ACCESS_DENIAL_RESULT_SCHEMA,
-                "civicrm-browser-access-denial-result-v0.1.schema.json",
-            ),
-            (
-                BROWSER_ACCESS_ALLOW_CONTROL_RESULT_SCHEMA,
-                "civicrm-browser-access-allow-control-result-v0.1.schema.json",
-            ),
-            (
-                CASE_SEARCH_WORKFLOW_RESULT_SCHEMA,
-                "civicrm-case-search-workflow-result-v0.1.schema.json",
-            ),
-            (EVIDENCE_INDEX_V1_SCHEMA, "civicrm-evidence-index-v0.1.schema.json"),
-            (EVIDENCE_INDEX_V2_SCHEMA, "civicrm-evidence-index-v0.2.schema.json"),
-            (EVIDENCE_INDEX_V3_SCHEMA, "civicrm-evidence-index-v0.3.schema.json"),
-            (EVIDENCE_INDEX_V4_SCHEMA, "civicrm-evidence-index-v0.4.schema.json"),
-            (EVIDENCE_INDEX_V5_SCHEMA, "civicrm-evidence-index-v0.5.schema.json"),
-            (EVIDENCE_INDEX_V6_SCHEMA, "civicrm-evidence-index-v0.6.schema.json"),
-            (EVIDENCE_INDEX_V7_SCHEMA, "civicrm-evidence-index-v0.7.schema.json"),
-            (
-                EVIDENCE_VERIFICATION_V1_SCHEMA,
-                "civicrm-evidence-verification-v0.1.schema.json",
-            ),
-            (
-                EVIDENCE_VERIFICATION_V2_SCHEMA,
-                "civicrm-evidence-verification-v0.2.schema.json",
-            ),
-            (
-                EVIDENCE_VERIFICATION_V3_SCHEMA,
-                "civicrm-evidence-verification-v0.3.schema.json",
-            ),
-            (
-                EVIDENCE_VERIFICATION_V4_SCHEMA,
-                "civicrm-evidence-verification-v0.4.schema.json",
-            ),
-            (
-                EVIDENCE_VERIFICATION_V5_SCHEMA,
-                "civicrm-evidence-verification-v0.5.schema.json",
-            ),
-            (
-                EVIDENCE_VERIFICATION_V6_SCHEMA,
-                "civicrm-evidence-verification-v0.6.schema.json",
-            ),
-        ):
-            _check_schema(
-                archive,
-                names,
-                packaged_path,
-                Path("schemas") / source_name,
-                f"https://exitdrill.example/schemas/{source_name}",
-            )
-        _check_schema(
-            archive,
-            names,
-            UI_RESULT_SCHEMA,
-            Path("schemas/civicrm-ui-surface-result-v0.1.schema.json"),
-            "https://exitdrill.example/schemas/civicrm-ui-surface-result-v0.1.schema.json",
-        )
-        _check_schema(
-            archive,
-            names,
-            BROWSER_RESULT_SCHEMA,
-            Path("schemas/civicrm-browser-workflow-result-v0.1.schema.json"),
-            "https://exitdrill.example/schemas/civicrm-browser-workflow-result-v0.1.schema.json",
-        )
-        _check_schema(
-            archive,
-            names,
-            TARGET_RESULT_SCHEMA,
-            Path("schemas/civicrm-target-roundtrip-result-v0.1.schema.json"),
-            (
-                "https://github.com/ChelseaKR/exitdrill/blob/main/"
-                "schemas/civicrm-target-roundtrip-result-v0.1.schema.json"
-            ),
-        )
+        schema_count = check_packaged_schemas(archive, names, PROJECT)
     if "exitdrill/py.typed" not in names:
         raise SystemExit("wheel does not contain exitdrill/py.typed")
     forbidden = tuple(name for name in names if name.startswith(("tests/", "examples/")))
@@ -231,6 +142,7 @@ def main() -> None:
     if "--out-dir" not in _command_help(uv, wheels[0], "normalize-civicrm-target-canary"):
         raise SystemExit("wheel CLI does not expose the CiviCRM target canary normalizer")
     _check_civicrm_evidence_verifier(uv, wheels[0])
+    print(f"verified {schema_count} packaged schemas in {wheels[0].name}")
 
 
 if __name__ == "__main__":

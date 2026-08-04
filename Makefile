@@ -1,4 +1,4 @@
-.PHONY: install format lint type test verify package demo demo-lossy demo-compare demo-compare-policy demo-directus-canary demo-civicrm-target-canary
+.PHONY: install format lint lint-lab type test verify package demo demo-lossy demo-compare demo-compare-policy demo-directus-canary demo-civicrm-target-canary
 
 install:
 	uv sync --frozen
@@ -9,6 +9,16 @@ format:
 lint:
 	uv run ruff format --check .
 	uv run ruff check .
+
+lint-lab:
+	@set -e; \
+	checked=0; \
+	for script in $$(git ls-files '*.mjs'); do \
+		node --check "$$script"; \
+		checked=$$((checked + 1)); \
+	done; \
+	test "$$checked" -gt 0; \
+	echo "syntax-checked $$checked browser-lab scripts"
 
 type:
 	uv run mypy

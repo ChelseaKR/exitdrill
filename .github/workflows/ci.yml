@@ -32,10 +32,8 @@ jobs:
         run: uv sync --frozen
       - name: Install locked browser-lab dependency
         run: npm ci --ignore-scripts
-      - name: Check CiviCRM lab scripts
-        run: |
-          node --check scripts/civicrm_browser_workflow.mjs
-          node --check scripts/civicrm_target_roundtrip_lab.mjs
+      - name: Check every committed browser-lab script
+        run: make lint-lab
       - name: Verify
         run: make verify
       - name: Exercise both declared outcomes and comparison policy
