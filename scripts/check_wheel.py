@@ -13,10 +13,26 @@ PROJECT = Path(__file__).resolve().parents[1]
 SCHEMA_SOURCE_DIR = "schemas"
 SCHEMA_SUFFIX = ".schema.json"
 PACKAGED_SCHEMA_PREFIX = "exitdrill/schemas/"
-ACCEPTED_SCHEMA_ID_FORMATS = (
-    "https://github.com/ChelseaKR/exitdrill/blob/main/schemas/{name}",
-    "https://exitdrill.example/schemas/{name}",
+CANONICAL_SCHEMA_ID_FORMAT = "https://exitdrill.example/schemas/{name}"
+LEGACY_SCHEMA_ID_FORMAT = "https://github.com/ChelseaKR/exitdrill/blob/main/schemas/{name}"
+LEGACY_SCHEMA_ID_NAMES = frozenset(
+    {
+        "receipt-comparison-v0.1.schema.json",
+        "civicrm-target-roundtrip-result-v0.1.schema.json",
+    }
 )
+
+
+def expected_schema_id(name: str) -> str:
+    """Return the single `$id` this schema name is pinned to.
+
+    Every schema is pinned to exactly one accepted `$id`, so a schema cannot
+    silently adopt another schema's published form. Two schemas predate the
+    canonical form and stay pinned to their legacy one; anything added later
+    must use the canonical form without touching this gate.
+    """
+    form = LEGACY_SCHEMA_ID_FORMAT if name in LEGACY_SCHEMA_ID_NAMES else CANONICAL_SCHEMA_ID_FORMAT
+    return form.format(name=name)
 
 
 def committed_schemas(project: Path) -> tuple[Path, ...]:
@@ -32,8 +48,8 @@ def _check_schema(archive: ZipFile, packaged_path: str, source_path: Path) -> No
     if packaged != source_path.read_bytes():
         raise SystemExit(f"wheel schema differs from {source_path}")
     document = json.loads(packaged)
-    accepted = tuple(form.format(name=source_path.name) for form in ACCEPTED_SCHEMA_ID_FORMATS)
-    if not isinstance(document, dict) or document.get("$id") not in accepted:
+    expected = expected_schema_id(source_path.name)
+    if not isinstance(document, dict) or document.get("$id") != expected:
         raise SystemExit(f"wheel contains an unexpected schema id for {packaged_path}")
 
 

@@ -13,7 +13,7 @@ lint:
 lint-lab:
 	@set -e; \
 	checked=0; \
-	for script in scripts/*.mjs; do \
+	for script in $$(git ls-files '*.mjs'); do \
 		node --check "$$script"; \
 		checked=$$((checked + 1)); \
 	done; \

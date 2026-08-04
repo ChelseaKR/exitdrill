@@ -8,14 +8,16 @@ All notable changes will be documented here.
 
 - The wheel-content gate now derives its expected schema set from the committed
   `schemas/` directory instead of a hand-maintained constant list. It requires
-  the wheel to carry exactly that set, byte for byte, with an accepted `$id`,
-  and rejects an unexpected packaged schema.
+  the wheel to carry exactly that set, byte for byte, and rejects an unexpected
+  packaged schema. Each schema stays pinned to exactly one `$id`, as before:
+  the two schemas published under the repository URL keep that form, and every
+  other schema must use `https://exitdrill.example/schemas/<name>`, so a schema
+  added later is `$id`-pinned without editing the gate.
 - Strict mypy now covers `scripts/` as well as `src/` and `tests/`, so the
   offline acceptance gates, fixture builders, and the wheel checker are type
   checked like the package.
 - CI syntax-checks every committed browser-lab script through a new
   `make lint-lab` target instead of two individually named files.
-
 - Advanced the CiviCRM evidence index to `v0.7` and verification result to
   `v0.6` for a twelfth indexed artifact: a bounded case-search failure result.
 - Advanced the CiviCRM evidence index to `v0.6` and verification result to
@@ -48,12 +50,14 @@ All notable changes will be documented here.
 
 - Gate-completeness regression tests: the merge gate now fails when a committed
   schema is missing from the wheel force-include map, when a committed schema
-  uses an unpublished `$id` form, when a committed browser-lab script escapes
-  the syntax gate or fails `node --check`, and when the lab or type gates go
-  back to naming individual files.
+  departs from its pinned `$id`, including by adopting the other published form,
+  when a packaged schema is not a JSON object, when a committed browser-lab
+  script escapes the syntax gate or fails `node --check`, and when the lab or
+  type gates go back to naming individual files.
+- A negative test for the synthetic-demo summary parser, which now rejects a
+  receipt that parses as JSON but is not an object.
 - A `make lint-lab` target that syntax-checks every committed browser-lab
   script and fails when none is found.
-
 - An eleventh CiviCRM evidence family that observes both synthetic cases through
   Case Summary, then records HTTP 500 from one exact-subject filter submission
   without claiming root cause or general search behavior.
