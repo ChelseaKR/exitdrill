@@ -7,6 +7,7 @@ from typing import cast
 
 import pytest
 
+from exitdrill import __version__
 from exitdrill.canonical import canonical_json_bytes, sha256_bytes
 from exitdrill.cli import main
 from exitdrill.evaluator import run_drill
@@ -90,6 +91,17 @@ def _good_receipt(example_root: Path) -> dict[str, JsonValue]:
         example_root / "export-files",
     )
     return build_receipt(result, claimed_generated_at="2040-01-01T00:00:00Z")
+
+
+def test_cli_version_flag_reports_package_version(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    with pytest.raises(SystemExit) as raised:
+        main(["--version"])
+    assert raised.value.code == 0
+    captured = capsys.readouterr()
+    assert captured.out.strip() == f"exitdrill {__version__}"
+    assert captured.err == ""
 
 
 def test_validate_cli(example_root: Path, capsys: pytest.CaptureFixture[str]) -> None:

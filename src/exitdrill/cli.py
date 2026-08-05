@@ -7,6 +7,7 @@ import json
 import sys
 from pathlib import Path
 
+from exitdrill import __version__
 from exitdrill.canonical import canonical_json_bytes
 from exitdrill.civicrm_target_canary import (
     CiviCRMTargetCanaryError,
@@ -36,6 +37,11 @@ def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="exitdrill",
         description="Run structural recovery drills for leaving SaaS systems.",
+    )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"%(prog)s {__version__}",
     )
     commands = parser.add_subparsers(dest="command", required=True)
     validate = commands.add_parser("validate", help="validate a baseline and export package")
