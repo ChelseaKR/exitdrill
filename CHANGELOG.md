@@ -48,6 +48,9 @@ All notable changes will be documented here.
 
 ### Added
 
+- A top-level `--version` flag that reports the installed `exitdrill` package
+  version and exits before any subcommand is required, so an operator can
+  confirm what they installed without running a drill.
 - Gate-completeness regression tests: the merge gate now fails when a committed
   schema is missing from the wheel force-include map, when a committed schema
   departs from its pinned `$id`, including by adopting the other published form,
