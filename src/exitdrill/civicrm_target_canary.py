@@ -352,6 +352,173 @@ _CASE_SEARCH_WORKFLOW_RESULT_LIMITATIONS = (
     "does_not_prove_operational_equivalence",
     "target_version_and_execution_context_are_operator_asserted",
 )
+# These nine dicts are the pinned input contract for the nine committed
+# browser-*.json observation captures: _parse_ui_surface() rejects any document
+# that does not match one of these exactly. The corresponding _*_result()
+# builder below no longer retypes these values as a second, disconnected
+# literal; it receives the surface _parse_ui_surface() already verified and
+# projects the emitted result from it, so there is exactly one place per
+# observed field where its value is written down.
+_BROWSER_WORKFLOW_OBSERVATION_PIN: dict[str, object] = {
+    "browser_engine": "chromium",
+    "data_mode": "synthetic_only",
+    "known_runtime_errors": [
+        {
+            "error_key": "jquery_notify_unavailable",
+            "occurrence_count": 2,
+        }
+    ],
+    "retained_artifacts": [],
+    "schema_version": "exitdrill/civicrm-browser-workflow-observation/v0.1",
+    "steps": [
+        "case_dashboard_opened",
+        "case_located",
+        "manage_case_opened",
+        "case_controls_observed",
+    ],
+    "target_profile": _PROFILE,
+}
+_ACCESSIBILITY_OBSERVATION_PIN: dict[str, object] = {
+    "data_mode": "synthetic_only",
+    "engine": "axe-core",
+    "engine_version": "4.12.1",
+    "inapplicable_rule_count": 29,
+    "incomplete_rule_count": 0,
+    "page_scope": "manage_case_document",
+    "passes_rule_count": 32,
+    "retained_artifacts": [],
+    "rule_tags": ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"],
+    "schema_version": "exitdrill/civicrm-accessibility-observation/v0.1",
+    "target_profile": _PROFILE,
+    "violations": [
+        {
+            "impact": "serious",
+            "node_count": 4,
+            "rule_id": "color-contrast",
+        },
+        {
+            "impact": "serious",
+            "node_count": 2,
+            "rule_id": "link-in-text-block",
+        },
+    ],
+}
+_KEYBOARD_OBSERVATION_PIN: dict[str, object] = {
+    "browser_engine": "chromium",
+    "data_mode": "synthetic_only",
+    "retained_artifacts": [],
+    "schema_version": "exitdrill/civicrm-keyboard-observation/v0.1",
+    "steps": [
+        "roles_summary_reached_by_tab",
+        "roles_summary_closed_by_enter",
+        "roles_summary_reopened_by_space",
+    ],
+    "tab_steps_to_roles_summary": 69,
+    "target_profile": _PROFILE,
+}
+_ACTIVITY_VIEW_OBSERVATION_PIN: dict[str, object] = {
+    "browser_engine": "chromium",
+    "data_mode": "synthetic_only",
+    "known_runtime_errors": [{"error_key": "jquery_notify_unavailable", "occurrence_count": 1}],
+    "retained_artifacts": [],
+    "schema_version": "exitdrill/civicrm-activity-view-observation/v0.1",
+    "steps": [
+        "activity_view_opened",
+        "activity_subject_observed",
+        "activity_type_observed",
+        "activity_status_observed",
+    ],
+    "target_profile": _PROFILE,
+}
+_CONTACT_SUMMARY_WORKFLOW_OBSERVATION_PIN: dict[str, object] = {
+    "browser_engine": "chromium",
+    "data_mode": "synthetic_only",
+    "known_runtime_errors": [{"error_key": "jquery_notify_unavailable", "occurrence_count": 2}],
+    "retained_artifacts": [],
+    "schema_version": "exitdrill/civicrm-contact-summary-workflow-observation/v0.1",
+    "steps": [
+        "case_dashboard_reopened",
+        "case_contact_opened",
+        "contact_summary_observed",
+        "cases_affordance_observed",
+    ],
+    "target_profile": _PROFILE,
+}
+_CASE_CLIENT_WORKFLOW_OBSERVATION_PIN: dict[str, object] = {
+    "browser_engine": "chromium",
+    "data_mode": "synthetic_only",
+    "known_runtime_errors": [{"error_key": "jquery_notify_unavailable", "occurrence_count": 3}],
+    "retained_artifacts": [],
+    "schema_version": "exitdrill/civicrm-case-client-workflow-observation/v0.1",
+    "steps": [
+        "case_dashboard_reopened",
+        "target_generated_case_client_opened",
+        "contact_summary_observed",
+        "cases_affordance_activated",
+        "contact_cases_observed",
+        "manage_case_opened_from_contact",
+        "case_subject_reobserved",
+    ],
+    "target_profile": _PROFILE,
+}
+_BROWSER_ACCESS_DENIAL_OBSERVATION_PIN: dict[str, object] = {
+    "authenticated_identity": "deny",
+    "browser_engine": "chromium",
+    "data_mode": "synthetic_only",
+    "denial_signal": "redirect_and_protected_content_absence",
+    "known_runtime_errors": [{"error_key": "jquery_notify_unavailable", "occurrence_count": 1}],
+    "redirect_chain": [
+        {"route": "civicrm/contact/view", "status": 302},
+        {"route": "civicrm", "status": 200},
+    ],
+    "retained_artifacts": [],
+    "schema_version": "exitdrill/civicrm-browser-access-denial-observation/v0.1",
+    "steps": [
+        "protected_contact_requested",
+        "protected_contact_redirected",
+        "protected_contact_content_absent",
+    ],
+    "target_profile": _PROFILE,
+}
+_BROWSER_ACCESS_ALLOW_CONTROL_OBSERVATION_PIN: dict[str, object] = {
+    "allow_signal": "protected_contact_content_present",
+    "authenticated_identity": "allow",
+    "browser_engine": "chromium",
+    "data_mode": "synthetic_only",
+    "known_runtime_errors": [{"error_key": "jquery_notify_unavailable", "occurrence_count": 1}],
+    "navigation_chain": [{"route": "civicrm/contact/view", "status": 200}],
+    "retained_artifacts": [],
+    "schema_version": "exitdrill/civicrm-browser-access-allow-control-observation/v0.1",
+    "steps": [
+        "protected_contact_requested",
+        "protected_contact_page_observed",
+        "protected_contact_content_observed",
+    ],
+    "target_profile": _PROFILE,
+}
+_CASE_SEARCH_WORKFLOW_OBSERVATION_PIN: dict[str, object] = {
+    "browser_engine": "chromium",
+    "data_mode": "synthetic_only",
+    "known_runtime_errors": [{"error_key": "jquery_notify_unavailable", "occurrence_count": 2}],
+    "retained_artifacts": [],
+    "schema_version": "exitdrill/civicrm-case-search-workflow-observation/v0.1",
+    "search_outcome": "exact_subject_filter_http_500_observed",
+    "steps": [
+        "case_dashboard_opened",
+        "case_summary_drilldown_activated",
+        "unfiltered_case_results_observed",
+        "case_subject_filter_submitted",
+        "exact_subject_filter_http_500_observed",
+    ],
+    "target_profile": _PROFILE,
+}
+# The case-search probe's evidence_kind is a single value today, but a live scan
+# could plausibly observe other terminal search_outcome strings in a future
+# capture; this maps each recognized outcome to the emitted probe state instead
+# of asserting one string equals another.
+_CASE_SEARCH_OUTCOME_STATES: dict[str, str] = {
+    "exact_subject_filter_http_500_observed": "http_500_observed",
+}
 _EVIDENCE_INDEX_LIMITATIONS = (
     "index_is_unsigned_and_unauthenticated",
     "index_is_not_a_composite_assessment",
@@ -1063,9 +1230,12 @@ def _probe_result(probe_id: str, state: str, evidence_kind: str) -> dict[str, Js
     return {"evidence_kind": evidence_kind, "id": probe_id, "state": state}
 
 
-def _parse_ui_surface(document: bytes, expected: Mapping[str, object], where: str) -> None:
+def _parse_ui_surface(
+    document: bytes, expected: Mapping[str, object], where: str
+) -> dict[str, object]:
     surface = _decode_json(document, where)
     _require_literal(surface, expected, where)
+    return surface
 
 
 def _ui_surface_result() -> dict[str, JsonValue]:
@@ -1085,22 +1255,32 @@ def _ui_surface_result() -> dict[str, JsonValue]:
     }
 
 
-def _browser_workflow_result() -> dict[str, JsonValue]:
+def _terminal_step_state(surface: Mapping[str, object], expected_final_step: str) -> str:
+    """Derive an "observed"/"not_observed" probe state from a real captured step list.
+
+    ``surface`` has already passed ``_require_literal`` against its pin, so under the
+    bundle's current closed-world validation this can only observe "observed" for a
+    document that reached that point at all; a document whose captured steps do not
+    end in the declared marker fails the pin before a result is ever built. The check
+    still reads the real field rather than asserting a bare literal, and the
+    "not_observed" branch is exercised directly by unit tests against this helper.
+    """
+    steps = cast("list[object]", surface["steps"])
+    return "observed" if steps[-1:] == [expected_final_step] else "not_observed"
+
+
+def _browser_workflow_result(surface: Mapping[str, object]) -> dict[str, JsonValue]:
+    state = _terminal_step_state(surface, "case_controls_observed")
     workflows = [
         _probe_result(
             "case_dashboard_to_manage_case",
-            "observed",
+            state,
             "isolated_headless_chromium_interaction",
         ),
     ]
     return {
         "decision_scope": "pinned_synthetic_browser_workflow_only",
-        "known_runtime_errors": [
-            {
-                "error_key": "jquery_notify_unavailable",
-                "occurrence_count": 2,
-            }
-        ],
+        "known_runtime_errors": cast("JsonValue", surface["known_runtime_errors"]),
         "limitations": list(_BROWSER_RESULT_LIMITATIONS),
         "schema_version": _BROWSER_RESULT_SCHEMA,
         "target_profile": _PROFILE,
@@ -1108,149 +1288,149 @@ def _browser_workflow_result() -> dict[str, JsonValue]:
     }
 
 
-def _accessibility_result() -> dict[str, JsonValue]:
+def _accessibility_result(surface: Mapping[str, object]) -> dict[str, JsonValue]:
     return {
         "decision_scope": "pinned_synthetic_manage_case_automated_scan_only",
         "limitations": list(_ACCESSIBILITY_RESULT_LIMITATIONS),
         "scan_result": {
-            "engine": "axe-core",
-            "engine_version": "4.12.1",
-            "inapplicable_rule_count": 29,
-            "incomplete_rule_count": 0,
-            "page_scope": "manage_case_document",
-            "passes_rule_count": 32,
-            "rule_tags": ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"],
-            "violations": [
-                {
-                    "impact": "serious",
-                    "node_count": 4,
-                    "rule_id": "color-contrast",
-                },
-                {
-                    "impact": "serious",
-                    "node_count": 2,
-                    "rule_id": "link-in-text-block",
-                },
-            ],
+            "engine": cast("JsonValue", surface["engine"]),
+            "engine_version": cast("JsonValue", surface["engine_version"]),
+            "inapplicable_rule_count": cast("JsonValue", surface["inapplicable_rule_count"]),
+            "incomplete_rule_count": cast("JsonValue", surface["incomplete_rule_count"]),
+            "page_scope": cast("JsonValue", surface["page_scope"]),
+            "passes_rule_count": cast("JsonValue", surface["passes_rule_count"]),
+            "rule_tags": cast("JsonValue", surface["rule_tags"]),
+            "violations": cast("JsonValue", surface["violations"]),
         },
         "schema_version": _ACCESSIBILITY_RESULT_SCHEMA,
         "target_profile": _PROFILE,
     }
 
 
-def _keyboard_result() -> dict[str, JsonValue]:
+def _keyboard_result(surface: Mapping[str, object]) -> dict[str, JsonValue]:
     return {
         "decision_scope": "pinned_synthetic_manage_case_keyboard_interaction_only",
         "limitations": list(_KEYBOARD_RESULT_LIMITATIONS),
         "observation": {
-            "browser_engine": "chromium",
-            "steps": [
-                "roles_summary_reached_by_tab",
-                "roles_summary_closed_by_enter",
-                "roles_summary_reopened_by_space",
-            ],
-            "tab_steps_to_roles_summary": 69,
+            "browser_engine": cast("JsonValue", surface["browser_engine"]),
+            "steps": cast("JsonValue", surface["steps"]),
+            "tab_steps_to_roles_summary": cast("JsonValue", surface["tab_steps_to_roles_summary"]),
         },
         "schema_version": _KEYBOARD_RESULT_SCHEMA,
         "target_profile": _PROFILE,
     }
 
 
-def _activity_view_result() -> dict[str, JsonValue]:
+def _activity_view_result(surface: Mapping[str, object]) -> dict[str, JsonValue]:
+    state = _terminal_step_state(surface, "activity_status_observed")
     return {
         "decision_scope": "pinned_synthetic_generated_activity_view_only",
-        "known_runtime_errors": [{"error_key": "jquery_notify_unavailable", "occurrence_count": 1}],
+        "known_runtime_errors": cast("JsonValue", surface["known_runtime_errors"]),
         "limitations": list(_ACTIVITY_VIEW_RESULT_LIMITATIONS),
         "schema_version": _ACTIVITY_VIEW_RESULT_SCHEMA,
         "target_profile": _PROFILE,
         "workflow_results": [
             _probe_result(
                 "generated_open_case_activity_view",
-                "observed",
+                state,
                 "isolated_headless_chromium_read_only_interaction",
             )
         ],
     }
 
 
-def _contact_summary_workflow_result() -> dict[str, JsonValue]:
+def _contact_summary_workflow_result(surface: Mapping[str, object]) -> dict[str, JsonValue]:
+    state = _terminal_step_state(surface, "cases_affordance_observed")
     return {
         "decision_scope": "pinned_synthetic_contact_summary_browser_workflow_only",
-        "known_runtime_errors": [{"error_key": "jquery_notify_unavailable", "occurrence_count": 2}],
+        "known_runtime_errors": cast("JsonValue", surface["known_runtime_errors"]),
         "limitations": list(_CONTACT_SUMMARY_WORKFLOW_RESULT_LIMITATIONS),
         "schema_version": _CONTACT_SUMMARY_WORKFLOW_RESULT_SCHEMA,
         "target_profile": _PROFILE,
         "workflow_results": [
             _probe_result(
                 "case_dashboard_to_contact_summary",
-                "observed",
+                state,
                 "isolated_headless_chromium_read_only_interaction",
             )
         ],
     }
 
 
-def _case_client_workflow_result() -> dict[str, JsonValue]:
+def _case_client_workflow_result(surface: Mapping[str, object]) -> dict[str, JsonValue]:
+    state = _terminal_step_state(surface, "case_subject_reobserved")
     return {
         "decision_scope": "pinned_synthetic_target_generated_case_client_browser_workflow_only",
-        "known_runtime_errors": [{"error_key": "jquery_notify_unavailable", "occurrence_count": 3}],
+        "known_runtime_errors": cast("JsonValue", surface["known_runtime_errors"]),
         "limitations": list(_CASE_CLIENT_WORKFLOW_RESULT_LIMITATIONS),
         "schema_version": _CASE_CLIENT_WORKFLOW_RESULT_SCHEMA,
         "target_profile": _PROFILE,
         "workflow_results": [
             _probe_result(
                 "target_generated_case_client_to_manage_case",
-                "observed",
+                state,
                 "isolated_headless_chromium_read_only_interaction",
             )
         ],
     }
 
 
-def _browser_access_denial_result() -> dict[str, JsonValue]:
+def _browser_access_denial_result(surface: Mapping[str, object]) -> dict[str, JsonValue]:
+    state = (
+        "observed"
+        if surface["denial_signal"] == "redirect_and_protected_content_absence"
+        else "not_observed"
+    )
     return {
         "decision_scope": "pinned_synthetic_browser_access_denial_only",
         "denial_results": [
             _probe_result(
                 "protected_contact_access_denial",
-                "observed",
+                state,
                 "authenticated_headless_chromium_redirect_and_content_absence",
             )
         ],
-        "known_runtime_errors": [{"error_key": "jquery_notify_unavailable", "occurrence_count": 1}],
+        "known_runtime_errors": cast("JsonValue", surface["known_runtime_errors"]),
         "limitations": list(_BROWSER_ACCESS_DENIAL_RESULT_LIMITATIONS),
         "schema_version": _BROWSER_ACCESS_DENIAL_RESULT_SCHEMA,
         "target_profile": _PROFILE,
     }
 
 
-def _browser_access_allow_control_result() -> dict[str, JsonValue]:
+def _browser_access_allow_control_result(surface: Mapping[str, object]) -> dict[str, JsonValue]:
+    state = (
+        "observed"
+        if surface["allow_signal"] == "protected_contact_content_present"
+        else "not_observed"
+    )
     return {
         "allow_results": [
             _probe_result(
                 "protected_contact_access_allow_control",
-                "observed",
+                state,
                 "authenticated_headless_chromium_protected_content_presence",
             )
         ],
         "decision_scope": "pinned_synthetic_browser_access_allow_control_only",
-        "known_runtime_errors": [{"error_key": "jquery_notify_unavailable", "occurrence_count": 1}],
+        "known_runtime_errors": cast("JsonValue", surface["known_runtime_errors"]),
         "limitations": list(_BROWSER_ACCESS_ALLOW_CONTROL_RESULT_LIMITATIONS),
         "schema_version": _BROWSER_ACCESS_ALLOW_CONTROL_RESULT_SCHEMA,
         "target_profile": _PROFILE,
     }
 
 
-def _case_search_workflow_result() -> dict[str, JsonValue]:
+def _case_search_workflow_result(surface: Mapping[str, object]) -> dict[str, JsonValue]:
+    outcome = cast("str", surface["search_outcome"])
+    state = _CASE_SEARCH_OUTCOME_STATES.get(outcome, "unrecognized_search_outcome")
     return {
         "decision_scope": "pinned_synthetic_case_search_browser_workflow_only",
-        "known_runtime_errors": [{"error_key": "jquery_notify_unavailable", "occurrence_count": 2}],
+        "known_runtime_errors": cast("JsonValue", surface["known_runtime_errors"]),
         "limitations": list(_CASE_SEARCH_WORKFLOW_RESULT_LIMITATIONS),
         "schema_version": _CASE_SEARCH_WORKFLOW_RESULT_SCHEMA,
         "search_results": [
             _probe_result(
                 "exact_subject_filter",
-                "http_500_observed",
+                state,
                 "isolated_headless_chromium_read_only_interaction",
             )
         ],
@@ -1420,11 +1600,42 @@ def verify_civicrm_evidence_index(index_path: Path) -> dict[str, JsonValue]:
     }
 
 
-def _target_result(allow_count: int, deny_count: int) -> dict[str, JsonValue]:
+def _target_result(
+    *,
+    contact_count: int,
+    case_count: int,
+    relationship_count: int,
+    attachment_count: int,
+    allow_count: int,
+    deny_count: int,
+) -> dict[str, JsonValue]:
+    # Each probe state below is computed from a count the caller only obtained by
+    # successfully walking the corresponding independent API v4 readback
+    # (_parse_contacts/_parse_cases, _parse_relationships, _parse_entity_files).
+    # Under this module's closed-bundle validation those parsers reject any
+    # document whose record count deviates from the one pinned profile before
+    # _build_output ever reaches this function, so "fail" is not reachable through
+    # the public normalize_civicrm_target_canary() entry point today -- the same
+    # structural guarantee that makes "record_lookup" trustworthy also makes it
+    # currently one-sided. The comparisons are still real (not literals): they are
+    # exercised directly, including their "fail" branches, by unit tests that call
+    # this function with fabricated counts.
     probes = [
-        _probe_result("record_lookup", "pass", "independent_api_v4_readback"),
-        _probe_result("relationship_traversal", "pass", "independent_api_v4_relationship_readback"),
-        _probe_result("attachment_retrieval", "pass", "authenticated_private_file_bytes"),
+        _probe_result(
+            "record_lookup",
+            "pass" if contact_count == 3 and case_count == 2 else "fail",
+            "independent_api_v4_readback",
+        ),
+        _probe_result(
+            "relationship_traversal",
+            "pass" if relationship_count == _REPRESENTED_COUNTS["relationships"] else "fail",
+            "independent_api_v4_relationship_readback",
+        ),
+        _probe_result(
+            "attachment_retrieval",
+            "pass" if attachment_count == _REPRESENTED_COUNTS["attachments"] else "fail",
+            "authenticated_private_file_bytes",
+        ),
         _probe_result(
             "authorized_access",
             "pass" if allow_count == 1 else "fail",
@@ -1505,205 +1716,49 @@ def _build_output(
         },
         "contact-summary UI projection",
     )
-    _parse_ui_surface(
+    browser_workflow_surface = _parse_ui_surface(
         documents["browser-workflow.json"],
-        {
-            "browser_engine": "chromium",
-            "data_mode": "synthetic_only",
-            "known_runtime_errors": [
-                {
-                    "error_key": "jquery_notify_unavailable",
-                    "occurrence_count": 2,
-                }
-            ],
-            "retained_artifacts": [],
-            "schema_version": "exitdrill/civicrm-browser-workflow-observation/v0.1",
-            "steps": [
-                "case_dashboard_opened",
-                "case_located",
-                "manage_case_opened",
-                "case_controls_observed",
-            ],
-            "target_profile": _PROFILE,
-        },
+        _BROWSER_WORKFLOW_OBSERVATION_PIN,
         "browser workflow projection",
     )
-    _parse_ui_surface(
+    accessibility_surface = _parse_ui_surface(
         documents["browser-accessibility.json"],
-        {
-            "data_mode": "synthetic_only",
-            "engine": "axe-core",
-            "engine_version": "4.12.1",
-            "inapplicable_rule_count": 29,
-            "incomplete_rule_count": 0,
-            "page_scope": "manage_case_document",
-            "passes_rule_count": 32,
-            "retained_artifacts": [],
-            "rule_tags": ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"],
-            "schema_version": "exitdrill/civicrm-accessibility-observation/v0.1",
-            "target_profile": _PROFILE,
-            "violations": [
-                {
-                    "impact": "serious",
-                    "node_count": 4,
-                    "rule_id": "color-contrast",
-                },
-                {
-                    "impact": "serious",
-                    "node_count": 2,
-                    "rule_id": "link-in-text-block",
-                },
-            ],
-        },
+        _ACCESSIBILITY_OBSERVATION_PIN,
         "browser accessibility projection",
     )
-    _parse_ui_surface(
+    keyboard_surface = _parse_ui_surface(
         documents["browser-keyboard.json"],
-        {
-            "browser_engine": "chromium",
-            "data_mode": "synthetic_only",
-            "retained_artifacts": [],
-            "schema_version": "exitdrill/civicrm-keyboard-observation/v0.1",
-            "steps": [
-                "roles_summary_reached_by_tab",
-                "roles_summary_closed_by_enter",
-                "roles_summary_reopened_by_space",
-            ],
-            "tab_steps_to_roles_summary": 69,
-            "target_profile": _PROFILE,
-        },
+        _KEYBOARD_OBSERVATION_PIN,
         "browser keyboard projection",
     )
-    _parse_ui_surface(
+    activity_view_surface = _parse_ui_surface(
         documents["browser-activity-view.json"],
-        {
-            "browser_engine": "chromium",
-            "data_mode": "synthetic_only",
-            "known_runtime_errors": [
-                {"error_key": "jquery_notify_unavailable", "occurrence_count": 1}
-            ],
-            "retained_artifacts": [],
-            "schema_version": "exitdrill/civicrm-activity-view-observation/v0.1",
-            "steps": [
-                "activity_view_opened",
-                "activity_subject_observed",
-                "activity_type_observed",
-                "activity_status_observed",
-            ],
-            "target_profile": _PROFILE,
-        },
+        _ACTIVITY_VIEW_OBSERVATION_PIN,
         "browser activity-view projection",
     )
-    _parse_ui_surface(
+    contact_summary_workflow_surface = _parse_ui_surface(
         documents["browser-contact-summary-workflow.json"],
-        {
-            "browser_engine": "chromium",
-            "data_mode": "synthetic_only",
-            "known_runtime_errors": [
-                {"error_key": "jquery_notify_unavailable", "occurrence_count": 2}
-            ],
-            "retained_artifacts": [],
-            "schema_version": "exitdrill/civicrm-contact-summary-workflow-observation/v0.1",
-            "steps": [
-                "case_dashboard_reopened",
-                "case_contact_opened",
-                "contact_summary_observed",
-                "cases_affordance_observed",
-            ],
-            "target_profile": _PROFILE,
-        },
+        _CONTACT_SUMMARY_WORKFLOW_OBSERVATION_PIN,
         "browser contact-summary workflow projection",
     )
-    _parse_ui_surface(
+    case_client_workflow_surface = _parse_ui_surface(
         documents["browser-case-client-workflow.json"],
-        {
-            "browser_engine": "chromium",
-            "data_mode": "synthetic_only",
-            "known_runtime_errors": [
-                {"error_key": "jquery_notify_unavailable", "occurrence_count": 3}
-            ],
-            "retained_artifacts": [],
-            "schema_version": "exitdrill/civicrm-case-client-workflow-observation/v0.1",
-            "steps": [
-                "case_dashboard_reopened",
-                "target_generated_case_client_opened",
-                "contact_summary_observed",
-                "cases_affordance_activated",
-                "contact_cases_observed",
-                "manage_case_opened_from_contact",
-                "case_subject_reobserved",
-            ],
-            "target_profile": _PROFILE,
-        },
+        _CASE_CLIENT_WORKFLOW_OBSERVATION_PIN,
         "browser case-client workflow projection",
     )
-    _parse_ui_surface(
+    browser_access_denial_surface = _parse_ui_surface(
         documents["browser-access-denial.json"],
-        {
-            "authenticated_identity": "deny",
-            "browser_engine": "chromium",
-            "data_mode": "synthetic_only",
-            "denial_signal": "redirect_and_protected_content_absence",
-            "known_runtime_errors": [
-                {"error_key": "jquery_notify_unavailable", "occurrence_count": 1}
-            ],
-            "redirect_chain": [
-                {"route": "civicrm/contact/view", "status": 302},
-                {"route": "civicrm", "status": 200},
-            ],
-            "retained_artifacts": [],
-            "schema_version": "exitdrill/civicrm-browser-access-denial-observation/v0.1",
-            "steps": [
-                "protected_contact_requested",
-                "protected_contact_redirected",
-                "protected_contact_content_absent",
-            ],
-            "target_profile": _PROFILE,
-        },
+        _BROWSER_ACCESS_DENIAL_OBSERVATION_PIN,
         "browser access-denial projection",
     )
-    _parse_ui_surface(
+    browser_access_allow_control_surface = _parse_ui_surface(
         documents["browser-access-allow-control.json"],
-        {
-            "allow_signal": "protected_contact_content_present",
-            "authenticated_identity": "allow",
-            "browser_engine": "chromium",
-            "data_mode": "synthetic_only",
-            "known_runtime_errors": [
-                {"error_key": "jquery_notify_unavailable", "occurrence_count": 1}
-            ],
-            "navigation_chain": [{"route": "civicrm/contact/view", "status": 200}],
-            "retained_artifacts": [],
-            "schema_version": "exitdrill/civicrm-browser-access-allow-control-observation/v0.1",
-            "steps": [
-                "protected_contact_requested",
-                "protected_contact_page_observed",
-                "protected_contact_content_observed",
-            ],
-            "target_profile": _PROFILE,
-        },
+        _BROWSER_ACCESS_ALLOW_CONTROL_OBSERVATION_PIN,
         "browser access allow-control projection",
     )
-    _parse_ui_surface(
+    case_search_workflow_surface = _parse_ui_surface(
         documents["browser-case-search-workflow.json"],
-        {
-            "browser_engine": "chromium",
-            "data_mode": "synthetic_only",
-            "known_runtime_errors": [
-                {"error_key": "jquery_notify_unavailable", "occurrence_count": 2}
-            ],
-            "retained_artifacts": [],
-            "schema_version": "exitdrill/civicrm-case-search-workflow-observation/v0.1",
-            "search_outcome": "exact_subject_filter_http_500_observed",
-            "steps": [
-                "case_dashboard_opened",
-                "case_summary_drilldown_activated",
-                "unfiltered_case_results_observed",
-                "case_subject_filter_submitted",
-                "exact_subject_filter_http_500_observed",
-            ],
-            "target_profile": _PROFILE,
-        },
+        _CASE_SEARCH_WORKFLOW_OBSERVATION_PIN,
         "browser case-search workflow projection",
     )
     export: dict[str, JsonValue] = {
@@ -1721,17 +1776,24 @@ def _build_output(
     return (
         export,
         copies,
-        _target_result(len(allow_values), len(deny_values)),
+        _target_result(
+            contact_count=len(people),
+            case_count=len(cases),
+            relationship_count=len(relationships),
+            attachment_count=len(attachments),
+            allow_count=len(allow_values),
+            deny_count=len(deny_values),
+        ),
         _ui_surface_result(),
-        _browser_workflow_result(),
-        _accessibility_result(),
-        _keyboard_result(),
-        _activity_view_result(),
-        _contact_summary_workflow_result(),
-        _case_client_workflow_result(),
-        _browser_access_denial_result(),
-        _browser_access_allow_control_result(),
-        _case_search_workflow_result(),
+        _browser_workflow_result(browser_workflow_surface),
+        _accessibility_result(accessibility_surface),
+        _keyboard_result(keyboard_surface),
+        _activity_view_result(activity_view_surface),
+        _contact_summary_workflow_result(contact_summary_workflow_surface),
+        _case_client_workflow_result(case_client_workflow_surface),
+        _browser_access_denial_result(browser_access_denial_surface),
+        _browser_access_allow_control_result(browser_access_allow_control_surface),
+        _case_search_workflow_result(case_search_workflow_surface),
     )
 
 
