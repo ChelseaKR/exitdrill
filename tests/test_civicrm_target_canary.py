@@ -2,13 +2,14 @@ from __future__ import annotations
 
 import hashlib
 import json
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 from typing import Any, cast
 
 import pytest
 from jsonschema import Draft202012Validator
 
+from exitdrill import civicrm_target_canary
 from exitdrill.canonical import canonical_json_bytes
 from exitdrill.civicrm_target_canary import (
     CiviCRMTargetCanaryError,
@@ -1651,3 +1652,211 @@ def test_module_has_no_evaluator_receipt_report_or_connector_abstraction() -> No
         "mapping_expression",
     ):
         assert forbidden not in source
+
+
+# --- gh-30: probe states must be computed from an observed outcome, never a bare literal ---
+#
+# `record_lookup`, `relationship_traversal`, and `attachment_retrieval` used to be the
+# literal Python string "pass", written directly at every call site regardless of what
+# had actually been read back. They are now computed from the same counts the caller
+# only has after successfully walking the corresponding independent API v4 readback.
+#
+# This module's closed-bundle validation (_api_values' fixed allowed_lengths) rejects any
+# document whose contact/case/relationship/attachment count deviates from the one pinned
+# profile before _build_output ever reaches _target_result, so the "fail" branches below
+# are not reachable through the public normalize_civicrm_target_canary() entry point today
+# -- unlike authorized_access/unauthorized_denial, whose permission-probe inputs are
+# already validated as 0-or-1 rather than a fixed count. That is a property of the
+# surrounding parsers' strictness, not evidence that the branch is unreachable dead code:
+# it is exercised directly here, against the real function, with fabricated counts.
+
+
+def _probe_state_map(result: dict[str, Any]) -> dict[str, str]:
+    probes = cast(list[dict[str, Any]], result["probe_results"])
+    return {cast(str, item["id"]): cast(str, item["state"]) for item in probes}
+
+
+def test_target_result_all_probes_pass_when_every_count_matches_the_pinned_profile() -> None:
+    result = civicrm_target_canary._target_result(
+        contact_count=3,
+        case_count=2,
+        relationship_count=2,
+        attachment_count=2,
+        allow_count=1,
+        deny_count=0,
+    )
+    assert _probe_state_map(result) == {
+        "record_lookup": "pass",
+        "relationship_traversal": "pass",
+        "attachment_retrieval": "pass",
+        "authorized_access": "pass",
+        "unauthorized_denial": "pass",
+    }
+
+
+@pytest.mark.parametrize(
+    ("counts", "failing_probe_id"),
+    [
+        ({"contact_count": 2}, "record_lookup"),
+        ({"contact_count": 4}, "record_lookup"),
+        ({"case_count": 1}, "record_lookup"),
+        ({"case_count": 3}, "record_lookup"),
+        ({"relationship_count": 1}, "relationship_traversal"),
+        ({"relationship_count": 3}, "relationship_traversal"),
+        ({"attachment_count": 0}, "attachment_retrieval"),
+        ({"attachment_count": 3}, "attachment_retrieval"),
+    ],
+)
+def test_target_result_reports_fail_for_a_real_failing_count_not_pass(
+    counts: dict[str, int], failing_probe_id: str
+) -> None:
+    base = {
+        "contact_count": 3,
+        "case_count": 2,
+        "relationship_count": 2,
+        "attachment_count": 2,
+        "allow_count": 1,
+        "deny_count": 0,
+    }
+    base.update(counts)
+    result = civicrm_target_canary._target_result(**base)
+    states = _probe_state_map(result)
+    assert states[failing_probe_id] == "fail"
+    for probe_id, state in states.items():
+        if probe_id != failing_probe_id:
+            assert state == "pass", f"unrelated probe {probe_id} changed to {state}"
+
+
+# --- gh-30: the nine browser/accessibility/keyboard result builders must project the
+# committed evidence document instead of returning a fixed dict regardless of input ---
+
+
+def test_accessibility_result_projects_the_given_scan_not_a_fixed_dict() -> None:
+    surface: dict[str, object] = {
+        "engine": "axe-core",
+        "engine_version": "4.13.0",
+        "inapplicable_rule_count": 11,
+        "incomplete_rule_count": 3,
+        "page_scope": "manage_case_document",
+        "passes_rule_count": 40,
+        "rule_tags": ["wcag2a"],
+        "violations": [{"impact": "minor", "node_count": 1, "rule_id": "some-other-rule"}],
+    }
+    result = civicrm_target_canary._accessibility_result(surface)
+    assert result["scan_result"] == surface
+
+
+def test_keyboard_result_projects_the_given_observation_not_a_fixed_dict() -> None:
+    surface: dict[str, object] = {
+        "browser_engine": "firefox",
+        "steps": ["roles_summary_reached_by_tab"],
+        "tab_steps_to_roles_summary": 12,
+    }
+    result = civicrm_target_canary._keyboard_result(surface)
+    assert result["observation"] == surface
+
+
+def _terminal_state(document: dict[str, Any], results_key: str) -> str:
+    return cast(str, cast(list[dict[str, Any]], document[results_key])[0]["state"])
+
+
+@pytest.mark.parametrize(
+    ("builder", "results_key", "final_step"),
+    [
+        (
+            civicrm_target_canary._browser_workflow_result,
+            "workflow_results",
+            "case_controls_observed",
+        ),
+        (
+            civicrm_target_canary._activity_view_result,
+            "workflow_results",
+            "activity_status_observed",
+        ),
+        (
+            civicrm_target_canary._contact_summary_workflow_result,
+            "workflow_results",
+            "cases_affordance_observed",
+        ),
+        (
+            civicrm_target_canary._case_client_workflow_result,
+            "workflow_results",
+            "case_subject_reobserved",
+        ),
+    ],
+)
+def test_terminal_step_probes_report_observed_or_not_observed_from_real_steps(
+    builder: Callable[[Mapping[str, object]], dict[str, Any]],
+    results_key: str,
+    final_step: str,
+) -> None:
+    complete = builder({"known_runtime_errors": [], "steps": ["earlier_step", final_step]})
+    incomplete = builder(
+        {"known_runtime_errors": [], "steps": ["earlier_step", "an_unexpected_step"]}
+    )
+    assert _terminal_state(complete, results_key) == "observed"
+    assert _terminal_state(incomplete, results_key) == "not_observed"
+
+
+def test_browser_access_denial_result_reflects_the_real_denial_signal() -> None:
+    denied = civicrm_target_canary._browser_access_denial_result(
+        {"denial_signal": "redirect_and_protected_content_absence", "known_runtime_errors": []}
+    )
+    assert _terminal_state(denied, "denial_results") == "observed"
+
+    not_denied = civicrm_target_canary._browser_access_denial_result(
+        {"denial_signal": "protected_content_present", "known_runtime_errors": []}
+    )
+    assert _terminal_state(not_denied, "denial_results") == "not_observed"
+
+
+def test_browser_access_allow_control_result_reflects_the_real_allow_signal() -> None:
+    allowed = civicrm_target_canary._browser_access_allow_control_result(
+        {"allow_signal": "protected_contact_content_present", "known_runtime_errors": []}
+    )
+    assert _terminal_state(allowed, "allow_results") == "observed"
+
+    not_allowed = civicrm_target_canary._browser_access_allow_control_result(
+        {"allow_signal": "redirected", "known_runtime_errors": []}
+    )
+    assert _terminal_state(not_allowed, "allow_results") == "not_observed"
+
+
+def test_case_search_workflow_result_maps_the_real_search_outcome_to_a_state() -> None:
+    known = civicrm_target_canary._case_search_workflow_result(
+        {"known_runtime_errors": [], "search_outcome": "exact_subject_filter_http_500_observed"}
+    )
+    assert _terminal_state(known, "search_results") == "http_500_observed"
+
+    unrecognized = civicrm_target_canary._case_search_workflow_result(
+        {"known_runtime_errors": [], "search_outcome": "exact_subject_filter_succeeded"}
+    )
+    assert _terminal_state(unrecognized, "search_results") == "unrecognized_search_outcome"
+
+
+# --- gh-30: passes_rule_count (and the other browser/a11y fields) must flow from one real
+# source, not from five independently-typed literals that merely happen to agree ---
+
+
+def test_passes_rule_count_flows_from_committed_evidence_not_a_frozen_second_literal(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Before this fix, `_accessibility_result()` always emitted a literal 32 regardless
+    of what `browser-accessibility.json` said. Re-pin both the module's input contract
+    and the fixture bundle to a different, self-consistent value (40): if the emitted
+    result were still an independent literal, this would keep reading 32."""
+    mutated_pin = dict(civicrm_target_canary._ACCESSIBILITY_OBSERVATION_PIN)
+    mutated_pin["passes_rule_count"] = 40
+    monkeypatch.setattr(civicrm_target_canary, "_ACCESSIBILITY_OBSERVATION_PIN", mutated_pin)
+
+    manifest = _create_bundle(tmp_path / "capture")
+    _mutate_json(
+        manifest,
+        "browser-accessibility.json",
+        lambda raw: raw.update({"passes_rule_count": 40}),
+    )
+
+    normalize_civicrm_target_canary(manifest, tmp_path / "out")
+
+    accessibility_result = _read_json(tmp_path / "out" / "accessibility-result.json")
+    assert accessibility_result["scan_result"]["passes_rule_count"] == 40
