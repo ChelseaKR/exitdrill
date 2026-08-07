@@ -4,8 +4,26 @@ All notable changes will be documented here.
 
 ## [Unreleased]
 
+### Added
+
+- Portfolio standards conformance documentation: a Standards Conformance
+  table and an AI-assisted development disclosure in the README, a roadmap
+  with the milestone gates and the Quality & Metrics ledger
+  (`docs/ROADMAP.md`), and a reasoned internationalization N/A declaration
+  (`docs/I18N.md`).
+- `.github/allowed_signers`, the SSH allowed-signers file the release
+  workflow uses to verify a signed annotated release tag.
+
 ### Changed
 
+- The release workflow is now dispatch-only and split-authority: a shared
+  read-only authorization job verifies a signed annotated tag against trusted
+  main, the build job re-runs `make verify` and both declared demo outcomes at
+  the verified commit before packaging, and a checkout-free publish job
+  rechecks the immutable tag object before creating the GitHub Release. It
+  replaces the tag-push candidate build, which had never run because no tag
+  exists; there is still no tag, no release, and no package-registry
+  publication.
 - The wheel-content gate now derives its expected schema set from the committed
   `schemas/` directory instead of a hand-maintained constant list. It requires
   the wheel to carry exactly that set, byte for byte, and rejects an unexpected
