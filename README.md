@@ -163,8 +163,15 @@ make package
 ```
 
 The merge gate runs Ruff, strict mypy, pytest, and at least 90% branch coverage.
-The candidate-release workflow builds and inspects a wheel but publishes no
-package.
+The release workflow is dispatch-only: it verifies a signed annotated tag
+against trusted main, rebuilds and re-verifies at that exact commit, and can
+publish a GitHub Release. No tag or release exists yet, and no package-registry
+publication is configured.
+
+ExitDrill is built AI-assisted, within a portfolio that shares a common quality
+standard: merge-blocking gates guard the core safety properties, audit
+artifacts are committed rather than claimed, and the accountable maintainer
+reviews and owns every change.
 
 ## Documentation
 
@@ -173,9 +180,29 @@ package.
 - [Data governance](docs/DATA-GOVERNANCE.md)
 - [Threat model](docs/THREAT-MODEL.md)
 - [Responsible-technology audit](docs/RESPONSIBLE-TECH-AUDITS.md)
+- [Roadmap and metrics ledger](docs/ROADMAP.md)
+- [Internationalization declaration](docs/I18N.md)
 
 Detailed source and target evidence stays with the corresponding example rather
 than being duplicated here.
+
+## Standards Conformance
+
+Declared per the portfolio standards set. Every standard is either applied or
+recorded as N/A with a reason; there are no silent skips.
+
+| Standard | State |
+|---|---|
+| Code Quality | Applies. Single root `pyproject.toml`, `uv.lock`, Ruff lint and format, strict mypy over `src`, `tests`, and `scripts`, pytest with at least 90% branch coverage, pre-commit hooks, and `make verify` as the merge gate. |
+| Security & Supply-Chain | Applies. SHA-pinned actions, scoped workflow permissions, Semgrep, gitleaks, strict pip-audit plus npm audit, zizmor, Dependabot, and private vulnerability reporting per [SECURITY.md](SECURITY.md). |
+| CI/CD | Applies. `ci.yml` runs the same `make` targets a contributor runs locally; the release workflow is dispatch-only, verifies a signed annotated tag against trusted main, and separates verification from publication authority. No tag or release exists yet. |
+| Observability | Applies (Tier C scope). Offline single-run CLI; evidence is deterministic exit codes, replayable receipts, and rendered reports. The out-of-scope decision for tracing and SLO surfaces is recorded in [docs/ROADMAP.md](docs/ROADMAP.md). |
+| Accessibility | Applies (scoped). The offline HTML report is static, script-free, and escaped. The CiviCRM canary records one sanitized automated accessibility scan and one keyboard observation without claiming WCAG conformance; human assistive-technology review remains open. |
+| Internationalization | N/A (single-operator, English-only CLI with no public or bilingual delivery obligation; declared in [docs/I18N.md](docs/I18N.md)). |
+| AI Evaluation | N/A (no LLM or model component in the evaluator or its trust path; excluding model-generated transforms is a load-bearing invariant in `AGENTS.md`). |
+| Documentation | Applies. README, architecture, ADR log, CHANGELOG, SECURITY.md, CONTRIBUTING.md, CITATION.cff, threat model, data governance, and responsible-tech audit are committed and current. |
+| Quality & Metrics | Applies. The metrics ledger and milestone gates live in [docs/ROADMAP.md](docs/ROADMAP.md); `make verify` is the single merge gate locally and in CI. |
+| Responsible-Tech Framework | Applies. [docs/RESPONSIBLE-TECH-AUDITS.md](docs/RESPONSIBLE-TECH-AUDITS.md) covers public-interest value, privacy, equity, transparency, and accountability; the synthetic-only boundary is enforced through [docs/DATA-GOVERNANCE.md](docs/DATA-GOVERNANCE.md). |
 
 ## License
 

@@ -1,0 +1,32 @@
+# zizmor configuration. See https://docs.zizmor.sh/configuration/
+#
+# `impostor-commit` is disabled repo-wide because it cannot run at all: it
+# needs the GitHub API to confirm that a pinned commit SHA belongs to the
+# referenced repo, and release.yml's `authorize` job pins
+# ChelseaKR/portfolio-standards/.github/workflows/release-authorize.yml --
+# a *different*, private repo that this workflow's repo-scoped
+# GITHUB_TOKEN cannot read. zizmor does not fail closed on that access
+# error; it aborts the whole audit for the file before it reaches any
+# other `uses:` line, so per-line `ignore` cannot scope around it
+# (BaseRuleConfig.ignore filters findings after a successful run; it
+# cannot suppress an audit-level error). Same failure mode and fix as
+# obligation-receipts' .github/zizmor.yml.
+#
+# What this trades away: automated confirmation that a pinned SHA in this
+# repo's own workflows resolves to a real tag on its origin repo.
+# Everything else zizmor checks (unpinned-uses, stale-action-refs,
+# known-vulnerable-actions, ref-confusion, ref-version-mismatch, and the
+# offline audits) stays active for every `uses:` line, including the
+# public actions in these workflows.
+#
+# The one pin this leaves unchecked -- release.yml's release-authorize
+# reference -- is still verified by hand before every bump: the SHA must
+# resolve to a signed, tagged commit on portfolio-standards.
+#
+# Re-enable once the zizmor job is given a credential that can read
+# portfolio-standards (e.g. a fine-grained PAT with contents:read on that
+# repo specifically, passed as the zizmor-action `token:` input) rather
+# than relying on this repo's own GITHUB_TOKEN.
+rules:
+  impostor-commit:
+    disable: true
