@@ -926,8 +926,15 @@ def main() -> None:
                 adversaries / "nonempty-precondition" / "capture-manifest.json",
                 rejected_output,
             )
-        except CiviCRMTargetCanaryError:
-            pass
+        except CiviCRMTargetCanaryError as error:
+            # Any rejection at all would satisfy a bare "it raised" assertion, so
+            # this control names the precondition it is supposed to be proving.
+            # Otherwise an unrelated regression that broke the whole bundle would
+            # keep scoring as a detected adversarial control.
+            _require(
+                "sandbox.application_empty_before_write" in str(error),
+                "nonempty target bundle was rejected for an unrelated reason",
+            )
         else:
             raise RuntimeError("nonempty target precondition was not rejected")
         _require(not rejected_output.exists(), "nonempty rejection created an output directory")

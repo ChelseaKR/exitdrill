@@ -314,3 +314,77 @@ def test_strict_type_checking_covers_the_committed_gate_scripts() -> None:
 
     assert metadata["tool"]["mypy"]["strict"] is True
     assert set(metadata["tool"]["mypy"]["files"]) == {"src", "tests", "scripts"}
+
+
+def _uv_or_skip() -> str:
+    uv = which("uv")
+    if uv is None:  # pragma: no cover - exercised by the uv-provisioned CI gate
+        pytest.skip("uv is required to exercise the lockfile-drift gate")
+    return uv
+
+
+def _uv(uv: str, *arguments: str, cwd: Path) -> int:
+    completed = subprocess.run(  # noqa: S603 - resolved interpreter and fixed arguments
+        [uv, *arguments],
+        cwd=cwd,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    return completed.returncode
+
+
+def test_frozen_lockfile_flag_cannot_observe_declared_dependency_drift(tmp_path: Path) -> None:
+    """`--frozen` exits 0 on a drifted lockfile; only `--locked` can observe the drift.
+
+    This is the property the repository's own lockfile gate depends on, so it is
+    asserted against real `uv` behaviour rather than assumed. The probe project
+    declares no dependencies, so both commands resolve offline.
+    """
+    uv = _uv_or_skip()
+    project = tmp_path / "drift-probe"
+    project.mkdir()
+    manifest = project / "pyproject.toml"
+    manifest.write_text(
+        '[project]\nname = "drift-probe"\nversion = "0.0.0"\n'
+        'requires-python = ">=3.12"\ndependencies = []\n',
+        encoding="utf-8",
+    )
+    assert _uv(uv, "lock", "--offline", cwd=project) == 0
+
+    manifest.write_text(
+        manifest.read_text(encoding="utf-8").replace(
+            "dependencies = []", 'dependencies = ["exitdrill-drift-probe-absent"]'
+        ),
+        encoding="utf-8",
+    )
+
+    assert _uv(uv, "sync", "--frozen", "--offline", "--no-install-project", cwd=project) == 0
+    assert _uv(uv, "sync", "--locked", "--offline", "--no-install-project", cwd=project) != 0
+
+
+def test_every_lockfile_consuming_command_observes_lockfile_drift() -> None:
+    """No committed command may read `uv.lock` with a flag that ignores drift.
+
+    `uv sync --frozen` and `uv export --frozen` install and export whatever the
+    lockfile already says and exit 0 even when `pyproject.toml` has moved on. A
+    dependency added to the project but never relocked would then be absent from
+    the installed environment and absent from the audited requirement set, while
+    every gate stayed green. `--locked` fails closed instead.
+    """
+    sources = {
+        "Makefile": (PROJECT / "Makefile").read_text(encoding="utf-8"),
+        "ci.yml": (PROJECT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8"),
+        "release.yml": (PROJECT / ".github" / "workflows" / "release.yml").read_text(
+            encoding="utf-8"
+        ),
+    }
+    drift_blind = re.compile(r"uv (?:sync|export)[^\n]*--frozen")
+
+    for name, text in sources.items():
+        assert not drift_blind.search(text), f"{name} reads uv.lock without observing drift"
+
+    assert "uv sync --locked" in sources["Makefile"]
+    assert "uv sync --locked" in sources["ci.yml"]
+    assert "uv export --locked" in sources["ci.yml"]
+    assert "uv sync --locked" in sources["release.yml"]

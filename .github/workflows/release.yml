@@ -72,7 +72,7 @@ jobs:
           PY
       - name: Verify and build the candidate at the verified commit
         run: |
-          uv sync --frozen
+          uv sync --locked
           make verify
           make demo
           make demo-lossy

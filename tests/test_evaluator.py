@@ -265,6 +265,44 @@ def test_multiple_field_value_mismatches_count_one_invalid_entity(copied_example
     assert result.payload()["observed_remediation_signals"] == 1
 
 
+def test_extra_attachment_whose_bytes_contradict_its_own_digest_fails(
+    copied_example: Path,
+) -> None:
+    """An exported attachment absent from the baseline is still byte-checked.
+
+    Nothing in the baseline declares an expected digest for an extra attachment,
+    so only the export's own `content_sha256` can be contradicted. Without that
+    check the drill would downgrade a corrupt attachment to `extra`, and the
+    receipt would read `structurally_restorable_with_findings` for an export
+    whose attachment bytes are not the bytes it claims to ship.
+    """
+    (copied_example / "export-files" / "attachments" / "extra.txt").write_bytes(b"other bytes\n")
+    path = copied_example / "export.json"
+    raw = _json(path)
+    attachments = raw["attachments"]
+    assert isinstance(attachments, list)
+    attachments.append(
+        {
+            "id": "attachment-002",
+            "owner_type": "case",
+            "owner_id": "case-001",
+            "relative_path": "attachments/extra.txt",
+            "content_sha256": "0" * 64,
+        }
+    )
+    _write(path, raw)
+
+    result = _run(copied_example)
+    attachment_result = next(
+        item for item in result.dimensions if item.dimension is Dimension.ATTACHMENTS
+    )
+
+    assert attachment_result.extra_count == 1
+    assert attachment_result.invalid_count == 1
+    assert attachment_result.status is DimensionStatus.FAIL
+    assert result.overall_status is OverallStatus.NOT_STRUCTURALLY_RESTORABLE
+
+
 def test_payload_preserves_complete_dimension_denominator(example_root: Path) -> None:
     result = _run(example_root)
     names = {item.dimension for item in result.dimensions}

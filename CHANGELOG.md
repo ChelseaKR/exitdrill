@@ -14,6 +14,23 @@ All notable changes will be documented here.
 - `.github/allowed_signers`, the SSH allowed-signers file the release
   workflow uses to verify a signed annotated release tag.
 
+### Fixed
+
+- Every command that reads `uv.lock` now uses `--locked` instead of `--frozen`,
+  so a `pyproject.toml` dependency change that was never relocked fails the
+  build instead of passing it. `uv sync --frozen` and `uv export --frozen`
+  install and export whatever the lockfile already says and exit 0 on a drifted
+  lockfile, which meant a newly declared runtime dependency was neither
+  installed for the merge gate nor present in the requirement set handed to
+  `pip-audit`. Two gates cover the change: one asserts the real flag behaviour
+  against `uv`, and one keeps `--frozen` out of the Makefile and both
+  workflows.
+- The offline CiviCRM acceptance gate now requires the empty-target
+  precondition control to be rejected *for that precondition*. It previously
+  accepted any `CiviCRMTargetCanaryError`, so a derivative that stopped
+  exercising the precondition but broke in some unrelated way still counted
+  toward `adversarial_controls_detected`.
+
 ### Changed
 
 - The release workflow is now dispatch-only and split-authority: a shared
