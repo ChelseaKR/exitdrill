@@ -1,7 +1,7 @@
 .PHONY: install format lint lint-lab type test verify package demo demo-lossy demo-compare demo-compare-policy demo-directus-canary demo-civicrm-target-canary
 
 install:
-	uv sync --frozen
+	uv sync --locked
 
 format:
 	uv run ruff format .

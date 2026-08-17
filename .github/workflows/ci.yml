@@ -29,7 +29,7 @@ jobs:
         with:
           node-version: "24.18.0"
       - name: Install locked environment
-        run: uv sync --frozen
+        run: uv sync --locked
       - name: Install locked browser-lab dependency
         run: npm ci --ignore-scripts
       - name: Check every committed browser-lab script
@@ -69,7 +69,7 @@ jobs:
           node-version: "24.18.0"
       - name: Audit locked runtime dependencies
         run: |
-          uv export --frozen --no-dev --no-emit-project --no-hashes > /tmp/runtime-requirements.txt
+          uv export --locked --no-dev --no-emit-project --no-hashes > /tmp/runtime-requirements.txt
           if test -s /tmp/runtime-requirements.txt; then
             uvx --from pip-audit==2.10.1 pip-audit --strict --requirement /tmp/runtime-requirements.txt
           else
