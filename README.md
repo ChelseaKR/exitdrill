@@ -210,5 +210,6 @@ ExitDrill is available under the [Apache License 2.0](LICENSE).
 
 ## Support
 
-This is independent, unpaid work. If it has been useful to you, you can
-<a href='https://ko-fi.com/T6T6GMYTU' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi6.png?v=6' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>
+This is independent work, published so it can be read and checked rather than taken on
+trust. If your organization is planning a platform migration or an exit and wants help
+running one, see [consulting and workshops](https://chelseakr.com/consulting/).
