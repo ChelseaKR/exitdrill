@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import sqlite3
 from collections.abc import Collection
+from dataclasses import dataclass
 from pathlib import Path
 
 from exitdrill.canonical import canonical_json_bytes
@@ -32,6 +33,14 @@ class DrillError(ValueError):
     """Raised when inputs cannot belong to the same exit drill."""
 
 
+@dataclass(frozen=True, slots=True)
+class _RestoreOutcome:
+    """What the neutral reference-model load actually accepted."""
+
+    counts: dict[Dimension, int]
+    restored_attachment_ids: frozenset[str]
+
+
 def _value_matches(requirement: FieldRequirement, value: object) -> bool:
     return matches_field_type(requirement.value_type, value) and value == requirement.expected_value
 
@@ -46,6 +55,9 @@ def _dimension_result(
 ) -> DimensionResult:
     missing_count = len(set(expected) - set(actual))
     extra_count = len(set(actual) - set(expected))
+    # `invalid_count` is the caller's own count of distinct invalid items. The
+    # restoration shortfall is a fail-closed floor beneath it: a caller may
+    # never report fewer invalid items than the reference model refused.
     effective_invalid = max(invalid_count, len(actual) - restored_count)
     status = classify_dimension_status(
         coverage,
@@ -66,7 +78,7 @@ def _dimension_result(
     )
 
 
-def _restore_reference_model(package: ExportPackage) -> dict[Dimension, int]:
+def _restore_reference_model(package: ExportPackage) -> _RestoreOutcome:
     connection = sqlite3.connect(":memory:")
     connection.execute("PRAGMA foreign_keys = ON")
     connection.executescript(
@@ -130,7 +142,7 @@ def _restore_reference_model(package: ExportPackage) -> dict[Dimension, int]:
     except sqlite3.IntegrityError:
         connection.rollback()
         connection.close()
-        return counts
+        return _RestoreOutcome(counts, frozenset())
     operations: tuple[tuple[Dimension, str, tuple[tuple[object, ...], ...]], ...] = (
         (
             Dimension.RELATIONSHIPS,
@@ -184,11 +196,14 @@ def _restore_reference_model(package: ExportPackage) -> dict[Dimension, int]:
             except sqlite3.IntegrityError:
                 connection.rollback()
         counts[dimension] = _table_count(connection, table_names[dimension])
+    restored_attachment_ids = frozenset(
+        str(row[0]) for row in connection.execute("SELECT attachment_id FROM attachments")
+    )
     if tuple(connection.execute("PRAGMA foreign_key_check")):
         connection.close()
-        return {dimension: 0 for dimension in Dimension}
+        return _RestoreOutcome({dimension: 0 for dimension in Dimension}, frozenset())
     connection.close()
-    return counts
+    return _RestoreOutcome(counts, restored_attachment_ids)
 
 
 def _table_count(connection: sqlite3.Connection, table: str) -> int:
@@ -219,14 +234,20 @@ def _invalid_entities(
     return invalid
 
 
-def _invalid_attachments(
+def _byte_invalid_attachment_keys(
     baseline: Baseline,
     package: ExportPackage,
     attachment_root: Path,
-) -> int:
+) -> frozenset[tuple[str, str, str]]:
+    """Return the keys of exported attachments whose bytes fail verification.
+
+    Keys, not a count: byte verification and reference-model restoration are
+    independent failure populations, and the caller must union them rather than
+    compare their sizes.
+    """
     expected_hashes = {item.key: item.content_sha256 for item in baseline.attachments}
     total_budget = ByteBudget(_MAX_TOTAL_ATTACHMENT_BYTES)
-    invalid = 0
+    invalid: set[tuple[str, str, str]] = set()
     for item in package.attachments:
         try:
             actual_hash = sha256_bounded_file(
@@ -236,15 +257,15 @@ def _invalid_attachments(
                 total_budget=total_budget,
             )
         except (BoundedPathError, FileNotFoundError, OSError):
-            invalid += 1
+            invalid.add(item.key)
             continue
         if actual_hash != item.content_sha256:
-            invalid += 1
+            invalid.add(item.key)
             continue
         expected_hash = expected_hashes.get(item.key)
         if expected_hash is not None and expected_hash != actual_hash:
-            invalid += 1
-    return invalid
+            invalid.add(item.key)
+    return frozenset(invalid)
 
 
 def _overall_status(results: tuple[DimensionResult, ...]) -> OverallStatus:
@@ -275,7 +296,8 @@ def run_drill(
         for item in package.audit_events
     ):
         raise DrillError("export audit event occurs after export creation")
-    restored = _restore_reference_model(package)
+    restore = _restore_reference_model(package)
+    restored = restore.counts
     actual_entities = {item.key: item for item in package.entities}
     entity_result = _dimension_result(
         Dimension.ENTITIES,
@@ -284,6 +306,17 @@ def run_drill(
         set(actual_entities),
         restored[Dimension.ENTITIES],
         _invalid_entities(tuple(baseline.entities), actual_entities),
+    )
+    # An attachment can fail byte verification, fail to restore, or both. Those
+    # populations are disjoint in general, so the invalid count is the size of
+    # their union; comparing their sizes would hide whichever set is smaller.
+    unrestorable_attachments = frozenset(
+        item.key
+        for item in package.attachments
+        if item.attachment_id not in restore.restored_attachment_ids
+    )
+    invalid_attachments = (
+        _byte_invalid_attachment_keys(baseline, package, attachment_root) | unrestorable_attachments
     )
     results = (
         entity_result,
@@ -301,7 +334,7 @@ def run_drill(
             {item.key for item in baseline.attachments},
             {item.key for item in package.attachments},
             restored[Dimension.ATTACHMENTS],
-            _invalid_attachments(baseline, package, attachment_root),
+            len(invalid_attachments),
         ),
         _dimension_result(
             Dimension.PERMISSIONS,
