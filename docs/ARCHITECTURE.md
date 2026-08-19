@@ -394,6 +394,17 @@ assertions. Each entity contributes at most one invalid count even if several
 declared fields are missing, mistyped, or unequal. Undeclared fields remain
 outside the denominator.
 
+An `invalid_count` is a count of distinct items, not of failed checks, and a
+dimension whose items can fail more than one independent check must union those
+populations rather than compare their sizes. Attachments are the only such
+dimension: byte verification and reference-model restoration select different
+attachments, so the evaluator tracks the failing key set for each and reports
+`len(byte_failures | unrestorable)`. Taking the larger of the two counts would
+conceal every failure in the smaller set. The restoration shortfall stays a
+fail-closed floor beneath any per-dimension count, so a dimension can never
+report fewer invalid items than the reference model refused. Every other
+dimension has exactly one reachable failure mode.
+
 ## Result algebra
 
 Per dimension:

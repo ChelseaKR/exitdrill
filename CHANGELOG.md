@@ -16,6 +16,23 @@ All notable changes will be documented here.
 
 ### Fixed
 
+- The attachments dimension no longer hides one class of loss behind another.
+  An exported attachment can fail byte verification, be refused by the
+  reference model's foreign key, or both, and those are disjoint populations.
+  The evaluator reported `max()` of the two population sizes, so whichever set
+  was smaller became invisible: an export carrying an unrestorable attachment
+  could newly corrupt a *restorable* attachment's bytes and still publish an
+  identical `invalid_count`, identical `restored_count`, and identical
+  `observed_remediation_signals`. `exitdrill compare
+  --fail-on-loss-signal-increase` then exited 0 and recorded
+  `no_observed_loss_signal_change` for attachments — a silent-loss false
+  negative in the one dimension the tool exists to watch. The evaluator now
+  tracks which attachments failed each check and reports the size of their
+  union, so overlapping failures still count once while disjoint ones both
+  count. The restoration shortfall remains a fail-closed floor. No other
+  dimension was affected: each has only one reachable failure mode, so `max()`
+  was already exact there. Every existing fixture, demo, and canary summary is
+  unchanged.
 - Every command that reads `uv.lock` now uses `--locked` instead of `--frozen`,
   so a `pyproject.toml` dependency change that was never relocked fails the
   build instead of passing it. `uv sync --frozen` and `uv export --frozen`

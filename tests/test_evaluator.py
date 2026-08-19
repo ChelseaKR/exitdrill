@@ -1,18 +1,27 @@
+import hashlib
 import json
 from dataclasses import replace
 from pathlib import Path
+from shutil import copytree
 
 import pytest
 
+from exitdrill.comparison import (
+    _comparison_has_observed_loss_signal_increase,
+    compare_snapshots,
+    snapshot_receipt,
+)
 from exitdrill.evaluator import DrillError, run_drill
 from exitdrill.loader import load_baseline, load_export
 from exitdrill.models import (
     Coverage,
     Dimension,
+    DimensionResult,
     DimensionStatus,
     DrillResult,
     OverallStatus,
 )
+from exitdrill.receipt import build_receipt
 
 
 def _json(path: Path) -> dict[str, object]:
@@ -308,3 +317,123 @@ def test_payload_preserves_complete_dimension_denominator(example_root: Path) ->
     names = {item.dimension for item in result.dimensions}
     assert names == set(Dimension)
     assert all(item.coverage is Coverage.COMPLETE for item in result.dimensions)
+
+
+def _add_unrestorable_attachment(root: Path, *, corrupt_its_bytes: bool = False) -> None:
+    """Declare an attachment whose owning entity is absent from the export.
+
+    The baseline and export declare the same key, so it produces no missing or
+    extra count. Its only possible failure is the reference model's foreign key
+    refusing it, which makes it an isolated restoration failure.
+    """
+    payload = b"orphan attachment bytes\n"
+    digest = hashlib.sha256(payload).hexdigest()
+    written = b"tampered orphan bytes\n" if corrupt_its_bytes else payload
+    (root / "export-files" / "attachments" / "orphan.txt").write_bytes(written)
+    record = {
+        "id": "attachment-002",
+        "owner_type": "case",
+        "owner_id": "case-404",
+        "content_sha256": digest,
+    }
+    baseline_path = root / "baseline.json"
+    baseline = _json(baseline_path)
+    baseline_attachments = baseline["attachments"]
+    assert isinstance(baseline_attachments, list)
+    baseline_attachments.append(dict(record))
+    _write(baseline_path, baseline)
+
+    export_path = root / "export.json"
+    export = _json(export_path)
+    export_attachments = export["attachments"]
+    assert isinstance(export_attachments, list)
+    export_attachments.append({**record, "relative_path": "attachments/orphan.txt"})
+    _write(export_path, export)
+
+
+def _attachments_of(root: Path) -> DimensionResult:
+    return next(item for item in _run(root).dimensions if item.dimension is Dimension.ATTACHMENTS)
+
+
+def test_unrestorable_attachment_alone_is_one_invalid(copied_example: Path) -> None:
+    """Establish the control count for the union regression below."""
+    _add_unrestorable_attachment(copied_example)
+    attachments = _attachments_of(copied_example)
+    assert attachments.exported_count == 2
+    assert attachments.restored_count == 1
+    assert (attachments.missing_count, attachments.extra_count) == (0, 0)
+    assert attachments.invalid_count == 1
+    assert attachments.status is DimensionStatus.FAIL
+
+
+def test_attachment_byte_and_restore_failures_are_unioned_not_maximized(
+    copied_example: Path,
+) -> None:
+    """Two disjoint attachment failures must count as two, not one.
+
+    Byte verification and reference-model restoration are independent
+    populations: an attachment can ship the wrong bytes, be refused by the
+    foreign key, or both. Reporting `max()` of the two population sizes hides
+    the smaller one entirely, so an export that newly corrupts an attachment
+    while carrying an unrelated unrestorable one reports an unchanged
+    `invalid_count` -- a silent loss in the dimension this tool exists to watch.
+    """
+    _add_unrestorable_attachment(copied_example)
+    (copied_example / "export-files" / "attachments" / "intake.txt").write_text(
+        "tampered", encoding="utf-8"
+    )
+
+    attachments = _attachments_of(copied_example)
+
+    assert attachments.exported_count == 2
+    assert attachments.restored_count == 1
+    assert (attachments.missing_count, attachments.extra_count) == (0, 0)
+    assert attachments.invalid_count == 2
+    assert attachments.status is DimensionStatus.FAIL
+
+
+def test_attachment_failing_both_checks_is_counted_once(copied_example: Path) -> None:
+    """The union counts distinct attachments, so overlap must not double count."""
+    _add_unrestorable_attachment(copied_example, corrupt_its_bytes=True)
+
+    attachments = _attachments_of(copied_example)
+
+    assert attachments.exported_count == 2
+    assert attachments.restored_count == 1
+    assert attachments.invalid_count == 1
+    assert attachments.status is DimensionStatus.FAIL
+
+
+def test_new_attachment_corruption_is_visible_to_the_comparison_gate(
+    tmp_path: Path,
+    example_root: Path,
+) -> None:
+    """The count regression above is what `--fail-on-loss-signal-increase` reads.
+
+    Both exports carry the same unrestorable attachment; only the candidate also
+    tampers with a restorable one. The receipts must therefore differ, and the
+    comparison must observe an attachment loss-signal increase.
+    """
+    roots: dict[str, Path] = {}
+    for name in ("reference", "candidate"):
+        destination = tmp_path / name
+        copytree(example_root, destination)
+        _add_unrestorable_attachment(destination)
+        roots[name] = destination
+    (roots["candidate"] / "export-files" / "attachments" / "intake.txt").write_text(
+        "tampered", encoding="utf-8"
+    )
+
+    snapshots = [
+        snapshot_receipt(
+            build_receipt(_run(roots[name]), claimed_generated_at="2026-07-22T20:00:00Z")
+        )
+        for name in ("reference", "candidate")
+    ]
+    comparison = compare_snapshots(*snapshots)
+
+    assert comparison["comparability"] == "comparable"
+    assert _comparison_has_observed_loss_signal_increase(comparison)
+    summary = comparison["summary"]
+    assert isinstance(summary, dict)
+    assert summary["observed_loss_signal_increases"] == ["attachments"]
