@@ -56,7 +56,15 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def _mutate(native: Path) -> None:
+def _mutate(native: Path) -> list[str]:
+    """Apply each fixed mutation and return the label for each one actually applied.
+
+    The returned list is what the derivative's statement declares. It is
+    derived from mutations that ran, not a separately maintained constant, so
+    the declared list cannot silently drift from what this function does.
+    """
+    applied: list[str] = []
+
     cases_path = native / "cases.json"
     cases = _read_json(cases_path)
     case_rows = _data(cases_path)
@@ -65,6 +73,7 @@ def _mutate(native: Path) -> None:
     case_rows[1]["status"] = "closed"
     cases["data"] = case_rows
     _write_json(cases_path, cases)
+    applied.append("critical_field_value")
 
     people_path = native / "people.json"
     people = _read_json(people_path)
@@ -74,6 +83,7 @@ def _mutate(native: Path) -> None:
     people_rows[2]["id"] = 4
     people["data"] = people_rows
     _write_json(people_path, people)
+    applied.append("unreferenced_identity_churn")
 
     links_path = native / "case-people.json"
     links = _read_json(links_path)
@@ -83,6 +93,7 @@ def _mutate(native: Path) -> None:
     link_rows[0]["person_id"] = 2
     links["data"] = link_rows
     _write_json(links_path, links)
+    applied.append("relationship_rewire")
 
     permissions_path = native / "permissions.json"
     permissions = _read_json(permissions_path)
@@ -93,6 +104,7 @@ def _mutate(native: Path) -> None:
     permission_rows[0]["fields"] = [item for item in fields if item != "document"]
     permissions["data"] = permission_rows
     _write_json(permissions_path, permissions)
+    applied.append("permission_field_collapse")
 
     activity_path = native / "activity.json"
     activity = _read_json(activity_path)
@@ -102,6 +114,7 @@ def _mutate(native: Path) -> None:
     activity_rows[0]["action"] = "update"
     activity["data"] = activity_rows
     _write_json(activity_path, activity)
+    applied.append("audit_action_substitution")
 
     attachment_path = native / "assets" / "11111111-1111-4111-8111-111111111111.txt"
     content = attachment_path.read_bytes()
@@ -109,6 +122,9 @@ def _mutate(native: Path) -> None:
     if changed == content or len(changed) != len(content):
         raise ValueError("expected same-length synthetic attachment token was not found")
     attachment_path.write_bytes(changed)
+    applied.append("attachment_same_length_bytes")
+
+    return applied
 
 
 def _refresh_manifest(native: Path) -> None:
@@ -212,7 +228,7 @@ def build_lossy_canary(source: Path, destination: Path, statement: Path) -> None
                 or _sha256(working / _MANIFEST_NAME) != _CLEAN_MANIFEST_SHA256
             ):
                 raise ValueError("copied source does not match the committed clean canary")
-            _mutate(working)
+            applied_mutations = _mutate(working)
             _refresh_manifest(working)
             lossy_result = normalize_directus_canary(
                 working / _MANIFEST_NAME,
@@ -230,14 +246,7 @@ def build_lossy_canary(source: Path, destination: Path, statement: Path) -> None
                         "source_bundle_sha256": _CLEAN_BUNDLE_SHA256,
                         "source_manifest_sha256": _CLEAN_MANIFEST_SHA256,
                         "row_and_file_counts_preserved": True,
-                        "mutations": [
-                            "critical_field_value",
-                            "unreferenced_identity_churn",
-                            "relationship_rewire",
-                            "attachment_same_length_bytes",
-                            "permission_field_collapse",
-                            "audit_action_substitution",
-                        ],
+                        "mutations": applied_mutations,
                     }
                 )
                 + b"\n"

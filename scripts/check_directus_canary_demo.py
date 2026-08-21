@@ -293,6 +293,18 @@ def main() -> None:
             statement["row_and_file_counts_preserved"] is True,
             "adversarial derivative did not preserve row and file counts",
         )
+        _require(
+            statement["mutations"]
+            == [
+                "critical_field_value",
+                "unreferenced_identity_churn",
+                "relationship_rewire",
+                "permission_field_collapse",
+                "audit_action_substitution",
+                "attachment_same_length_bytes",
+            ],
+            "adversarial derivative mutation list did not match the expected six",
+        )
         _assert_no_raw_values(
             (clean_receipt, lossy_receipt, clean_report, lossy_report),
             command_output,

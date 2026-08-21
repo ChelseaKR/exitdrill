@@ -27,9 +27,29 @@ All notable changes will be documented here.
   `civicrm_target_canary.py` already used for its own result schemas. The
   public schema previously validated only in tests, against the repo copy;
   the installed package never opened it.
+- `examples/directus-11.17.4-civic-case/README.md` now documents the
+  adversarial derivative the top-level README cites: the six mutations, that
+  row and file counts are preserved by construction, that the derivative is
+  never committed (generated per run into a `TemporaryDirectory`), the
+  per-dimension observed-loss-signal table, and a claim-limits paragraph
+  scoped to the derivative (issue #32). Matches the shape the CiviCRM example
+  README already used.
 
 ### Fixed
 
+- `build_directus_lossy_canary.py`'s six adversarial-mutation labels were a
+  separately maintained constant, never re-derived from the mutations the
+  script actually applies (issue #32). `_mutate` now returns the label for
+  each mutation as it applies it, and that returned list -- not a parallel
+  hardcoded one -- is what the derivative's `adversarial-derivative.json`
+  statement declares. `check_directus_canary_demo.py` now also asserts the
+  exact mutation list on every run, so a future edit that adds, drops, or
+  reorders a mutation without updating the label is caught immediately.
+- The top-level README said the Directus derivative produces "six declared
+  loss signals"; the evaluator observes them, the six mutation labels are
+  what is declared, and those are two different sixes that happen to match
+  by arithmetic today, not by construction (issue #32). Now reads "six
+  observed loss signals."
 - The wheel force-included 25 schemas; 12 were never loaded by any code
   (issue #33): the six superseded `civicrm-evidence-index` versions (only
   v0.7 is read), and all six `civicrm-evidence-verification` versions
