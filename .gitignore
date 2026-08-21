@@ -11,3 +11,26 @@ node_modules/
 examples/*/out/
 normalized-directus-canary/
 normalized-civicrm-target-canary/
+
+# Local product-strategy, competitive-intelligence, brand/legal, and
+# customer-discovery working documents. Each was reviewed individually
+# (issue #39) and kept out because it is private planning rather than a
+# technical decision record: buyer/kill-gate economics, a rejected
+# private codename and competitor scan, brand-positioning strategy, or
+# a trademark clearance memo. This file is tracked so the same rules
+# apply in every clone instead of living only in the untracked, local
+# `.git/info/exclude`.
+/docs/PRD.md
+/docs/RESEARCH.md
+/docs/NAMING.md
+/docs/NAMING-CLEARANCE.md
+/docs/RED-TEAM.md
+/docs/DISCOVERY-PACK.md
+/docs/USER-RESEARCH.md
+/docs/ROADMAP.LOCAL-DRAFT.md
+
+# Superseded by the committed docs/I18N.md and the Observability scope
+# section of docs/ROADMAP.md. Not sensitive, just stale duplicates; kept
+# out to avoid two conflicting sources of truth for the same decision.
+/docs/I18N.LOCAL-DRAFT.md
+/docs/OBSERVABILITY.md

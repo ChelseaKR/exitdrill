@@ -1,6 +1,7 @@
 # Contributing
 
-Read `AGENTS.md`, the PRD, architecture, and threat model first.
+Read `AGENTS.md`, [the architecture doc](docs/ARCHITECTURE.md), and
+[the threat model](docs/THREAT-MODEL.md) first.
 
 ```sh
 make install
