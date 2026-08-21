@@ -13,8 +13,40 @@ All notable changes will be documented here.
   (`docs/I18N.md`).
 - `.github/allowed_signers`, the SSH allowed-signers file the release
   workflow uses to verify a signed annotated release tag.
+- `docs/RELEASE.md` (release posture and the publication-blocking checklist)
+  and `docs/INCIDENT-RESPONSE.md` (the incident process the Standards
+  Conformance table already cited) are now committed and linked from the
+  README's Documentation list.
 
 ### Fixed
+
+- Thirteen paths — twelve documents and `docs/adr/` — were hidden from every
+  `git status` by `.git/info/exclude`, a per-clone file that is never pushed
+  and was itself untracked. Nothing in the repository recorded that these
+  paths existed or why they were unpublished, and because `docs/adr/` was
+  one of them, a new ADR written there (the portfolio's canonical discovery
+  path per `docs/adr/0000-record-architecture-decisions.md`) would silently
+  fail to appear in `git status` or `git add`. Each of the twelve documents
+  was read in full and judged individually. Two were purely technical and
+  public-appropriate with no existing committed equivalent
+  (`docs/RELEASE.md`, `docs/INCIDENT-RESPONSE.md`) and are now committed.
+  Two were stale, non-sensitive duplicates already fully superseded by a
+  committed doc (`docs/I18N.LOCAL-DRAFT.md` by `docs/I18N.md`;
+  `docs/OBSERVABILITY.md` by the Observability scope section of
+  `docs/ROADMAP.md`) and stay out to avoid two disagreeing sources of
+  truth. Eight were private product-strategy, competitive-intelligence,
+  brand, or legal material — buyer/kill-gate economics, a rejected private
+  codename and competitor scan, brand-positioning strategy, a trademark
+  clearance memo, and customer-discovery scripts (`docs/PRD.md`,
+  `docs/RESEARCH.md`, `docs/NAMING.md`, `docs/NAMING-CLEARANCE.md`,
+  `docs/RED-TEAM.md`, `docs/DISCOVERY-PACK.md`, `docs/USER-RESEARCH.md`,
+  `docs/ROADMAP.LOCAL-DRAFT.md`) — and stay out. `.git/info/exclude` is
+  emptied back to the git default template, the decision to keep the eight
+  private and two superseded documents unpublished is now recorded in a
+  tracked, commented `.gitignore`, and `docs/adr/` is no longer excluded
+  anywhere so a future ADR left there is visible instead of vanishing.
+  `CONTRIBUTING.md` no longer directs contributors to read "the PRD," a file
+  that would not exist in a fresh public clone.
 
 - The attachments dimension no longer hides one class of loss behind another.
   An exported attachment can fail byte verification, be refused by the
