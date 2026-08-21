@@ -10,6 +10,7 @@ import tomllib
 from pathlib import Path
 from shutil import which
 from types import ModuleType
+from typing import cast
 from zipfile import ZipFile
 
 import pytest
@@ -19,7 +20,21 @@ PACKAGED_PREFIX = "exitdrill/schemas/"
 
 
 def _committed_schemas() -> list[Path]:
+    """Every schema.json committed under schemas/, referenced by code or not."""
     return sorted((PROJECT / "schemas").glob("*.schema.json"))
+
+
+def _expected_wheel_schemas() -> list[Path]:
+    """The schemas the wheel is required to carry: those `src/exitdrill/` references."""
+    return sorted(_check_wheel_module().committed_schemas(PROJECT))
+
+
+def _force_include_table() -> dict[str, str]:
+    metadata = tomllib.loads((PROJECT / "pyproject.toml").read_text(encoding="utf-8"))
+    return cast(
+        dict[str, str],
+        metadata["tool"]["hatch"]["build"]["targets"]["wheel"]["force-include"],
+    )
 
 
 def _committed_lab_scripts() -> list[Path]:
@@ -59,7 +74,9 @@ def _wheel_with(entries: dict[str, bytes], path: Path) -> ZipFile:
 
 
 def _packaged_entries() -> dict[str, bytes]:
-    return {PACKAGED_PREFIX + schema.name: schema.read_bytes() for schema in _committed_schemas()}
+    return {
+        PACKAGED_PREFIX + schema.name: schema.read_bytes() for schema in _expected_wheel_schemas()
+    }
 
 
 def test_committed_schemas_exist() -> None:
@@ -67,13 +84,35 @@ def test_committed_schemas_exist() -> None:
     assert len(_committed_lab_scripts()) >= 1
 
 
-def test_wheel_force_include_packages_every_committed_schema() -> None:
-    metadata = tomllib.loads((PROJECT / "pyproject.toml").read_text(encoding="utf-8"))
-    force_include = metadata["tool"]["hatch"]["build"]["targets"]["wheel"]["force-include"]
+def test_wheel_force_include_packages_exactly_the_referenced_schemas() -> None:
+    """pyproject.toml's force-include must match what `src/exitdrill/` references --
+    no more (issue #33: 12 superseded schemas were force-included and never
+    opened by any code) and no less (a schema real code needs must ship).
+    """
+    module = _check_wheel_module()
+    referenced = module.schemas_referenced_by_source(PROJECT)
+    assert referenced, "src/exitdrill/ must reference at least one schema"
 
-    assert force_include == {
-        f"schemas/{schema.name}": PACKAGED_PREFIX + schema.name for schema in _committed_schemas()
+    assert _force_include_table() == {
+        f"schemas/{name}": PACKAGED_PREFIX + name for name in referenced
     }
+
+
+def test_wheel_excludes_a_superseded_schema_nothing_references() -> None:
+    """At least one committed schema stays unshipped because nothing loads it --
+    proves the previous test can actually fail, not just pass vacuously, and
+    pins the concrete regression from issue #33.
+    """
+    module = _check_wheel_module()
+    referenced = module.schemas_referenced_by_source(PROJECT)
+    committed_names = {schema.name for schema in _committed_schemas()}
+    unreferenced = committed_names - referenced
+
+    assert "civicrm-evidence-index-v0.1.schema.json" in unreferenced
+    assert "civicrm-evidence-verification-v0.1.schema.json" in unreferenced
+    force_include = _force_include_table()
+    for name in unreferenced:
+        assert f"schemas/{name}" not in force_include
 
 
 def test_committed_schema_ids_match_their_pinned_form() -> None:
@@ -83,25 +122,27 @@ def test_committed_schema_ids_match_their_pinned_form() -> None:
         assert document["$id"] == module.expected_schema_id(schema.name), schema.name
 
 
-def test_wheel_schema_gate_accepts_the_committed_set(tmp_path: Path) -> None:
+def test_wheel_schema_gate_accepts_the_expected_set(tmp_path: Path) -> None:
     module = _check_wheel_module()
     entries = _packaged_entries()
+    expected_schemas = _expected_wheel_schemas()
     with _wheel_with(entries, tmp_path / "wheel.zip") as archive:
-        checked = module.check_packaged_schemas(archive, set(entries), PROJECT)
+        checked = module.check_packaged_schemas(archive, set(entries), expected_schemas)
 
-    assert checked == len(_committed_schemas())
+    assert checked == len(expected_schemas)
 
 
 def test_wheel_schema_gate_rejects_a_dropped_schema(tmp_path: Path) -> None:
     module = _check_wheel_module()
     entries = _packaged_entries()
-    dropped = PACKAGED_PREFIX + _committed_schemas()[0].name
+    expected_schemas = _expected_wheel_schemas()
+    dropped = PACKAGED_PREFIX + expected_schemas[0].name
     del entries[dropped]
     with (
         _wheel_with(entries, tmp_path / "wheel.zip") as archive,
         pytest.raises(SystemExit) as error,
     ):
-        module.check_packaged_schemas(archive, set(entries), PROJECT)
+        module.check_packaged_schemas(archive, set(entries), expected_schemas)
 
     assert "does not contain committed schemas" in str(error.value)
 
@@ -114,7 +155,30 @@ def test_wheel_schema_gate_rejects_an_unexpected_packaged_schema(tmp_path: Path)
         _wheel_with(entries, tmp_path / "wheel.zip") as archive,
         pytest.raises(SystemExit) as error,
     ):
-        module.check_packaged_schemas(archive, set(entries), PROJECT)
+        module.check_packaged_schemas(archive, set(entries), _expected_wheel_schemas())
+
+    assert "unexpected packaged schemas" in str(error.value)
+
+
+def test_wheel_schema_gate_rejects_a_superseded_schema_that_is_not_referenced(
+    tmp_path: Path,
+) -> None:
+    """Concrete regression test for issue #33: civicrm-evidence-index-v0.1.schema.json
+    is a real, committed file, but no code under `src/exitdrill/` references
+    it (only v0.7 is loaded), so it must not ship even though it exists.
+    """
+    module = _check_wheel_module()
+    superseded = PROJECT / "schemas" / "civicrm-evidence-index-v0.1.schema.json"
+    assert superseded.is_file()
+    assert superseded.name not in module.schemas_referenced_by_source(PROJECT)
+
+    entries = _packaged_entries()
+    entries[PACKAGED_PREFIX + superseded.name] = superseded.read_bytes()
+    with (
+        _wheel_with(entries, tmp_path / "wheel.zip") as archive,
+        pytest.raises(SystemExit) as error,
+    ):
+        module.check_packaged_schemas(archive, set(entries), _expected_wheel_schemas())
 
     assert "unexpected packaged schemas" in str(error.value)
 
@@ -122,13 +186,14 @@ def test_wheel_schema_gate_rejects_an_unexpected_packaged_schema(tmp_path: Path)
 def test_wheel_schema_gate_rejects_altered_schema_bytes(tmp_path: Path) -> None:
     module = _check_wheel_module()
     entries = _packaged_entries()
-    altered = PACKAGED_PREFIX + _committed_schemas()[0].name
+    expected_schemas = _expected_wheel_schemas()
+    altered = PACKAGED_PREFIX + expected_schemas[0].name
     entries[altered] = entries[altered] + b"\n"
     with (
         _wheel_with(entries, tmp_path / "wheel.zip") as archive,
         pytest.raises(SystemExit) as error,
     ):
-        module.check_packaged_schemas(archive, set(entries), PROJECT)
+        module.check_packaged_schemas(archive, set(entries), expected_schemas)
 
     assert "wheel schema differs from" in str(error.value)
 
@@ -144,7 +209,7 @@ def test_wheel_schema_gate_rejects_a_rewritten_schema_id(tmp_path: Path) -> None
         _wheel_with(entries, tmp_path / "wheel.zip") as archive,
         pytest.raises(SystemExit) as error,
     ):
-        module.check_packaged_schemas(archive, set(entries), project)
+        module.check_packaged_schemas(archive, set(entries), (source,))
 
     assert "unexpected schema id" in str(error.value)
 
@@ -157,7 +222,7 @@ def _wheel_for_schema_id(module: ModuleType, name: str, schema_id: str, tmp_path
     source.write_bytes(json.dumps({"$id": schema_id}).encode("utf-8"))
     entries = {PACKAGED_PREFIX + name: source.read_bytes()}
     with _wheel_with(entries, tmp_path / "wheel.zip") as archive:
-        module.check_packaged_schemas(archive, set(entries), project)
+        module.check_packaged_schemas(archive, set(entries), (source,))
 
 
 def test_wheel_schema_gate_pins_each_schema_to_one_published_form(tmp_path: Path) -> None:
@@ -209,22 +274,45 @@ def test_wheel_schema_gate_rejects_a_non_object_schema_document(tmp_path: Path) 
         _wheel_with(entries, tmp_path / "wheel.zip") as archive,
         pytest.raises(SystemExit) as error,
     ):
-        module.check_packaged_schemas(archive, set(entries), project)
+        module.check_packaged_schemas(archive, set(entries), (source,))
 
     assert "unexpected schema id" in str(error.value)
 
 
-def test_wheel_schema_gate_rejects_an_empty_schema_directory(tmp_path: Path) -> None:
+def test_committed_schemas_rejects_a_project_with_no_schema_references(tmp_path: Path) -> None:
+    """`committed_schemas` -- not `check_packaged_schemas` -- now owns discovery,
+    so this exercises it directly: a tree with no schema references at all
+    (an empty or absent `src/exitdrill/`) must fail loudly rather than ship
+    nothing silently.
+    """
     module = _check_wheel_module()
     project = tmp_path / "project"
     (project / "schemas").mkdir(parents=True)
-    with (
-        _wheel_with({}, tmp_path / "wheel.zip") as archive,
-        pytest.raises(SystemExit) as error,
-    ):
-        module.check_packaged_schemas(archive, set(), project)
+    (project / "src" / "exitdrill").mkdir(parents=True)
+    (project / "src" / "exitdrill" / "empty.py").write_text("", encoding="utf-8")
 
-    assert "no committed JSON Schemas" in str(error.value)
+    with pytest.raises(SystemExit) as error:
+        module.committed_schemas(project)
+
+    assert "no schema references were found" in str(error.value)
+
+
+def test_committed_schemas_rejects_a_reference_to_a_missing_schema(tmp_path: Path) -> None:
+    """A schema `src/exitdrill/` names but `schemas/` does not contain is a
+    broken build, not a trim -- `committed_schemas` must fail, not skip it.
+    """
+    module = _check_wheel_module()
+    project = tmp_path / "project"
+    (project / "schemas").mkdir(parents=True)
+    (project / "src" / "exitdrill").mkdir(parents=True)
+    (project / "src" / "exitdrill" / "loader.py").write_text(
+        'SCHEMA = "ghost-v0.1.schema.json"\n', encoding="utf-8"
+    )
+
+    with pytest.raises(SystemExit) as error:
+        module.committed_schemas(project)
+
+    assert "references a schema that does not exist" in str(error.value)
 
 
 def _makefile_recipe(target: str) -> str:

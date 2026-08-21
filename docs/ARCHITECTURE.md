@@ -460,12 +460,19 @@ only this observed aggregate condition; it does not classify overall direction,
 certainty, or readiness.
 
 The public JSON Schema validates closed structure and every locally expressible
-invariant. Cross-object equality is not expressible in standard Draft 2020-12.
-`verify_comparison_document` therefore verifies both original receipts,
+invariant, and the packaged wheel now loads it at runtime to check its own
+output: `compare_snapshots` validates every comparison document it builds
+against the schema before returning it, and `verify_comparison_document`
+validates any caller-supplied document the same way. Cross-object equality is
+not expressible in standard Draft 2020-12, so schema conformance alone cannot
+detect a forged field that happens to keep the document well-formed.
+`verify_comparison_document` therefore also verifies both original receipts,
 recomputes the complete deterministic comparison, and requires canonical byte
-equality. This is the source-bound semantic verification path for summaries,
-measurement relationship, scope checks and reasons, deltas, transitions,
-signals, and assessments.
+equality -- the semantic check runs first, since it gives the more precise
+error for a forged field, and the schema check runs after as a structural
+sanity net. This is the source-bound semantic verification path for
+summaries, measurement relationship, scope checks and reasons, deltas,
+transitions, signals, and assessments.
 
 ## Trust claims
 

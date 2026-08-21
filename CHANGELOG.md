@@ -21,8 +21,31 @@ All notable changes will be documented here.
   and `docs/INCIDENT-RESPONSE.md` (the incident process the Standards
   Conformance table already cited) are now committed and linked from the
   README's Documentation list.
+- `compare_snapshots` and `verify_comparison_document` now load the packaged
+  `receipt-comparison-v0.1.schema.json` at runtime and validate every
+  comparison document against it, matching the self-check pattern
+  `civicrm_target_canary.py` already used for its own result schemas. The
+  public schema previously validated only in tests, against the repo copy;
+  the installed package never opened it.
 
 ### Fixed
+
+- The wheel force-included 25 schemas; 12 were never loaded by any code
+  (issue #33): the six superseded `civicrm-evidence-index` versions (only
+  v0.7 is read), and all six `civicrm-evidence-verification` versions
+  (nothing loads that family at all). `pyproject.toml`'s force-include block
+  is trimmed to the 13 schemas `src/exitdrill/` actually references.
+  `scripts/check_wheel.py`'s `committed_schemas` now derives the required
+  set from a scan of `src/exitdrill/` for schema-filename literals instead
+  of globbing every file under `schemas/`, so the gate enforces "referenced
+  by real code," not "exists in the tree." `receipt-comparison-v0.1` is the
+  one schema that moved from "referenced by tests only" to "referenced by
+  real code" rather than being dropped -- see the runtime self-check added
+  above. New tests in `tests/test_gates.py` assert the force-include table
+  matches exactly what source code references, and pin the concrete
+  regression: a superseded schema that still exists on disk must not ship
+  even if it sneaks back into the packaged entries. The 12 superseded files
+  stay in `schemas/` and git history; nothing is deleted.
 
 - Thirteen paths — twelve documents and `docs/adr/` — were hidden from every
   `git status` by `.git/info/exclude`, a per-clone file that is never pushed

@@ -17,6 +17,7 @@ from exitdrill.comparison import (
     _compare_dimension,
     _comparison_has_observed_loss_signal_increase,
     _extra_transition,
+    _validate_comparison_schema,
     compare_receipt_files,
     compare_snapshots,
     snapshot_receipt,
@@ -551,6 +552,23 @@ def test_public_comparison_schema_validates_generated_outputs(example_root: Path
     incomparable = compare_snapshots(reference, replace(reference, baseline_sha256="0" * 64))
     validator.validate(comparable)
     validator.validate(incomparable)
+
+
+def test_validate_comparison_schema_accepts_real_comparison_output(example_root: Path) -> None:
+    """The runtime self-check (issue #33) must accept what the evaluator itself
+    produces -- this is what makes the schema genuinely load-bearing rather
+    than a file the package merely carries.
+    """
+    comparison = compare_snapshots(
+        snapshot_receipt(_good_receipt(example_root)),
+        snapshot_receipt(_lossy_receipt(example_root)),
+    )
+    _validate_comparison_schema(comparison)  # must not raise
+
+
+def test_validate_comparison_schema_rejects_a_structurally_wrong_document() -> None:
+    with pytest.raises(ComparisonError, match="does not satisfy the public comparison schema"):
+        _validate_comparison_schema(cast(dict[str, JsonValue], {"not": "a comparison document"}))
 
 
 def test_semantic_verifier_accepts_generated_comparison(example_root: Path) -> None:
