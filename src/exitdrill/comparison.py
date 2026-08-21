@@ -2,13 +2,20 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
+from functools import lru_cache
+from importlib.resources import files
 from pathlib import Path
 from typing import cast
+
+from jsonschema import Draft202012Validator, SchemaError, ValidationError
 
 from exitdrill.canonical import canonical_json_bytes
 from exitdrill.models import Coverage, Dimension, DimensionStatus, JsonValue
 from exitdrill.receipt import ReceiptError, load_receipt, verify_receipt
+
+_COMPARISON_SCHEMA_RESOURCE = "receipt-comparison-v0.1.schema.json"
 
 _COMPARISON_LIMITATIONS = (
     "inputs_are_unsigned_and_unauthenticated",
@@ -316,6 +323,41 @@ def _build_comparison(
     return result
 
 
+@lru_cache(maxsize=1)
+def _comparison_schema_validator() -> Draft202012Validator:
+    """Load and compile the packaged public comparison schema, wheel or checkout."""
+    packaged = files("exitdrill").joinpath("schemas", _COMPARISON_SCHEMA_RESOURCE)
+    try:
+        schema_bytes = packaged.read_bytes()
+    except FileNotFoundError:
+        schema_bytes = (
+            Path(__file__).parents[2] / "schemas" / _COMPARISON_SCHEMA_RESOURCE
+        ).read_bytes()
+    schema = json.loads(schema_bytes)
+    try:
+        Draft202012Validator.check_schema(schema)
+    except SchemaError as exc:
+        raise ComparisonError("packaged comparison schema is invalid") from exc
+    return Draft202012Validator(schema)
+
+
+def _validate_comparison_schema(comparison: dict[str, JsonValue]) -> None:
+    """Require closed-structure conformance to the public comparison schema.
+
+    The schema validates closed structure and every locally expressible
+    invariant; it cannot express the cross-object equality that only a
+    source-bound recomputation can check. The two checks are complementary,
+    not redundant: this rejects a structurally wrong document before the
+    more expensive semantic recomputation runs.
+    """
+    try:
+        _comparison_schema_validator().validate(comparison)
+    except ValidationError as exc:
+        raise ComparisonError(
+            "comparison document does not satisfy the public comparison schema"
+        ) from exc
+
+
 def _verify_comparison_against_snapshots(
     comparison: dict[str, JsonValue],
     reference: ReceiptSnapshot,
@@ -337,6 +379,7 @@ def compare_snapshots(
     """Compare aggregate evidence without inferring chronology or a score."""
     result = _build_comparison(reference, candidate)
     _verify_comparison_against_snapshots(result, reference, candidate)
+    _validate_comparison_schema(result)
     return result
 
 
@@ -345,12 +388,21 @@ def verify_comparison_document(
     reference_receipt: dict[str, JsonValue],
     candidate_receipt: dict[str, JsonValue],
 ) -> None:
-    """Verify every comparison field by recomputing it from two valid source receipts."""
+    """Verify every comparison field by recomputing it from two valid source receipts.
+
+    Semantic recomputation runs first: it is the precise, source-bound check
+    and gives the specific "does not match its source receipts" error for
+    any forged field. The schema check runs after as a final structural
+    sanity net -- it only has anything left to catch when a document passes
+    byte-for-byte recomputation yet still isn't well-formed, which recomputation
+    alone cannot promise for arbitrary caller-supplied JSON.
+    """
     _verify_comparison_against_snapshots(
         comparison,
         snapshot_receipt(reference_receipt),
         snapshot_receipt(candidate_receipt),
     )
+    _validate_comparison_schema(comparison)
 
 
 def _comparison_has_observed_loss_signal_increase(
