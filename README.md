@@ -112,7 +112,7 @@ The repository contains two deliberately narrow integration exercises:
 
 - [Directus 11.17.4 source canary](examples/directus-11.17.4-civic-case/README.md)
   verifies and normalizes one local synthetic API-response capture profile. Its
-  equal-count adversarial derivative produces six declared loss signals.
+  equal-count adversarial derivative produces six observed loss signals.
 - [CiviCRM 6.16.2 target canary](examples/civicrm-6.16.2-target-roundtrip/README.md)
   loads that fixed source profile into an isolated local target and performs
   independent read-back. Five target-interface probes pass, while the structural

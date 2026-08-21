@@ -122,6 +122,64 @@ Keeping permission semantics out of the collection-scope entities ensures that
 a permission-only mutation fails the permissions dimension without also
 creating an entity-value failure.
 
+## Adversarial derivative and observed loss signals
+
+`../../scripts/build_directus_lossy_canary.py` builds one deterministic,
+equal-count adversarial derivative of this profile. It is **not committed**:
+`../../scripts/check_directus_canary_demo.py` generates it fresh into a
+`TemporaryDirectory` on every run, verifies it against this directory's
+committed `capture-manifest.json` bundle digest first, and discards it when
+the process exits. Nothing under this directory holds lossy bytes.
+
+The derivative applies exactly six mutations, one per source file, and each
+is required to leave every row and file count unchanged --
+`build_lossy_canary` raises `adversarial derivative changed row or file
+counts` if it does not:
+
+| Mutation | What it changes |
+|---|---|
+| `critical_field_value` | The second case's `status` flips from `open` to `closed`. |
+| `unreferenced_identity_churn` | The third person's `id` changes from `3` to `4`, orphaning any reference to the old id. |
+| `relationship_rewire` | The first case-person link's `person_id` changes from `1` to `2`. |
+| `permission_field_collapse` | The case permission's `fields` list drops `document`. |
+| `audit_action_substitution` | The first activity record's `action` changes from `create` to `update`. |
+| `attachment_same_length_bytes` | One attachment's bytes change (`alpha` → `omega`) without changing its length. |
+
+The mutation labels above are not a separately maintained list: the builder
+returns the label for each mutation it actually applies, and that returned
+list is what the derivative's `adversarial-derivative.json` statement
+declares. A future mutation that is added, removed, or changed cannot leave
+a stale label behind.
+
+Running the unchanged ExitDrill evaluator against this derivative, with the
+same baseline used for the clean bundle, produces six **observed** loss
+signals -- the evaluator counts them; the six mutations above are what
+produced them, not a target the evaluator was tuned to hit:
+
+| Dimension | Expected | Exported | Missing | Extra | Invalid | Status | Signals |
+|---|--:|--:|--:|--:|--:|---|--:|
+| Entities | 7 | 7 | 1 | 1 | 1 | fail | 2 |
+| Relationships | 2 | 2 | 1 | 1 | 0 | fail | 1 |
+| Attachments | 2 | 2 | 0 | 0 | 1 | fail | 1 |
+| Permissions | 2 | 2 | 1 | 1 | 0 | fail | 1 |
+| Audit events | 2 | 2 | 1 | 1 | 0 | fail | 1 |
+
+`overall_status` is `not_structurally_restorable` and
+`observed_remediation_signals` is `6`. The row is a coincidence worth being
+explicit about: the entities dimension absorbs two of the six mutations
+(`critical_field_value` and `unreferenced_identity_churn`) and reports two
+signals, so six mutations producing six signals holds by arithmetic on this
+specific set, not by a one-to-one correspondence the evaluator enforces. A
+future mutation that changed two dimensions at once, or none, would not
+break anything -- but it would change which number is six, and this table
+would need updating to match. `check_directus_canary_demo.py` asserts the
+exact per-dimension counts above and the exact six mutation labels on every
+run, so that drift is caught immediately rather than discovered by a reader.
+
+`--fail-on-loss-signal-increase` exits `3` when comparing the clean receipt
+against the lossy one, since a comparable result directly observes a
+missing/invalid increase in every dimension above.
+
 ## License and claim limits
 
 Directus 11.17.4 is vendor software distributed under the Business Source
@@ -147,3 +205,11 @@ contract. It does **not** prove:
 
 The bundle and manifest are unsigned. Hashes detect byte changes but do not
 authenticate the source, operator, or capture time.
+
+The adversarial derivative adds one further, narrower claim and does **not**
+extend the above: it shows that six specific, hand-chosen mutations to this
+one pinned profile each survive normalization (row and file counts are
+unchanged) and each still produce a fail-closed structural result. It does
+not claim these are the only loss-producing mutations possible, that six is
+a meaningful score, or that a different source profile would show the same
+count.
