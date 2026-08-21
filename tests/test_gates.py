@@ -366,6 +366,26 @@ def test_every_committed_lab_script_parses() -> None:
         assert completed.returncode == 0, f"{script.name}: {completed.stderr}"
 
 
+def test_committed_browser_captures_bind_to_their_scripts_declared_output() -> None:
+    """Regression test for issue #31: a committed browser-*.json must match the
+    literal its capture script declares, offline, without a live CiviCRM,
+    Playwright, or Docker. See scripts/check_browser_capture_bindings.mjs
+    for exactly which fields this can and cannot verify.
+    """
+    node = which("node")
+    if node is None:  # pragma: no cover - exercised by the Node-enabled CI gate
+        pytest.skip("node is required to check the browser-capture bindings")
+    completed = subprocess.run(  # noqa: S603 - resolved interpreter and repository script
+        [node, str(PROJECT / "scripts" / "check_browser_capture_bindings.mjs")],
+        cwd=PROJECT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert completed.returncode == 0, completed.stderr
+    assert "verified 9 committed browser-*.json files" in completed.stdout
+
+
 def _summary_module_rooted_at(
     root: Path, document: str, monkeypatch: pytest.MonkeyPatch
 ) -> ModuleType:

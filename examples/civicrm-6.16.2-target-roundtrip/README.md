@@ -234,6 +234,61 @@ Those execution assertions remain unsigned. The command below verifies the
 committed bundle and adversarial controls; it does not rerun or authenticate the
 historical Docker execution.
 
+A third, narrower gate closes part of that remaining distance:
+[`scripts/check_browser_capture_bindings.mjs`](../../scripts/check_browser_capture_bindings.mjs)
+statically extracts the literal each of the four `civicrm_browser_*.mjs`
+capture scripts declares as its output on a successful run and requires it to
+canonically equal the corresponding committed `browser-*.json`, offline, with
+no CiviCRM, Playwright, or Docker involved. Editing a script's declared output
+without a matching update to the committed file -- or the reverse -- now fails
+this gate. It is bound into `make demo-civicrm-target-canary` and runs on
+every PR. It cannot verify the handful of fields only a live page produces
+(axe-core's rule counts, its version, and the measured keyboard tab-count to
+reach a target); those stay unverified between live recaptures, and the
+script documents exactly which fields those are. It does not, on its own,
+prove a script's live *behavior* is unchanged -- only that its *declared*
+output still matches what is committed. Nothing today re-executes the full
+live capture in CI: a real attempt to do so brought up the compose stack and
+provisioned CiviCRM successfully but failed during the first browser
+automation step on a tight visibility-wait timeout, which is a fixable
+reliability gap in the harness, not evidence against determinism -- every
+observation asserted above (`requireExact`-style checks throughout the
+scripts) makes each script's real output deterministic *given* a completed
+run.
+
+## Recapturing this profile
+
+Nothing in CI re-runs the live capture; it is a documented manual procedure,
+not an automated or scheduled one, matching the project's paused feature
+scope. The entry point is the orchestrator itself:
+
+```sh
+uv sync --locked
+npm ci --ignore-scripts
+node scripts/civicrm_target_roundtrip_lab.mjs --output <a-fresh-empty-directory>
+```
+
+No environment variables are required; database and admin credentials are
+generated per run and never printed. The orchestrator brings up
+`lab/civicrm-6.16.2-standalone/compose.yaml` (pinned MariaDB and CiviCRM
+images, `pull_policy: never` -- pull them first if they are not already
+local), provisions CiviCRM's business data, roles, and ACLs, then invokes
+each of the four `civicrm_browser_*.mjs` scripts in a separate, digest-pinned,
+read-only, network-isolated Playwright container. Every observation is
+asserted exactly against a fixed expectation before it is written, so a
+successful run reproduces the committed bundle by construction, not by
+chance.
+
+A real attempt at this procedure, while working on issue #31, brought the
+compose stack up healthy and completed CiviCRM provisioning, then failed
+inside the first browser script (`civicrm_browser_workflow.mjs`, at the
+`case_locator` step) on a 15-second visibility-wait timeout for the "Manage
+Case" link, roughly four minutes in. That is a specific, fixable harness
+reliability question -- whether the wait budget is tight for a resource-
+constrained host, not a question about whether the scripts' declared output
+is trustworthy once a run completes. It has not yet been re-run to
+confirm a full success.
+
 ## Offline acceptance
 
 The offline acceptance command normalizes the committed Directus source,

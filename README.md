@@ -114,14 +114,27 @@ The repository contains two deliberately narrow integration exercises:
   verifies and normalizes one local synthetic API-response capture profile. Its
   equal-count adversarial derivative produces six observed loss signals.
 - [CiviCRM 6.16.2 target canary](examples/civicrm-6.16.2-target-roundtrip/README.md)
-  loads that fixed source profile into an isolated local target and performs
-  independent read-back. Five target-interface probes pass, while the structural
-  evaluation still reports six source-to-target gaps.
+  loaded that fixed source profile into an isolated local target once and
+  recorded one independent read-back. Five target-interface probes pass,
+  while the structural evaluation still reports six source-to-target gaps.
 
 These are exact-profile observations. They do not establish a general Directus
 export, a Directus-to-CiviCRM connector, vendor-wide portability, UI usability,
 accessibility conformance, or production readiness. The example READMEs contain
 the setup, evidence inventory, known failures, and claim limits.
+
+The nine committed browser-workflow, accessibility, and keyboard observations
+are pinned captures from that one lab run, not something the offline check
+re-executes. What the offline check does verify, every time: the structural
+evaluator against the committed evidence, and that each committed
+`browser-*.json` still binds to the exact literal its capture script declares
+as its output for a successful run -- so an edit to a script's declared
+output that isn't matched by a recapture is caught, without needing a live
+CiviCRM, Playwright, or Docker. It cannot confirm the small set of fields
+only a live page can produce (axe-core's rule counts and its version, and
+the measured keyboard tab-count); see
+[scripts/check_browser_capture_bindings.mjs](scripts/check_browser_capture_bindings.mjs)
+for exactly which fields that is.
 
 Run their committed offline acceptance checks with:
 
