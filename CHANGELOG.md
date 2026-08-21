@@ -6,6 +6,10 @@ All notable changes will be documented here.
 
 ### Added
 
+- `.github/workflows/codeql.yml`: a CodeQL `actions`-language scan of every
+  workflow file, generally available since 2025-04-22. It is a second,
+  independent engine from zizmor (different rule set, results in the
+  Security tab) and is now a required status check alongside `verify`.
 - Portfolio standards conformance documentation: a Standards Conformance
   table and an AI-assisted development disclosure in the README, a roadmap
   with the milestone gates and the Quality & Metrics ledger
