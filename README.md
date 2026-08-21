@@ -193,16 +193,21 @@ recorded as N/A with a reason; there are no silent skips.
 
 | Standard | State |
 |---|---|
-| Code Quality | Applies. Single root `pyproject.toml`, `uv.lock`, Ruff lint and format, strict mypy over `src`, `tests`, and `scripts`, pytest with at least 90% branch coverage, pre-commit hooks, and `make verify` as the merge gate. |
-| Security & Supply-Chain | Applies. SHA-pinned actions, scoped workflow permissions, Semgrep, gitleaks, strict pip-audit plus npm audit, zizmor, Dependabot, and private vulnerability reporting per [SECURITY.md](SECURITY.md). |
-| CI/CD | Applies. `ci.yml` runs the same `make` targets a contributor runs locally; the release workflow is dispatch-only, verifies a signed annotated tag against trusted main, and separates verification from publication authority. No tag or release exists yet. |
+| Code Quality | Applies: Single root `pyproject.toml`, `uv.lock`, Ruff lint and format, strict mypy over `src`, `tests`, and `scripts`, pytest with at least 90% branch coverage, pre-commit hooks, and `make verify` as the merge gate. |
+| Security & Supply-Chain | Applies: SHA-pinned actions, scoped workflow permissions, Semgrep, gitleaks, strict pip-audit plus npm audit, zizmor, Dependabot, and private vulnerability reporting per [SECURITY.md](SECURITY.md). |
+| CI/CD | Applies: `ci.yml` runs the same `make` targets a contributor runs locally; the release workflow is dispatch-only, verifies a signed annotated tag against trusted main, and separates verification from publication authority. No tag or release exists yet. |
+| Release & Versioning | Applies: `.github/workflows/release.yml` runs only on maintainer dispatch, verifies an SSH-signed annotated tag against trusted main, and hands publication to a separate job that never checks out code. No tag or release exists yet and no package registry is configured. |
 | Observability | Applies (Tier C scope). Offline single-run CLI; evidence is deterministic exit codes, replayable receipts, and rendered reports. The out-of-scope decision for tracing and SLO surfaces is recorded in [docs/ROADMAP.md](docs/ROADMAP.md). |
+| Performance | N/A (offline single-run CLI with no hosted route and no served page; the HTML report is written to a local path on demand and pulls no subresources, so there is no delivery surface to budget). |
 | Accessibility | Applies (scoped). The offline HTML report is static, script-free, and escaped. The CiviCRM canary records one sanitized automated accessibility scan and one keyboard observation without claiming WCAG conformance; human assistive-technology review remains open. |
 | Internationalization | N/A (single-operator, English-only CLI with no public or bilingual delivery obligation; declared in [docs/I18N.md](docs/I18N.md)). |
 | AI Evaluation | N/A (no LLM or model component in the evaluator or its trust path; excluding model-generated transforms is a load-bearing invariant in `AGENTS.md`). |
-| Documentation | Applies. README, architecture, ADR log, CHANGELOG, SECURITY.md, CONTRIBUTING.md, CITATION.cff, threat model, data governance, and responsible-tech audit are committed and current. |
-| Quality & Metrics | Applies. The metrics ledger and milestone gates live in [docs/ROADMAP.md](docs/ROADMAP.md); `make verify` is the single merge gate locally and in CI. |
-| Responsible-Tech Framework | Applies. [docs/RESPONSIBLE-TECH-AUDITS.md](docs/RESPONSIBLE-TECH-AUDITS.md) covers public-interest value, privacy, equity, transparency, and accountability; the synthetic-only boundary is enforced through [docs/DATA-GOVERNANCE.md](docs/DATA-GOVERNANCE.md). |
+| Documentation | Applies: README, architecture, ADR log, CHANGELOG, SECURITY.md, CONTRIBUTING.md, CITATION.cff, threat model, data governance, and responsible-tech audit are committed and current. |
+| Quality & Metrics | Applies: The metrics ledger and milestone gates live in [docs/ROADMAP.md](docs/ROADMAP.md); `make verify` is the single merge gate locally and in CI. |
+| AI Development Measurement | Applies: No tool-usage counter is collected and none gates a merge. The committed ledger in [docs/ROADMAP.md](docs/ROADMAP.md) is the record, and its gates are what a change must clear regardless of how it was authored. |
+| Incident Response | Applies: No incident has occurred. Reports go through GitHub private vulnerability reporting per [SECURITY.md](SECURITY.md), and a postmortem will be committed under `docs/incidents/` when there is one to write. |
+| Data Governance | Applies: [docs/DATA-GOVERNANCE.md](docs/DATA-GOVERNANCE.md) permits invented synthetic fixtures only; any non-synthetic input stays prohibited until an explicit gate is satisfied, and that gate is recorded as open in [docs/ROADMAP.md](docs/ROADMAP.md). |
+| Responsible-Tech Framework | Applies: [docs/RESPONSIBLE-TECH-AUDITS.md](docs/RESPONSIBLE-TECH-AUDITS.md) covers public-interest value, privacy, equity, transparency, and accountability; the synthetic-only boundary is enforced through [docs/DATA-GOVERNANCE.md](docs/DATA-GOVERNANCE.md). |
 
 ## License
 
