@@ -64,3 +64,4 @@ demo-directus-canary:
 
 demo-civicrm-target-canary:
 	uv run python scripts/check_civicrm_target_roundtrip_demo.py
+	node scripts/check_browser_capture_bindings.mjs

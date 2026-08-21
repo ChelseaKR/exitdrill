@@ -34,6 +34,35 @@ All notable changes will be documented here.
   per-dimension observed-loss-signal table, and a claim-limits paragraph
   scoped to the derivative (issue #32). Matches the shape the CiviCRM example
   README already used.
+- `scripts/check_browser_capture_bindings.mjs`: a real, offline reproducibility
+  gate for issue #31. Nothing previously bound the nine committed
+  `browser-*.json` files to the four `civicrm_browser_*.mjs` scripts that
+  produced them; `make lint-lab` only parses them. Each of those four scripts
+  writes a hardcoded literal unconditionally once every live browser/DOM
+  assertion above it passes, so the committed file should always equal that
+  literal. This gate extracts the literal directly from each script's source
+  and requires canonical equality with the corresponding committed file --
+  catching either side drifting from the other, without a live CiviCRM,
+  Playwright, or Docker. It explicitly excludes the handful of fields only a
+  live page can produce (axe-core's rule counts and version, one measured
+  keyboard tab-count) rather than silently trusting them; those are listed
+  by name in the script. Verified against three real scenarios: a mutated
+  script (caught), a hand-edited committed file (caught), and a change to
+  only a live-only field (correctly not flagged, since that case is out of
+  this gate's scope). Wired into `tests/test_gates.py` (skips cleanly
+  without Node, like the existing lab-syntax gate) and into
+  `make demo-civicrm-target-canary`, both of which run in the required
+  `verify` CI job.
+- `examples/civicrm-6.16.2-target-roundtrip/README.md`: a new "Recapturing
+  this profile" section documents the actual manual re-capture procedure
+  (the `civicrm_target_roundtrip_lab.mjs` orchestrator's CLI entry point and
+  prerequisites) and reports, honestly, that a real attempt at it during
+  this work completed CiviCRM provisioning but failed at the first browser
+  step on a 15-second visibility-wait timeout roughly four minutes in --
+  a harness reliability question, not evidence against the scripts'
+  determinism once a run completes. No automated or scheduled live
+  recapture exists; this stays a documented manual procedure, matching the
+  project's paused feature scope.
 
 ### Fixed
 
