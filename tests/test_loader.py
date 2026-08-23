@@ -221,11 +221,30 @@ def test_rejects_excessive_json_nesting(copied_example: Path) -> None:
         load_export(path)
 
 
+def test_rejects_excessive_json_dict_nesting(copied_example: Path) -> None:
+    path = copied_example / "export.json"
+    raw = _json(path)
+    nested: object = "leaf"
+    for _index in range(65):
+        nested = {"x": nested}
+    raw["entities"][0]["fields"]["deep"] = nested  # type: ignore[index]
+    _write(path, raw)
+    with pytest.raises(PackageError, match="depth limit"):
+        load_export(path)
+
+
 @pytest.mark.parametrize(("content", "message"), [("[]", "JSON object"), ("{", "valid JSON")])
 def test_rejects_non_object_or_malformed_json(tmp_path: Path, content: str, message: str) -> None:
     path = tmp_path / "bad.json"
     path.write_text(content, encoding="utf-8")
     with pytest.raises(PackageError, match=message):
+        load_export(path)
+
+
+def test_rejects_invalid_utf8_document(tmp_path: Path) -> None:
+    path = tmp_path / "invalid_utf8.json"
+    path.write_bytes(b"\xff")
+    with pytest.raises(PackageError, match="UTF-8"):
         load_export(path)
 
 
