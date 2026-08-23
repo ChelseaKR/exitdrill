@@ -101,6 +101,18 @@ def test_malformed_receipt_is_rejected(
         verify_receipt(receipt)  # type: ignore[arg-type]
 
 
+@pytest.mark.parametrize("receipt", [None, 5, [1, 2, 3], "not a receipt", True])
+def test_verify_receipt_rejects_a_non_object_cleanly(receipt: object) -> None:
+    # verify_receipt's type hint promises a dict, but it is a public entry
+    # point that arbitrary JSON can reach (directly, or via
+    # verify_comparison_document's reference/candidate receipts) before
+    # anything else has checked its shape. Each of these used to raise an
+    # unhandled TypeError from set(value) deep inside _require_exact_fields
+    # instead of a clean ReceiptError.
+    with pytest.raises(ReceiptError, match="receipt must be a JSON object"):
+        verify_receipt(receipt)  # type: ignore[arg-type]
+
+
 def test_changed_payload_is_rejected(example_root: Path) -> None:
     receipt = _receipt(example_root)
     payload = receipt["payload"]
@@ -447,8 +459,14 @@ def test_verify_rejects_non_digest_checksum(example_root: Path) -> None:
             "status is unsupported",
         ),
         (
+            # The more specific match text pins this to the isinstance
+            # guard in _enum_value specifically, not just "some exception
+            # with 'status is unsupported' in it" — the ValueError-catch
+            # branch a few lines below raises a shorter message that
+            # wouldn't satisfy this match if the guard were removed and
+            # DimensionStatus(123) fell through to it instead.
             lambda payload: _first_dimension(payload).update({"status": 123}),
-            "status is unsupported",
+            "status is unsupported: expected a string",
         ),
         (
             lambda payload: _first_dimension(payload).update({"expected_count": -1}),
