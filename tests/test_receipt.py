@@ -447,6 +447,10 @@ def test_verify_rejects_non_digest_checksum(example_root: Path) -> None:
             "status is unsupported",
         ),
         (
+            lambda payload: _first_dimension(payload).update({"status": 123}),
+            "status is unsupported",
+        ),
+        (
             lambda payload: _first_dimension(payload).update({"expected_count": -1}),
             "non-negative integer",
         ),
