@@ -84,7 +84,12 @@ def _enum_value[T: StrEnum](
 ) -> T:
     item = value.get(key)
     if not isinstance(item, str):
-        raise PayloadError(f"{context}.{key} is unsupported")
+        # Distinct message from the ValueError branch below: without this,
+        # a test asserting only "{key} is unsupported" can't tell the two
+        # branches apart, and can't detect this isinstance guard being
+        # removed (enum_type(item) below raises the same ValueError for a
+        # non-string item that isn't a valid member either).
+        raise PayloadError(f"{context}.{key} is unsupported: expected a string")
     try:
         return enum_type(item)
     except ValueError as exc:

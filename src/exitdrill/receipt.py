@@ -81,6 +81,21 @@ def load_receipt(path: Path) -> dict[str, JsonValue]:
     return cast(dict[str, JsonValue], raw)
 
 
+def _require_untrusted_envelope(envelope: dict[str, JsonValue]) -> None:
+    """Check the two envelope fields that guard against a receipt overstating
+    its own trustworthiness: a claimed generation time that is at least a
+    non-empty string, and a signature/trusted-time pair that both explicitly
+    disclaim authenticity."""
+    claimed_time = envelope.get("claimed_generated_at")
+    if not isinstance(claimed_time, str) or not claimed_time.strip():
+        raise ReceiptError("receipt envelope claimed time must be a non-empty string")
+    if (
+        envelope.get("signature_status") != "not_signed"
+        or envelope.get("trusted_time") is not False
+    ):
+        raise ReceiptError("receipt envelope overstates its trust status")
+
+
 def _require_exact_fields(value: dict[str, object], expected: set[str], context: str) -> None:
     unknown = sorted(set(value) - expected)
     missing = sorted(expected - set(value))
@@ -92,6 +107,14 @@ def _require_exact_fields(value: dict[str, object], expected: set[str], context:
 
 def verify_receipt(receipt: dict[str, JsonValue]) -> str:
     """Verify receipt self-consistency without claiming authenticity."""
+    if not isinstance(receipt, dict):
+        # The type hint promises a dict, but this is a public entry point
+        # (also reached via verify_comparison_document's caller-supplied
+        # reference/candidate receipts) that arbitrary JSON can reach before
+        # anything else checks its shape. load_receipt already guards this
+        # for its own callers; match its message here for a caller that
+        # skips load_receipt and hands verify_receipt raw JSON directly.
+        raise ReceiptError("receipt must be a JSON object")
     try:
         validate_json_value(receipt)
     except StrictJsonError as exc:
@@ -107,14 +130,7 @@ def verify_receipt(receipt: dict[str, JsonValue]) -> str:
     if not isinstance(envelope, dict):
         raise ReceiptError("receipt envelope is missing")
     _require_exact_fields(cast(dict[str, object], envelope), _ENVELOPE_KEYS, "receipt envelope")
-    claimed_time = envelope.get("claimed_generated_at")
-    if not isinstance(claimed_time, str) or not claimed_time.strip():
-        raise ReceiptError("receipt envelope claimed time must be a non-empty string")
-    if (
-        envelope.get("signature_status") != "not_signed"
-        or envelope.get("trusted_time") is not False
-    ):
-        raise ReceiptError("receipt envelope overstates its trust status")
+    _require_untrusted_envelope(envelope)
     try:
         validate_payload(payload)
     except PayloadError as exc:
