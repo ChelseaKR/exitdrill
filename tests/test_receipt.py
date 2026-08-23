@@ -451,8 +451,20 @@ def test_verify_rejects_non_digest_checksum(example_root: Path) -> None:
             "name is unsupported",
         ),
         (
+            # The more specific match text pins this to the isinstance
+            # guard in _enum_value specifically for 'name'.
+            lambda payload: _first_dimension(payload).update({"name": 123}),
+            "name is unsupported: expected a string",
+        ),
+        (
             lambda payload: _first_dimension(payload).update({"coverage": "assumed"}),
             "coverage is unsupported",
+        ),
+        (
+            # The more specific match text pins this to the isinstance
+            # guard in _enum_value specifically for 'coverage'.
+            lambda payload: _first_dimension(payload).update({"coverage": 123}),
+            "coverage is unsupported: expected a string",
         ),
         (
             lambda payload: _first_dimension(payload).update({"status": "portable"}),
@@ -465,6 +477,10 @@ def test_verify_rejects_non_digest_checksum(example_root: Path) -> None:
             # branch a few lines below raises a shorter message that
             # wouldn't satisfy this match if the guard were removed and
             # DimensionStatus(123) fell through to it instead.
+            #
+            # Note on node IDs: this match text ("...: expected a string") must
+            # remain distinct from the invalid-string case above ("status is unsupported")
+            # so pytest node IDs for both parametrized test cases do not collide.
             lambda payload: _first_dimension(payload).update({"status": 123}),
             "status is unsupported: expected a string",
         ),
@@ -491,6 +507,12 @@ def test_verify_rejects_non_digest_checksum(example_root: Path) -> None:
         (
             lambda payload: payload.update({"overall_status": "portable"}),
             "overall_status is unsupported",
+        ),
+        (
+            # The more specific match text pins this to the isinstance
+            # guard in _enum_value specifically for 'overall_status'.
+            lambda payload: payload.update({"overall_status": 123}),
+            "overall_status is unsupported: expected a string",
         ),
         (
             lambda payload: payload.update({"observed_remediation_signals": True}),
