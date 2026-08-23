@@ -118,6 +118,35 @@ def test_validate_cli(example_root: Path, capsys: pytest.CaptureFixture[str]) ->
     assert _stdout(capsys)["status"] == "valid"
 
 
+@pytest.mark.parametrize("mismatched_field", ["drill_id", "source_system"])
+def test_validate_cli_rejects_identity_mismatch(
+    copied_example: Path,
+    capsys: pytest.CaptureFixture[str],
+    mismatched_field: str,
+) -> None:
+    baseline_path = copied_example / "baseline.json"
+    export_path = copied_example / "export.json"
+
+    data = json.loads(baseline_path.read_text(encoding="utf-8"))
+    assert isinstance(data, dict)
+    data[mismatched_field] = f"different-{data[mismatched_field]}"
+    baseline_path.write_text(json.dumps(data), encoding="utf-8")
+
+    assert (
+        main(
+            [
+                "validate",
+                str(baseline_path),
+                str(export_path),
+            ]
+        )
+        == 2
+    )
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert "baseline and export identities do not match" in captured.err
+
+
 def test_normalize_directus_canary_cli(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
