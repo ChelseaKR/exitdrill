@@ -98,7 +98,11 @@ baseline, contract, coverage, or expected counts differ.
 ## Receipts and trust
 
 - Receipts contain aggregates and input digests, not record fields or attachment
-  contents.
+  contents. On the synthetic demo path this is a merge gate rather than a
+  promise: `tests/test_disclosure.py` derives every record value from the
+  fixtures and fails if one appears in a receipt, a rendered report, or a
+  comparison document. It compares whole values, so it would not catch a
+  leaked fragment of one.
 - Replay verification recomputes the result from the baseline, export, and
   attachment bytes.
 - Receipts are unsigned and contain no trusted time. A checksum detects internal

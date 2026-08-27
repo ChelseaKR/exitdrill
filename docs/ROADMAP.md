@@ -34,6 +34,7 @@ artifact). Nothing in this table is aspirational.
 | Secret scan | 0 findings | gitleaks job in `ci.yml` | AUTO | maintainer |
 | SAST | 0 Semgrep findings (p/python, p/nodejs) | `sast` job in `ci.yml` | AUTO | maintainer |
 | Declared demo outcomes | clean, lossy, and comparison-policy exit codes reproduced | `make demo-compare-policy` in CI | AUTO | maintainer |
+| Record-value disclosure (`AGENTS.md` invariant 7) | 0 record values in any aggregate artifact on the synthetic demo path | `tests/test_disclosure.py` inside `make verify` | AUTO | maintainer |
 | Offline canary acceptance | Directus and CiviCRM acceptance summaries match byte for byte | pytest acceptance tests inside `make verify`, plus `make demo-civicrm-target-canary` in CI | AUTO | maintainer |
 | Threat model [QM-14] | current for every new trust surface | `docs/THREAT-MODEL.md` | REVIEW | maintainer |
 | Responsible-tech audit | current for every capability change | `docs/RESPONSIBLE-TECH-AUDITS.md` | REVIEW | maintainer |
