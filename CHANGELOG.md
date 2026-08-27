@@ -6,6 +6,19 @@ All notable changes will be documented here.
 
 ### Added
 
+- `tests/test_disclosure.py`: a merge-gating check that no aggregate artifact
+  on the `examples/synthetic-crm` path republishes a record-level value, per
+  `AGENTS.md` invariant 7. Both canaries already scanned their own output for a
+  hand-written `_RAW_SENTINELS` tuple; the flagship demo path had only three
+  string literals in one report test, checking the rendered HTML and not the
+  receipt or comparison document. Measured: leaking the permission principal
+  `worker-001` into all five artifacts left every one of the 492 pre-existing
+  tests passing. The new gate derives its corpus from the fixture files,
+  asserts every derived value actually occurs in the input bytes before
+  trusting it, searches literal and HTML-escaped forms so escaping cannot act
+  as a bypass, and computes rather than hardcodes the two values ExitDrill's
+  own vocabulary makes indistinguishable. See ADR 0021.
+
 - `.github/workflows/codeql.yml`: a CodeQL `actions`-language scan of every
   workflow file, generally available since 2025-04-22. It is a second,
   independent engine from zizmor (different rule set, results in the
