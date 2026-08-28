@@ -98,11 +98,13 @@ baseline, contract, coverage, or expected counts differ.
 ## Receipts and trust
 
 - Receipts contain aggregates and input digests, not record fields or attachment
-  contents. On the synthetic demo path this is a merge gate rather than a
-  promise: `tests/test_disclosure.py` derives every record value from the
-  fixtures and fails if one appears in a receipt, a rendered report, or a
-  comparison document. It compares whole values, so it would not catch a
-  leaked fragment of one.
+  contents. On all three published paths this is a merge gate rather than a
+  promise. `tests/test_disclosure.py` covers the synthetic demo and
+  `tests/test_canary_disclosure.py` covers the Directus and CiviCRM canaries.
+  Each derives every record value from the committed fixtures, proves the
+  derived values still occur in those fixtures before trusting them, and fails
+  if one appears in an aggregate artifact. They compare whole values, so they
+  would not catch a leaked fragment of one.
 - Replay verification recomputes the result from the baseline, export, and
   attachment bytes.
 - Receipts are unsigned and contain no trusted time. A checksum detects internal
