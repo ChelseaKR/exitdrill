@@ -451,8 +451,19 @@ def test_verify_rejects_non_digest_checksum(example_root: Path) -> None:
             "name is unsupported",
         ),
         (
+            # Non-string counterpart. All four _enum_value call sites share one
+            # isinstance guard, so covering it at only one call site would let a
+            # regression specific to any of the other three ship undetected.
+            lambda payload: _first_dimension(payload).update({"name": 123}),
+            "name is unsupported: expected a string",
+        ),
+        (
             lambda payload: _first_dimension(payload).update({"coverage": "assumed"}),
             "coverage is unsupported",
+        ),
+        (
+            lambda payload: _first_dimension(payload).update({"coverage": None}),
+            "coverage is unsupported: expected a string",
         ),
         (
             lambda payload: _first_dimension(payload).update({"status": "portable"}),
@@ -461,10 +472,16 @@ def test_verify_rejects_non_digest_checksum(example_root: Path) -> None:
         (
             # The more specific match text pins this to the isinstance
             # guard in _enum_value specifically, not just "some exception
-            # with 'status is unsupported' in it" — the ValueError-catch
+            # with 'status is unsupported' in it": the ValueError-catch
             # branch a few lines below raises a shorter message that
             # wouldn't satisfy this match if the guard were removed and
             # DimensionStatus(123) fell through to it instead.
+            #
+            # The two `status` rows must keep distinct match text. Pytest
+            # generates this table's node ids from the message string, so two
+            # byte-identical messages would silently renumber each other's node
+            # id whenever one is added or removed. Nothing else enforces that,
+            # which is the second half of issue #61.
             lambda payload: _first_dimension(payload).update({"status": 123}),
             "status is unsupported: expected a string",
         ),
@@ -491,6 +508,10 @@ def test_verify_rejects_non_digest_checksum(example_root: Path) -> None:
         (
             lambda payload: payload.update({"overall_status": "portable"}),
             "overall_status is unsupported",
+        ),
+        (
+            lambda payload: payload.update({"overall_status": ["not_structurally_restorable"]}),
+            "overall_status is unsupported: expected a string",
         ),
         (
             lambda payload: payload.update({"observed_remediation_signals": True}),

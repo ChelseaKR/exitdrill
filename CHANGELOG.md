@@ -23,6 +23,18 @@ All notable changes will be documented here.
 - `docs/ROADMAP.md` now carries the multiyear arc, split into the work that
   fits inside the feature freeze and the work the outside-person usability
   gate in issue #51 blocks, with who can open each gate stated explicitly.
+- Negative tests for six trust-boundary rejection branches that had none
+  (issues #53, #54, #57, and #61). Each was proved to fire by neutering the
+  guard it pins and confirming that test, and only that test, fails:
+  `exitdrill validate`'s baseline/export identity guard (both halves of the
+  `or`), `matches_field_type`'s unsupported-type fallback, `strict_json.py`'s
+  dict-nesting depth limit and its invalid-UTF-8 rejection, and the
+  `isinstance` guard shared by all four `_enum_value` call sites, which was
+  covered at one call site out of four. A seventh branch found while closing
+  #57, the RecursionError arm that stops a raw interpreter error from escaping
+  the loader when a document is nested past the parser's own limit, is now
+  covered too. `models.py`, `receipt_validation.py`, and `strict_json.py` are
+  at 100% branch coverage.
 
 - `tests/test_disclosure.py`: a merge-gating check that no aggregate artifact
   on the `examples/synthetic-crm` path republishes a record-level value, per
