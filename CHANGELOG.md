@@ -54,6 +54,15 @@ All notable changes will be documented here.
   CiviCRM secret-key check, its key lowercasing, its sentinel scan, its
   filesystem-path scan, and its recursion into nested dictionaries. Each
   neutering failed only the cases for that behaviour.
+- `tests/test_documented_counts.py`: the counts the README, the Directus
+  example README, and `docs/ARCHITECTURE.md` publish are now bound to the
+  evidence they describe. Nine hand-written numbers had nothing tying them to
+  an artifact, so a recapture or a normalizer change would have left the prose
+  confidently wrong with no gate noticing, because prose is not executed. Each
+  test computes the number from the committed evidence, renders the documented
+  sentence with it, and requires that sentence to be present, so it fails in
+  both directions: evidence that moves without the prose, and prose that is
+  reworded without re-pointing the binding.
 
 - `tests/test_disclosure.py`: a merge-gating check that no aggregate artifact
   on the `examples/synthetic-crm` path republishes a record-level value, per
