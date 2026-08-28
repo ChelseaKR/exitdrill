@@ -118,6 +118,31 @@ def test_validate_cli(example_root: Path, capsys: pytest.CaptureFixture[str]) ->
     assert _stdout(capsys)["status"] == "valid"
 
 
+@pytest.mark.parametrize("field", ["drill_id", "source_system"])
+def test_validate_cli_rejects_a_baseline_and_export_that_are_not_the_same_drill(
+    copied_example: Path,
+    capsys: pytest.CaptureFixture[str],
+    field: str,
+) -> None:
+    """The guard that stops a validation against the wrong baseline file.
+
+    Both identity fields are exercised because the guard is one `or`: pinning
+    only `drill_id` would leave the `source_system` half of it free to be
+    deleted with every test still green.
+    """
+    export_path = copied_example / "export.json"
+    export = json.loads(export_path.read_text(encoding="utf-8"))
+    assert isinstance(export, dict)
+    export[field] = f"{export[field]}-mismatched"
+    export_path.write_text(json.dumps(export), encoding="utf-8")
+
+    assert main(["validate", str(copied_example / "baseline.json"), str(export_path)]) == 2
+
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert "identities do not match" in captured.err
+
+
 def test_normalize_directus_canary_cli(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],

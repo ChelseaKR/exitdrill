@@ -221,6 +221,53 @@ def test_rejects_excessive_json_nesting(copied_example: Path) -> None:
         load_export(path)
 
 
+def test_rejects_excessive_dict_nesting(copied_example: Path) -> None:
+    """The dict arm of the depth limit, which the list test above never reaches.
+
+    `validate_json_value` checks depth separately for dicts and for lists.
+    `test_rejects_excessive_json_nesting` builds a list chain, so it only ever
+    exercises the list arm; deleting the dict one left every test green.
+    """
+    path = copied_example / "export.json"
+    raw = _json(path)
+    nested: object = "leaf"
+    for _index in range(65):
+        nested = {"x": nested}
+    raw["entities"][0]["fields"]["deep"] = nested  # type: ignore[index]
+    _write(path, raw)
+    with pytest.raises(PackageError, match="depth limit"):
+        load_export(path)
+
+
+def test_rejects_a_document_that_is_not_valid_utf8(tmp_path: Path) -> None:
+    """Bytes that never become text at all, before any JSON shape is considered.
+
+    The neighbouring malformed-JSON cases are both valid UTF-8, so they take the
+    JSONDecodeError path. A lone 0xff byte is the one input that reaches the
+    UnicodeDecodeError branch, which is the first thing standing between a raw
+    file and every command that loads one.
+    """
+    path = tmp_path / "not-utf8.json"
+    path.write_bytes(b"\xff")
+    with pytest.raises(PackageError, match="UTF-8"):
+        load_export(path)
+
+
+def test_rejects_nesting_the_json_parser_itself_cannot_walk(tmp_path: Path) -> None:
+    """Nesting deep enough to exhaust the parser before any bound is consulted.
+
+    `validate_json_value` runs after `json.loads` returns, so a document nested
+    far past CPython's recursion limit never reaches the depth check at all. The
+    RecursionError arm is what stops that raw interpreter error from escaping
+    the trust boundary as itself. Found while closing issue #57; it was the last
+    uncovered branch left in the module.
+    """
+    path = tmp_path / "unparseable.json"
+    path.write_text("[" * 20000 + "]" * 20000, encoding="utf-8")
+    with pytest.raises(PackageError, match="parser limit"):
+        load_export(path)
+
+
 @pytest.mark.parametrize(("content", "message"), [("[]", "JSON object"), ("{", "valid JSON")])
 def test_rejects_non_object_or_malformed_json(tmp_path: Path, content: str, message: str) -> None:
     path = tmp_path / "bad.json"
