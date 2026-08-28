@@ -81,9 +81,11 @@ enforced against the rendered document. Any new claim reopens it.
 Where a rejection branch cannot be reached at all, it is exercised directly
 against its function's stated contract rather than marked `# pragma: no cover`,
 because a pragma leaves a guard in the tree that has never been observed to
-fire, which is the defect this track exists to remove. Four statements across
-the whole project remain genuinely unreachable; each is named in the test suite
-with its reason and with an assertion that fails if the reason stops holding.
+fire, which is the defect this track exists to remove. Seven statements across
+the whole project remain genuinely unreachable: two in `directus_canary.py`,
+one in `civicrm_target_canary.py`, three in `evaluator.py`, and one in
+`cli.py`. Each is named in the test suite with its reason and with an assertion
+that fails if the reason stops holding.
 
 ### The gate
 
