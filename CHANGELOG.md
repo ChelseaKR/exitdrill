@@ -42,6 +42,18 @@ All notable changes will be documented here.
   check that has been shown to fire, and the call ordering the finding depends
   on is now itself pinned by a test. `report.py` reaches 100% branch coverage
   with no pragma. See ADR 0023.
+- `tests/test_canary_gate_assertions.py`: proof that the two canary
+  acceptance scripts' four privacy assertions can fail. Until now the only
+  thing exercising them was a subprocess run of the whole script against
+  evidence that passes, which cannot distinguish a working assertion from one
+  that has stopped working. Each case is parametrized over the script's own
+  `_RAW_SENTINELS` or `_SENSITIVE_KEYS`, so a value added to either is proved
+  to fire without anyone remembering to add a case, and the secret-key cases
+  cover three casings so the `.lower()` in the walk is pinned too. Proved by
+  neutering each of six behaviours in turn: the Directus raw-value scan, the
+  CiviCRM secret-key check, its key lowercasing, its sentinel scan, its
+  filesystem-path scan, and its recursion into nested dictionaries. Each
+  neutering failed only the cases for that behaviour.
 
 - `tests/test_disclosure.py`: a merge-gating check that no aggregate artifact
   on the `examples/synthetic-crm` path republishes a record-level value, per
