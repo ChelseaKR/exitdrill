@@ -54,6 +54,15 @@ All notable changes will be documented here.
   CiviCRM secret-key check, its key lowercasing, its sentinel scan, its
   filesystem-path scan, and its recursion into nested dictionaries. Each
   neutering failed only the cases for that behaviour.
+- `tests/test_directus_canary_bounds.py`: the Directus canary's untested
+  trust-boundary rejection branches are closed. `directus_canary.py` verifies
+  an untrusted capture bundle before anything else in the project reads it, and
+  carried 69 uncovered statements, almost all a single `raise` with a distinct
+  message; deleting any of them left the whole suite green. This is the work
+  issue #57 asked for on `strict_json.py`, applied to the canary's separate
+  copy of that boundary. Branch coverage for the module goes from 84% to 99%,
+  and the two statements that remain are structurally unreachable, named in the
+  suite with the reason rather than left as unexplained red lines.
 
 - `tests/test_disclosure.py`: a merge-gating check that no aggregate artifact
   on the `examples/synthetic-crm` path republishes a record-level value, per
