@@ -6,6 +6,24 @@ All notable changes will be documented here.
 
 ### Added
 
+- `tests/test_canary_disclosure.py`: the same merge-gating record-value check,
+  extended to the two real-process canaries, and the binding ADR 0021 left
+  open. Each canary scanned its own aggregate output for a hand-written
+  `_RAW_SENTINELS` tuple that nothing tied to its capture bundle. Measured:
+  changing one sentinel in each script to a value no longer present left all
+  510 pre-existing tests passing and both offline acceptance summaries
+  byte-identical, and leaking the relationship type `assigned_to` into the
+  Directus normalization manifest did the same. The new gate derives 22
+  Directus and 23 CiviCRM record values from the committed captures, proves
+  each still occurs in the capture bytes, proves every file in each bundle is
+  classified, covers every aggregate artifact both canaries produce, and
+  requires every hand-written sentinel to be one of those derived values. See
+  ADR 0022.
+
+- `docs/ROADMAP.md` now carries the multiyear arc, split into the work that
+  fits inside the feature freeze and the work the outside-person usability
+  gate in issue #51 blocks, with who can open each gate stated explicitly.
+
 - `tests/test_disclosure.py`: a merge-gating check that no aggregate artifact
   on the `examples/synthetic-crm` path republishes a record-level value, per
   `AGENTS.md` invariant 7. Both canaries already scanned their own output for a
