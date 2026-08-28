@@ -60,7 +60,7 @@ did not build it, and only a person who did not build it can answer it.
 | Phase | Scope | State |
 |---|---|---|
 | A1 | Bind the canary disclosure checks to their fixtures, and cover both canaries' aggregate artifacts with a derived corpus (ADR 0022) | Built, in review |
-| A2 | Close the untested trust-boundary rejection branches recorded in issues #53, #54, #57, and #61 | Built, in review |
+| A2 | Close the untested trust-boundary rejection branches: the four recorded in issues #53, #54, #57, and #61, then the same class across `directus_canary.py`, `civicrm_target_canary.py`, `paths.py`, `loader.py`, `exercise.py`, `comparison.py`, and `evaluator.py` | Built, in review |
 | A3 | Decide the `_dimension_rows` reachability question in issue #55, and make the codebase reflect the decision (ADR 0023) | Built, in review |
 | A4 | Prove the offline gate scripts' own privacy assertions can fail, deriving the cases from the tuples they consume | Built, in review |
 | A5 | Keep the published claims and the enforced gates in step: every claim the README, a canary README, or the rendered report makes is either enforced by `make verify` or stated as unenforced | Built, in review; then continuous |
@@ -77,6 +77,13 @@ A5 is marked continuous because it is a standing obligation rather than a task
 that finishes. Two increments are built: the published counts are bound to the
 evidence they describe, and the report's offline and script-free claims are
 enforced against the rendered document. Any new claim reopens it.
+
+Where a rejection branch cannot be reached at all, it is exercised directly
+against its function's stated contract rather than marked `# pragma: no cover`,
+because a pragma leaves a guard in the tree that has never been observed to
+fire, which is the defect this track exists to remove. Four statements across
+the whole project remain genuinely unreachable; each is named in the test suite
+with its reason and with an assertion that fails if the reason stops holding.
 
 ### The gate
 
