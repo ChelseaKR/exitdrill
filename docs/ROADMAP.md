@@ -59,17 +59,24 @@ did not build it, and only a person who did not build it can answer it.
 
 | Phase | Scope | State |
 |---|---|---|
-| A1 | Bind the canary disclosure checks to their fixtures, and cover both canaries' aggregate artifacts with a derived corpus (ADR 0022) | Done |
-| A2 | Close the untested trust-boundary branches recorded in issues #53, #54, #57, and #61 | Planned |
-| A3 | Decide the `_dimension_rows` reachability question in issue #55, and make the codebase reflect the decision | Planned |
-| A4 | Sweep the remaining hand-written expectations in the offline gate scripts, binding or deriving each one that is not already bound to the artifact it checks | Planned |
-| A5 | Keep the published claims and the enforced gates in step: every claim the README or a canary README makes is either enforced by `make verify` or stated as unenforced | Continuous |
+| A1 | Bind the canary disclosure checks to their fixtures, and cover both canaries' aggregate artifacts with a derived corpus (ADR 0022) | Built, in review |
+| A2 | Close the untested trust-boundary rejection branches recorded in issues #53, #54, #57, and #61 | Built, in review |
+| A3 | Decide the `_dimension_rows` reachability question in issue #55, and make the codebase reflect the decision (ADR 0023) | Built, in review |
+| A4 | Prove the offline gate scripts' own privacy assertions can fail, deriving the cases from the tuples they consume | Built, in review |
+| A5 | Keep the published claims and the enforced gates in step: every claim the README, a canary README, or the rendered report makes is either enforced by `make verify` or stated as unenforced | Built, in review; then continuous |
 
 Track A is deliberately unglamorous. The recurring defect this project has
 found in itself is not a wrong answer; it is a check that reports a clean
-result whether or not it is still checking anything. ADR 0021 and ADR 0022 are
-both records of that defect. A4 exists because the same question has not yet
-been asked of every remaining guard.
+result whether or not it is still checking anything. ADR 0021, ADR 0022, and
+ADR 0023 are all records of that defect. A4 and A5 exist because the same
+question had not been asked of the gate scripts' own assertions, of the numbers
+the documentation publishes, or of the safety properties the rendered report
+claims for itself.
+
+A5 is marked continuous because it is a standing obligation rather than a task
+that finishes. Two increments are built: the published counts are bound to the
+evidence they describe, and the report's offline and script-free claims are
+enforced against the rendered document. Any new claim reopens it.
 
 ### The gate
 
