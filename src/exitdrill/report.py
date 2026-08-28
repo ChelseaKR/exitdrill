@@ -57,6 +57,17 @@ def _status_label(value: object) -> str:
 def _dimension_rows(dimensions: list[JsonValue]) -> str:
     rows: list[str] = []
     for raw in dimensions:
+        # Not reachable through either public entry point today. Both
+        # render_receipt_report and render_receipt_file run verify_receipt
+        # first, which routes every entry of payload["dimensions"] through
+        # receipt_validation._validate_dimension -> _object, and _object
+        # already rejects a non-dict entry. render_receipt_report then reads
+        # that same validated list. The guard stays because this function's
+        # parameter type is the contract it enforces: a caller that renders
+        # rows from a list this module did not verify gets a named error
+        # instead of a KeyError or a silently malformed table. It is exercised
+        # directly by tests rather than marked no-cover, so it stays a check
+        # that has been shown to fire. See ADR 0023 and issue #55.
         if not isinstance(raw, dict):
             raise ReportError("verified receipt contains a malformed dimension")
         name = cast(str, raw["name"])

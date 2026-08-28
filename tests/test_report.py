@@ -11,8 +11,13 @@ from exitdrill.cli import main
 from exitdrill.evaluator import run_drill
 from exitdrill.loader import load_baseline, load_export
 from exitdrill.models import JsonValue
-from exitdrill.receipt import build_receipt, write_receipt
-from exitdrill.report import ReportError, render_receipt_report, write_report
+from exitdrill.receipt import ReceiptError, build_receipt, write_receipt
+from exitdrill.report import (
+    ReportError,
+    _dimension_rows,
+    render_receipt_report,
+    write_report,
+)
 
 
 def _good_receipt(example_root: Path) -> dict[str, JsonValue]:
@@ -107,3 +112,70 @@ def test_report_size_limit_precedes_output_mutation(tmp_path: Path) -> None:
         write_report(report_path, "x" * (2 * 1024 * 1024 + 1))
 
     assert not report_path.parent.exists()
+
+
+@pytest.mark.parametrize("malformed", ["not-a-dimension", [], None, 123, True])
+def test_dimension_rows_rejects_a_non_dict_entry(malformed: JsonValue) -> None:
+    """The guard `_dimension_rows` enforces on its own parameter type.
+
+    Issue #55 asked whether this guard is reachable. It is not, through either
+    public entry point: `render_receipt_report` and `render_receipt_file` both
+    run `verify_receipt` first, which routes every dimension through
+    `receipt_validation._object`, and `render_receipt_report` then reads that
+    same validated list. `test_render_paths_reject_a_malformed_dimension_first`
+    below proves that ordering rather than assuming it.
+
+    So the guard is exercised here instead, directly, the way
+    `civicrm_target_canary._target_result`'s unreachable `fail` branches are.
+    Marking it no-cover would leave a guard in the tree that has never been
+    shown to fire, which is the failure mode ADR 0021 and ADR 0022 exist to
+    remove. See ADR 0023.
+    """
+    with pytest.raises(ReportError, match="malformed dimension"):
+        _dimension_rows([malformed])
+
+
+def test_dimension_rows_renders_a_well_formed_dimension() -> None:
+    """Pins the positive path, so the guard test cannot pass against a
+    function that raised for every input."""
+    row = _dimension_rows(
+        [
+            {
+                "name": "entities",
+                "coverage": "complete",
+                "expected_count": 2,
+                "exported_count": 2,
+                "restored_count": 2,
+                "missing_count": 0,
+                "extra_count": 0,
+                "invalid_count": 0,
+                "status": "pass",
+            }
+        ]
+    )
+
+    assert '<th scope="row">Entities</th>' in row
+    assert '<span class="status status-pass">Pass</span>' in row
+
+
+@pytest.mark.parametrize("position", [0, 5])
+def test_render_paths_reject_a_malformed_dimension_first(example_root: Path, position: int) -> None:
+    """Verification must run before rendering, or the reachability finding rots.
+
+    If `render_receipt_report` ever stopped verifying first, `_dimension_rows`
+    would become reachable and this test would say so by reporting a
+    `ReportError` where a `ReceiptError` is required. Position 5 appends a sixth
+    entry rather than replacing one, so the dimension-count check cannot be what
+    is doing the work.
+    """
+    receipt = _good_receipt(example_root)
+    payload = cast(dict[str, JsonValue], receipt["payload"])
+    dimensions = cast(list[JsonValue], payload["dimensions"])
+    if position < len(dimensions):
+        dimensions[position] = "not-a-dimension"
+    else:
+        dimensions.append("not-a-dimension")
+    _rehash(receipt)
+
+    with pytest.raises(ReceiptError, match=f"dimensions\\[{position}\\] must be an object"):
+        render_receipt_report(receipt)
