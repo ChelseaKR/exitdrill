@@ -46,6 +46,7 @@ Existing accepted records:
 20. [ADR 0020: Record one CiviCRM case-search failure](../decisions/0020-record-one-civicrm-case-search-failure.md)
 21. [ADR 0021: Gate record-value disclosure on the synthetic demo](../decisions/0021-gate-record-value-disclosure-on-the-synthetic-demo.md)
 22. [ADR 0022: Bind the canary disclosure checks to their fixtures](../decisions/0022-bind-canary-disclosure-checks-to-their-fixtures.md)
+23. [ADR 0023: Keep and exercise the report dimension guard](../decisions/0023-keep-and-exercise-the-report-dimension-guard.md)
 
 ## Consequences
 

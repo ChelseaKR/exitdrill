@@ -35,6 +35,13 @@ All notable changes will be documented here.
   the loader when a document is nested past the parser's own limit, is now
   covered too. `models.py`, `receipt_validation.py`, and `strict_json.py` are
   at 100% branch coverage.
+- Issue #55 is decided. `report.py`'s malformed-dimension guard is confirmed
+  unreachable through both public entry points, by reading and by measurement,
+  and is kept rather than deleted or marked no-cover: it is commented with the
+  chain that makes it unreachable, exercised directly by unit tests so it is a
+  check that has been shown to fire, and the call ordering the finding depends
+  on is now itself pinned by a test. `report.py` reaches 100% branch coverage
+  with no pragma. See ADR 0023.
 
 - `tests/test_disclosure.py`: a merge-gating check that no aggregate artifact
   on the `examples/synthetic-crm` path republishes a record-level value, per
