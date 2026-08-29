@@ -6,6 +6,16 @@ All notable changes will be documented here.
 
 ### Added
 
+- `tests/test_gates.py` now binds the offline binding gate's blind spot to the
+  README. Three new checks: every field in `DYNAMIC_FIELD_PATHS` must have a
+  disclosure phrase in a pinned table, every one of those phrases must appear
+  in the README, and the gate itself must fail when its binding table is empty.
+  The exclusion table is read out of the script's source rather than restated,
+  so a copy cannot drift from the table the gate applies. Growing the exclusion
+  table was the one edit that weakened this gate without changing its success
+  line, which still reported nine files checked. Each guard was proved by
+  breaking it and confirming that only its own test failed.
+
 - `tests/test_canary_disclosure.py`: the same merge-gating record-value check,
   extended to the two real-process canaries, and the binding ADR 0021 left
   open. Each canary scanned its own aggregate output for a hand-written
@@ -136,6 +146,23 @@ All notable changes will be documented here.
   project's paused feature scope.
 
 ### Fixed
+
+- `scripts/check_browser_capture_bindings.mjs` reported success having compared
+  nothing. `checked` was counted but never floored, so an emptied `BINDINGS`
+  table printed "verified 0 committed browser-*.json files bind to the literal
+  their capture script declares" and exited 0, through `make
+  demo-civicrm-target-canary` and through the CI step that runs it. Measured
+  before the fix, not assumed. The count is now floored the way `lint-lab`
+  floors its own with `test "$checked" -gt 0` and `check_wheel.py` floors its
+  with `if not referenced`.
+- The README named three of the four field groups the offline binding check
+  cannot verify. `DYNAMIC_FIELD_PATHS` excludes axe-core's `engine_version`,
+  its three rule counts, its `violations` list, and the keyboard tab-count from
+  comparison; the README's parenthetical listed the rule counts, the version,
+  and the tab-count, and stopped, while pointing the reader at the script "for
+  exactly which fields that is". `violations` is the field carrying the two
+  serious accessibility findings `docs/ARCHITECTURE.md` publishes, so the one
+  omission was the one that mattered most. The sentence now names it.
 
 - `build_directus_lossy_canary.py`'s six adversarial-mutation labels were a
   separately maintained constant, never re-derived from the mutations the

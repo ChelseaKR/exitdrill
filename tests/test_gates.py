@@ -6,6 +6,7 @@ import importlib.util
 import json
 import re
 import subprocess
+import tempfile
 import tomllib
 from pathlib import Path
 from shutil import which
@@ -496,3 +497,131 @@ def test_every_lockfile_consuming_command_observes_lockfile_drift() -> None:
     assert "uv sync --locked" in sources["ci.yml"]
     assert "uv export --locked" in sources["ci.yml"]
     assert "uv sync --locked" in sources["release.yml"]
+
+
+# ---------------------------------------------------------------------------
+# What the offline binding gate cannot verify, and whether the README says so.
+# ---------------------------------------------------------------------------
+
+README_PATH = PROJECT / "README.md"
+_BINDING_GATE = PROJECT / "scripts" / "check_browser_capture_bindings.mjs"
+
+# Every field the binding gate excludes from comparison, mapped to the phrase
+# the README must use to disclose it. Pinned rather than derived: the point is
+# that adding an exclusion is a review point, not something a later edit can
+# do silently. A new exclusion has no phrase here and fails the first test
+# below by name; a phrase that stops appearing in the README fails the second.
+_LIVE_ONLY_DISCLOSURES = {
+    ("browser-accessibility.json", "engine_version"): "its version",
+    ("browser-accessibility.json", "incomplete_rule_count"): "rule counts",
+    ("browser-accessibility.json", "inapplicable_rule_count"): "rule counts",
+    ("browser-accessibility.json", "passes_rule_count"): "rule counts",
+    ("browser-accessibility.json", "violations"): "its violation list",
+    ("browser-keyboard.json", "tab_steps_to_roles_summary"): "the measured keyboard tab-count",
+}
+
+
+def _flat(text: str) -> str:
+    """Collapse whitespace so a hard-wrapped claim can still be matched."""
+    return " ".join(text.split())
+
+
+def _dynamic_field_paths() -> dict[str, list[str]]:
+    """Read the binding gate's own exclusion table out of its source.
+
+    Read rather than restated, so this cannot pass against a copy of the table
+    that has drifted from the one the gate actually applies.
+    """
+    source = _BINDING_GATE.read_text(encoding="utf-8")
+    match = re.search(
+        r"^const DYNAMIC_FIELD_PATHS = (\{.*?^\});$", source, re.DOTALL | re.MULTILINE
+    )
+    assert match is not None, "the binding gate no longer declares DYNAMIC_FIELD_PATHS"
+    literal = re.sub(r",(\s*[}\]])", r"\1", match.group(1))
+    return cast("dict[str, list[str]]", json.loads(literal))
+
+
+def test_every_excluded_field_has_a_disclosure_phrase() -> None:
+    """The gate's exclusion table and the disclosure table must name the same fields.
+
+    `blankDynamicFields` replaces each of these with a sentinel on both sides of
+    the comparison, so an excluded field is not verified against its capture
+    script at all. Growing that table is the one edit that weakens this gate
+    without changing its success line, which still reports nine files checked.
+    """
+    excluded = {
+        (output, field) for output, fields in _dynamic_field_paths().items() for field in fields
+    }
+
+    assert excluded == set(_LIVE_ONLY_DISCLOSURES), (
+        "the binding gate's live-only exclusions changed; re-point the disclosure "
+        "table and the README sentence rather than leaving a field silently unverified"
+    )
+
+
+def test_the_readme_discloses_every_field_the_binding_gate_cannot_verify() -> None:
+    """Issue: the README named three of the four excluded field groups.
+
+    `violations` carries the two serious accessibility findings that
+    `docs/ARCHITECTURE.md` publishes, and the offline check never compares it
+    against the capture script's declared output. The README's parenthetical
+    listed axe-core's rule counts, its version, and the keyboard tab-count, and
+    stopped there, while pointing the reader at the script "for exactly which
+    fields that is".
+    """
+    readme = _flat(README_PATH.read_text(encoding="utf-8"))
+    excluded = {
+        (output, field) for output, fields in _dynamic_field_paths().items() for field in fields
+    }
+
+    undisclosed = sorted(
+        f"{output}:{field}"
+        for output, field in excluded
+        if _LIVE_ONLY_DISCLOSURES.get((output, field), "\0") not in readme
+    )
+
+    assert not undisclosed, f"the README does not disclose: {undisclosed}"
+
+
+def test_the_readme_points_at_the_gate_that_holds_the_exclusion_table() -> None:
+    """The disclosure is only checkable if the pointer still resolves."""
+    readme = _flat(README_PATH.read_text(encoding="utf-8"))
+
+    assert "scripts/check_browser_capture_bindings.mjs" in readme
+    assert _BINDING_GATE.is_file()
+
+
+def test_the_binding_gate_fails_when_it_has_nothing_to_check() -> None:
+    """A gate that reports success having compared zero files is not a gate.
+
+    `lint-lab` floors its own count with `test "$checked" -gt 0` and
+    `check_wheel.py` floors its with `if not referenced`. This one did not, so
+    an emptied binding table printed "verified 0 committed browser-*.json
+    files" and exited 0 through `make demo-civicrm-target-canary`.
+    """
+    node = which("node")
+    if node is None:  # pragma: no cover - exercised by the Node-enabled CI gate
+        pytest.skip("node is required to exercise the binding gate")
+    source = _BINDING_GATE.read_text(encoding="utf-8")
+    emptied, substitutions = re.subn(
+        r"^const BINDINGS = \[.*?^\];$",
+        "const BINDINGS = [];",
+        source,
+        flags=re.DOTALL | re.MULTILINE,
+    )
+    assert substitutions == 1, "could not locate the binding table to empty"
+    assert emptied != source, "emptying the binding table changed nothing"
+
+    with tempfile.TemporaryDirectory(prefix="exitdrill-binding-floor-") as raw:
+        probe = Path(raw) / "check_browser_capture_bindings.mjs"
+        probe.write_text(emptied, encoding="utf-8")
+        completed = subprocess.run(  # noqa: S603 - resolved interpreter and generated script
+            [node, str(probe)],
+            cwd=PROJECT,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+
+    assert completed.returncode != 0, completed.stdout
+    assert "verified 0" not in completed.stdout
