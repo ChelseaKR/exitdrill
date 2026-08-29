@@ -6,6 +6,7 @@ import importlib.util
 import json
 import re
 import subprocess
+import tempfile
 import tomllib
 from pathlib import Path
 from shutil import which
@@ -496,3 +497,46 @@ def test_every_lockfile_consuming_command_observes_lockfile_drift() -> None:
     assert "uv sync --locked" in sources["ci.yml"]
     assert "uv export --locked" in sources["ci.yml"]
     assert "uv sync --locked" in sources["release.yml"]
+
+
+# ---------------------------------------------------------------------------
+# The offline binding gate must be able to fail.
+# ---------------------------------------------------------------------------
+
+_BINDING_GATE = PROJECT / "scripts" / "check_browser_capture_bindings.mjs"
+
+
+def test_the_binding_gate_fails_when_it_has_nothing_to_check() -> None:
+    """A gate that reports success having compared zero files is not a gate.
+
+    `lint-lab` floors its own count with `test "$checked" -gt 0` and
+    `check_wheel.py` floors its with `if not referenced`. This one did not, so
+    an emptied binding table printed "verified 0 committed browser-*.json
+    files" and exited 0 through `make demo-civicrm-target-canary`.
+    """
+    node = which("node")
+    if node is None:  # pragma: no cover - exercised by the Node-enabled CI gate
+        pytest.skip("node is required to exercise the binding gate")
+    source = _BINDING_GATE.read_text(encoding="utf-8")
+    emptied, substitutions = re.subn(
+        r"^const BINDINGS = \[.*?^\];$",
+        "const BINDINGS = [];",
+        source,
+        flags=re.DOTALL | re.MULTILINE,
+    )
+    assert substitutions == 1, "could not locate the binding table to empty"
+    assert emptied != source, "emptying the binding table changed nothing"
+
+    with tempfile.TemporaryDirectory(prefix="exitdrill-binding-floor-") as raw:
+        probe = Path(raw) / "check_browser_capture_bindings.mjs"
+        probe.write_text(emptied, encoding="utf-8")
+        completed = subprocess.run(  # noqa: S603 - resolved interpreter and generated script
+            [node, str(probe)],
+            cwd=PROJECT,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+
+    assert completed.returncode != 0, completed.stdout
+    assert "verified 0" not in completed.stdout
