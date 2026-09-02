@@ -137,8 +137,8 @@ evaluator against the committed evidence, and that each committed
 as its output for a successful run -- so an edit to a script's declared
 output that isn't matched by a recapture is caught, without needing a live
 CiviCRM, Playwright, or Docker. It cannot confirm the small set of fields
-only a live page can produce (axe-core's rule counts and its version, and
-the measured keyboard tab-count); see
+only a live page can produce (axe-core's rule counts, its version, and its
+violation list, plus the measured keyboard tab-count); see
 [scripts/check_browser_capture_bindings.mjs](scripts/check_browser_capture_bindings.mjs)
 for exactly which fields that is.
 

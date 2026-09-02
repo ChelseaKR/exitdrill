@@ -185,6 +185,15 @@ function main() {
     process.exitCode = 1;
     return;
   }
+  // Floor the count, the way `lint-lab` does with `test "$checked" -gt 0` and
+  // check_wheel.py does with `if not referenced`. Without this, an emptied
+  // BINDINGS table reports "verified 0 ..." and exits 0, so `make
+  // demo-civicrm-target-canary` would pass having compared nothing.
+  if (checked === 0) {
+    process.stderr.write("no committed browser-*.json was compared: the binding table is empty\n");
+    process.exitCode = 1;
+    return;
+  }
   process.stdout.write(
     `verified ${checked} committed browser-*.json files bind to the literal their capture script declares\n`,
   );
