@@ -95,6 +95,13 @@ All notable changes will be documented here.
   copy of that boundary. Branch coverage for the module goes from 84% to 99%,
   and the two statements that remain are structurally unreachable, named in the
   suite with the reason rather than left as unexplained red lines.
+- `tests/test_remaining_trust_boundaries.py`: the last untested rejection
+  branches outside the two canaries are closed. `paths.py` (the single
+  attachment-root boundary), `loader.py`, `exercise.py`, and `comparison.py`
+  reach 100% branch coverage; `evaluator.py` goes from 92% to 96%. The three
+  branches that remain across the project are structurally unreachable and are
+  named in the suite with the reason and with assertions that fail if the
+  reason stops holding, rather than marked no-cover.
 
 - `tests/test_disclosure.py`: a merge-gating check that no aggregate artifact
   on the `examples/synthetic-crm` path republishes a record-level value, per
