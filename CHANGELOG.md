@@ -73,6 +73,19 @@ All notable changes will be documented here.
   sentence with it, and requires that sentence to be present, so it fails in
   both directions: evidence that moves without the prose, and prose that is
   reworded without re-pointing the binding.
+- `tests/test_report_offline_safety.py`: the HTML report's offline and
+  script-free claims are now enforced against the rendered document. Three
+  published statements assert them (the report's own footer, the README's
+  Accessibility row, and the README's Performance N/A rationale) and none was
+  checked; the only related test was one `"<script" not in ...` substring
+  against the clean fixture. Measured: adding an `@import url(...)` web font to
+  the report stylesheet, and separately deleting the Content-Security-Policy
+  meta tag, each left the entire pre-existing suite passing. The new module
+  parses the document with the standard library's HTML parser, holds its
+  element and attribute sets to pinned allowlists, requires every link to stay
+  in-document and the stylesheet to fetch nothing, and runs all of it a second
+  time against a receipt whose free text is markup, script URLs, and a
+  stylesheet import.
 
 - `tests/test_disclosure.py`: a merge-gating check that no aggregate artifact
   on the `examples/synthetic-crm` path republishes a record-level value, per
