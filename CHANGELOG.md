@@ -6,6 +6,16 @@ All notable changes will be documented here.
 
 ### Added
 
+- `tests/test_gates.py` now binds the offline binding gate's blind spot to the
+  README. Three new checks: every field in `DYNAMIC_FIELD_PATHS` must have a
+  disclosure phrase in a pinned table, every one of those phrases must appear
+  in the README, and the gate itself must fail when its binding table is empty.
+  The exclusion table is read out of the script's source rather than restated,
+  so a copy cannot drift from the table the gate applies. Growing the exclusion
+  table was the one edit that weakened this gate without changing its success
+  line, which still reported nine files checked. Each guard was proved by
+  breaking it and confirming that only its own test failed.
+
 - `tests/test_canary_disclosure.py`: the same merge-gating record-value check,
   extended to the two real-process canaries, and the binding ADR 0021 left
   open. Each canary scanned its own aggregate output for a hand-written
@@ -54,6 +64,37 @@ All notable changes will be documented here.
   CiviCRM secret-key check, its key lowercasing, its sentinel scan, its
   filesystem-path scan, and its recursion into nested dictionaries. Each
   neutering failed only the cases for that behaviour.
+- `tests/test_documented_counts.py`: the counts the README, the Directus
+  example README, and `docs/ARCHITECTURE.md` publish are now bound to the
+  evidence they describe. Nine hand-written numbers had nothing tying them to
+  an artifact, so a recapture or a normalizer change would have left the prose
+  confidently wrong with no gate noticing, because prose is not executed. Each
+  test computes the number from the committed evidence, renders the documented
+  sentence with it, and requires that sentence to be present, so it fails in
+  both directions: evidence that moves without the prose, and prose that is
+  reworded without re-pointing the binding.
+- `tests/test_report_offline_safety.py`: the HTML report's offline and
+  script-free claims are now enforced against the rendered document. Three
+  published statements assert them (the report's own footer, the README's
+  Accessibility row, and the README's Performance N/A rationale) and none was
+  checked; the only related test was one `"<script" not in ...` substring
+  against the clean fixture. Measured: adding an `@import url(...)` web font to
+  the report stylesheet, and separately deleting the Content-Security-Policy
+  meta tag, each left the entire pre-existing suite passing. The new module
+  parses the document with the standard library's HTML parser, holds its
+  element and attribute sets to pinned allowlists, requires every link to stay
+  in-document and the stylesheet to fetch nothing, and runs all of it a second
+  time against a receipt whose free text is markup, script URLs, and a
+  stylesheet import.
+- `tests/test_directus_canary_bounds.py`: the Directus canary's untested
+  trust-boundary rejection branches are closed. `directus_canary.py` verifies
+  an untrusted capture bundle before anything else in the project reads it, and
+  carried 69 uncovered statements, almost all a single `raise` with a distinct
+  message; deleting any of them left the whole suite green. This is the work
+  issue #57 asked for on `strict_json.py`, applied to the canary's separate
+  copy of that boundary. Branch coverage for the module goes from 84% to 99%,
+  and the two statements that remain are structurally unreachable, named in the
+  suite with the reason rather than left as unexplained red lines.
 - `tests/test_remaining_trust_boundaries.py`: the last untested rejection
   branches outside the two canaries are closed. `paths.py` (the single
   attachment-root boundary), `loader.py`, `exercise.py`, and `comparison.py`
@@ -134,6 +175,23 @@ All notable changes will be documented here.
   project's paused feature scope.
 
 ### Fixed
+
+- `scripts/check_browser_capture_bindings.mjs` reported success having compared
+  nothing. `checked` was counted but never floored, so an emptied `BINDINGS`
+  table printed "verified 0 committed browser-*.json files bind to the literal
+  their capture script declares" and exited 0, through `make
+  demo-civicrm-target-canary` and through the CI step that runs it. Measured
+  before the fix, not assumed. The count is now floored the way `lint-lab`
+  floors its own with `test "$checked" -gt 0` and `check_wheel.py` floors its
+  with `if not referenced`.
+- The README named three of the four field groups the offline binding check
+  cannot verify. `DYNAMIC_FIELD_PATHS` excludes axe-core's `engine_version`,
+  its three rule counts, its `violations` list, and the keyboard tab-count from
+  comparison; the README's parenthetical listed the rule counts, the version,
+  and the tab-count, and stopped, while pointing the reader at the script "for
+  exactly which fields that is". `violations` is the field carrying the two
+  serious accessibility findings `docs/ARCHITECTURE.md` publishes, so the one
+  omission was the one that mattered most. The sentence now names it.
 
 - `build_directus_lossy_canary.py`'s six adversarial-mutation labels were a
   separately maintained constant, never re-derived from the mutations the
