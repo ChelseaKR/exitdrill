@@ -102,6 +102,14 @@ All notable changes will be documented here.
   branches that remain across the project are structurally unreachable and are
   named in the suite with the reason and with assertions that fail if the
   reason stops holding, rather than marked no-cover.
+- `tests/test_civicrm_target_canary_bounds.py`: the CiviCRM target canary's
+  untested rejection branches are closed, the same way the Directus one's were.
+  The module is the second separate copy of the outermost trust boundary and
+  carried 29 uncovered statements: its own bounded JSON limits, its own
+  regular-file and directory checks, the evidence index's byte and schema
+  bindings, and the atomic-output paths. Branch coverage goes from 95% to 99%,
+  and the one statement that remains is structurally unreachable and named in
+  the suite with the reason.
 
 - `tests/test_disclosure.py`: a merge-gating check that no aggregate artifact
   on the `examples/synthetic-crm` path republishes a record-level value, per
