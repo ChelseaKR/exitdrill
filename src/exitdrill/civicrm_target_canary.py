@@ -24,6 +24,7 @@ from typing import TYPE_CHECKING, cast
 from jsonschema import Draft202012Validator, SchemaError, ValidationError
 
 from exitdrill.canonical import canonical_json_bytes, sha256_bytes
+from exitdrill.contracts import require_exact_key_set
 from exitdrill.loader import PackageError, load_export
 from exitdrill.paths import BoundedPathError, ByteBudget, sha256_bounded_file
 
@@ -689,8 +690,7 @@ def _fail(message: str) -> CiviCRMTargetCanaryError:
 def _exact_keys(
     value: Mapping[str, object], expected: set[str] | frozenset[str], where: str
 ) -> None:
-    if set(value) != set(expected):
-        raise _fail(f"{where} has an invalid field set")
+    require_exact_key_set(value, expected, where, CiviCRMTargetCanaryError)
 
 
 def _object(value: object, where: str) -> dict[str, object]:

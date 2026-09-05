@@ -28,12 +28,21 @@ permission model.
 
 ## Components
 
+- `contracts.py` holds the one closed-key check every parser uses to reject a
+  mapping whose key set is not exactly the expected set, in the two disclosure
+  levels the project needs: naming the offending fields for operator-authored
+  documents, and naming none of them for capture-derived canary input.
 - `strict_json.py` rejects duplicate keys, non-finite numbers, excessive
   nesting, invalid UTF-8, and documents beyond their byte budgets.
 - `loader.py` enforces strict versioned baseline and export contracts.
-- `exercise.py` validates a synthetic-only safety/evidence plan for a future
-  target exercise; it contains no connector, transform, credential, or target
-  execution path.
+- `exercise.py` backs the `validate-exercise` subcommand, which is the first
+  step of `make demo`. It validates a synthetic-only safety/evidence plan for a
+  future target exercise; it contains no connector, transform, credential, or
+  target execution path. A plan that passes returns `synthetic_protocol_valid`
+  with decision scope `plan_only_no_target_execution` — a statement about the
+  plan document, not about any executed exercise. The plan contract and the
+  reason it has no connector seam are in
+  [ADR 0002](decisions/0002-synthetic-exercise-preflight.md).
 - `directus_canary.py` is a source-specific, fail-closed verifier and normalizer
   for exactly the Directus 11.17.4 synthetic civic-case canary profile. It
   verifies the capture manifest and declared bytes before mapping them into the
@@ -405,8 +414,14 @@ attachments, so the evaluator tracks the failing key set for each and reports
 `len(byte_failures | unrestorable)`. Taking the larger of the two counts would
 conceal every failure in the smaller set. The restoration shortfall stays a
 fail-closed floor beneath any per-dimension count, so a dimension can never
-report fewer invalid items than the reference model refused. Every other
-dimension has exactly one reachable failure mode.
+report fewer invalid items than the reference model refused.
+
+Only entities and attachments contribute a per-dimension count at all, because
+only their items can be invalid while still restoring -- a wrong value in a
+declared required field, or bytes that fail verification. Relationships,
+permissions, and audit events have exactly one reachable failure mode,
+reference-model restoration, so they compute no independent count and the floor
+alone reports them.
 
 ## Result algebra
 

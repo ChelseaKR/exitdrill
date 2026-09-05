@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
 from exitdrill.canonical import canonical_json_bytes
+from exitdrill.contracts import require_exact_key_set
 
 if TYPE_CHECKING:
     from exitdrill.models import JsonValue
@@ -221,8 +222,7 @@ def _fail(message: str) -> DirectusCanaryError:
 def _exact_keys(
     value: Mapping[str, object], expected: set[str] | frozenset[str], where: str
 ) -> None:
-    if set(value) != set(expected):
-        raise _fail(f"{where} has an invalid field set")
+    require_exact_key_set(value, expected, where, DirectusCanaryError)
 
 
 def _object(value: object, where: str) -> dict[str, object]:

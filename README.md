@@ -111,6 +111,26 @@ exits 2 on any mismatch. The receipts it recomputes from are still unsigned:
 this proves a comparison describes those two files, not that those files are
 authentic.
 
+`make demo` runs one more subcommand ahead of those. It is preflight, not
+evaluation:
+
+```sh
+exitdrill validate-exercise examples/synthetic-exercise/plan.json
+```
+
+`validate-exercise` reads a plan for a *future* target exercise and executes
+nothing — no connector, no credentials, no source, no target, no restoration.
+It only checks that the plan document declares the controls such an exercise
+would need: `data_mode: synthetic_only`, a target sandbox that is empty,
+isolated, egress-blocked, automations-disabled and `production_data_allowed:
+false`, required target read-back and raw evidence matrices, and exactly the
+five lookup, relationship, attachment, allow, and deny probes. Anything else is
+rejected. A plan that passes returns `synthetic_protocol_valid` with decision
+scope `plan_only_no_target_execution`, which is a statement about the plan and
+about nothing that has been run. The contract and the reason it has no
+connector seam are in
+[ADR 0002](docs/decisions/0002-synthetic-exercise-preflight.md).
+
 ## Receipts and trust
 
 - Receipts contain aggregates and input digests, not record fields or attachment
