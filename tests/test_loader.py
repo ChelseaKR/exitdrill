@@ -253,17 +253,43 @@ def test_rejects_a_document_that_is_not_valid_utf8(tmp_path: Path) -> None:
         load_export(path)
 
 
-def test_rejects_nesting_the_json_parser_itself_cannot_walk(tmp_path: Path) -> None:
+def test_rejects_nesting_far_past_every_bound_whichever_floor_catches_it(tmp_path: Path) -> None:
+    """20,000 levels, rejected on every interpreter `requires-python` admits.
+
+    Which floor fires is an interpreter detail, and asserting it here made this
+    test fail on CPython 3.14 (issue #90). On 3.12 and 3.13 `json.loads` raises
+    `RecursionError` before `validate_json_value` ever runs; on 3.14 the decoder
+    walks the document and the depth bound rejects it instead. Both name the
+    nesting, both raise `PackageError`, and neither returns a value. That is the
+    property worth pinning, because it is the one that holds across the whole
+    declared range -- the trust boundary held on 3.14 the entire time, only the
+    expectation was wrong.
+    """
+    path = tmp_path / "deeply-nested.json"
+    path.write_text("[" * 20000 + "]" * 20000, encoding="utf-8")
+    with pytest.raises(PackageError, match="JSON nesting exceeds"):
+        load_export(path)
+
+
+def test_rejects_nesting_the_json_parser_itself_cannot_walk(
+    tmp_path: Path, parser_defeating_json_depth: int
+) -> None:
     """Nesting deep enough to exhaust the parser before any bound is consulted.
 
     `validate_json_value` runs after `json.loads` returns, so a document nested
-    far past CPython's recursion limit never reaches the depth check at all. The
-    RecursionError arm is what stops that raw interpreter error from escaping
-    the trust boundary as itself. Found while closing issue #57; it was the last
-    uncovered branch left in the module.
+    far past the decoder's own recursion limit never reaches the depth check at
+    all. The RecursionError arm is what stops that raw interpreter error from
+    escaping the trust boundary as itself. Found while closing issue #57; it was
+    the last uncovered branch left in the module.
+
+    The depth is a fixture rather than the literal 20,000 #57 used because
+    CPython 3.14 moved it: see `parser_defeating_json_depth` in `conftest.py`.
+    The arm is still reachable on every supported interpreter; the fixture finds
+    the depth that reaches it, and fails the run if there is no such depth.
     """
+    depth = parser_defeating_json_depth
     path = tmp_path / "unparseable.json"
-    path.write_text("[" * 20000 + "]" * 20000, encoding="utf-8")
+    path.write_text("[" * depth + "]" * depth, encoding="utf-8")
     with pytest.raises(PackageError, match="parser limit"):
         load_export(path)
 

@@ -185,7 +185,11 @@ def test_json_bounds_accept_the_committed_capture_documents() -> None:
     [
         (b"\xff", "is not valid UTF-8"),
         (b"{", "is not valid JSON"),
-        (b"[" * 20_000 + b"]" * 20_000, "exceeds the parser nesting limit"),
+        # Which bound rejects the nesting is an interpreter detail: 3.12 and
+        # 3.13 give out in the decoder, 3.14 walks the document and
+        # `_validate_json_bounds` stops it. Both name a nesting limit, which is
+        # the part the caller is owed. See issue #90 and the next test.
+        (b"[" * 20_000 + b"]" * 20_000, "nesting limit"),
         (b'{"a":1,"a":2}', "duplicate JSON object key is not permitted"),
         (b"[]", "must be an object"),
     ],
@@ -193,6 +197,23 @@ def test_json_bounds_accept_the_committed_capture_documents() -> None:
 def test_decode_json_rejects_each_malformed_document_class(document: bytes, message: str) -> None:
     with pytest.raises(DirectusCanaryError, match=message):
         _decode_json(document, "w")
+
+
+def test_decode_json_rejects_nesting_the_parser_cannot_walk(
+    parser_defeating_json_depth: int,
+) -> None:
+    """The `RecursionError` arm: nesting the decoder gives out on, before any bound.
+
+    Split out of the class table above because the depth that defeats the
+    decoder is an interpreter detail, not a document class. 20,000 levels no
+    longer reaches this arm on CPython 3.14, so the depth comes from
+    `parser_defeating_json_depth`, which searches for one and fails the run if
+    none exists -- the condition under which this arm would stop being an
+    observable guard.
+    """
+    depth = parser_defeating_json_depth
+    with pytest.raises(DirectusCanaryError, match="exceeds the parser nesting limit"):
+        _decode_json(b"[" * depth + b"]" * depth, "w")
 
 
 def test_decode_json_names_any_other_value_error_rather_than_leaking_it(

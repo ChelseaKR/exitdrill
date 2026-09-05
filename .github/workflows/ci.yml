@@ -15,6 +15,14 @@ concurrency:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      # Every interpreter `requires-python = ">=3.12"` admits. Pinning only 3.12
+      # here left 3.13 and 3.14 declared supported and never run; on 3.14 the
+      # JSON decoder stopped raising RecursionError at the depth three tests
+      # used, and nothing noticed (issue #90).
+      matrix:
+        python-version: ["3.12", "3.13", "3.14"]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -22,7 +30,7 @@ jobs:
       - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
           version: "0.11.29"
-          python-version: "3.12"
+          python-version: ${{ matrix.python-version }}
           enable-cache: true
           cache-dependency-glob: uv.lock
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0

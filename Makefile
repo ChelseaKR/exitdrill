@@ -23,8 +23,15 @@ lint-lab:
 type:
 	uv run mypy
 
+# Three floors, not one. `--cov-fail-under` in pyproject.toml covers the run as
+# a whole; these two keep the published src/exitdrill number at 90% even though
+# scripts/ cannot reach that yet, so neither scope can hide behind the other.
 test:
 	uv run pytest
+	@printf 'branch coverage, src/exitdrill (floor 90): '
+	@uv run coverage report --include='src/exitdrill/*' --fail-under=90 --format=total
+	@printf 'branch coverage, scripts (floor 80): '
+	@uv run coverage report --include='scripts/*' --fail-under=80 --format=total
 
 verify: lint type test
 

@@ -16,6 +16,8 @@ classifiers = [
   "Development Status :: 3 - Alpha",
   "License :: OSI Approved :: Apache Software License",
   "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
   "Topic :: System :: Archiving :: Backup",
 ]
 dependencies = ["jsonschema>=4.23"]
@@ -79,14 +81,16 @@ addopts = """
 --strict-config \
 --import-mode=importlib \
 --cov=exitdrill \
+--cov=scripts \
 --cov-branch \
 --cov-report=term-missing \
 --cov-fail-under=90
 """
 
 [tool.coverage.run]
-source = ["exitdrill"]
+source = ["exitdrill", "scripts"]
 branch = true
+parallel = true
 
 [tool.coverage.report]
 fail_under = 90
