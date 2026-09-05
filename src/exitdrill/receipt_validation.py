@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-import re
 from collections.abc import Mapping
 from enum import StrEnum
 from typing import cast
 
+from exitdrill.canonical import is_sha256_hex
 from exitdrill.contracts import require_exact_keys
 from exitdrill.models import (
     TRUST_LIMITATIONS,
@@ -18,7 +18,6 @@ from exitdrill.models import (
     classify_overall_status,
 )
 
-_SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 _PAYLOAD_KEYS = {
     "baseline_sha256",
     "decision_scope",
@@ -174,7 +173,7 @@ def validate_payload(raw: object) -> None:
         raise PayloadError("receipt payload decision scope is unsupported")
     for key in ("baseline_sha256", "export_sha256"):
         item = _nonempty_string(value, key, "receipt payload")
-        if not _SHA256_PATTERN.fullmatch(item):
+        if not is_sha256_hex(item):
             raise PayloadError(f"receipt payload.{key} must be a lowercase SHA-256 digest")
     _nonempty_string(value, "drill_id", "receipt payload")
     _nonempty_string(value, "source_system", "receipt payload")
