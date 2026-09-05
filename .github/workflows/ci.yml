@@ -13,9 +13,16 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  verify:
+  # Every interpreter `requires-python = ">=3.12"` admits. Declaring support and
+  # never running it is how three tests came to depend on a 3.12-only recursion
+  # depth without anything noticing (issue #90).
+  verify-python:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12", "3.13", "3.14"]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -23,7 +30,7 @@ jobs:
       - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
           version: "0.11.29"
-          python-version: "3.12"
+          python-version: ${{ matrix.python-version }}
           enable-cache: true
           cache-dependency-glob: uv.lock
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -42,6 +49,20 @@ jobs:
         run: make demo-compare-policy
       - name: Verify the offline CiviCRM target-roundtrip canary
         run: make demo-civicrm-target-canary
+
+  # A matrix renames its own check runs, so the branch ruleset's required
+  # `verify` context would stop being reported. This carries that name and
+  # fails unless every interpreter above verified.
+  verify:
+    needs: [verify-python]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Require every declared interpreter to have verified
+        env:
+          MATRIX_RESULT: ${{ needs.verify-python.result }}
+        run: test "$MATRIX_RESULT" = success
 
   package:
     runs-on: ubuntu-latest
