@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import os
 import tempfile
+from collections.abc import Mapping
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import cast
 
 from exitdrill.canonical import canonical_json_bytes, sha256_bytes
+from exitdrill.contracts import require_exact_keys
 from exitdrill.models import DrillResult, JsonValue
 from exitdrill.receipt_validation import PayloadError, validate_payload
 from exitdrill.strict_json import StrictJsonError, load_strict_json, validate_json_value
@@ -112,13 +114,8 @@ def _require_untrusted_envelope(envelope: dict[str, JsonValue]) -> None:
         raise ReceiptError("receipt envelope overstates its trust status")
 
 
-def _require_exact_fields(value: dict[str, object], expected: set[str], context: str) -> None:
-    unknown = sorted(set(value) - expected)
-    missing = sorted(expected - set(value))
-    if unknown:
-        raise ReceiptError(f"{context} has unknown field(s): {', '.join(unknown)}")
-    if missing:
-        raise ReceiptError(f"{context} is missing field(s): {', '.join(missing)}")
+def _require_exact_fields(value: Mapping[str, object], expected: set[str], context: str) -> None:
+    require_exact_keys(value, expected, context, ReceiptError)
 
 
 def verify_receipt(receipt: dict[str, JsonValue]) -> str:
@@ -135,7 +132,7 @@ def verify_receipt(receipt: dict[str, JsonValue]) -> str:
         validate_json_value(receipt)
     except StrictJsonError as exc:
         raise ReceiptError(str(exc)) from exc
-    _require_exact_fields(cast(dict[str, object], receipt), _RECEIPT_KEYS, "receipt")
+    _require_exact_fields(receipt, _RECEIPT_KEYS, "receipt")
     if receipt.get("schema_version") != "exitdrill/receipt/v0.3":
         raise ReceiptError("unsupported receipt schema")
     payload = receipt.get("payload")
@@ -145,7 +142,7 @@ def verify_receipt(receipt: dict[str, JsonValue]) -> str:
         raise ReceiptError("receipt payload or payload checksum is missing")
     if not isinstance(envelope, dict):
         raise ReceiptError("receipt envelope is missing")
-    _require_exact_fields(cast(dict[str, object], envelope), _ENVELOPE_KEYS, "receipt envelope")
+    _require_exact_fields(envelope, _ENVELOPE_KEYS, "receipt envelope")
     _require_untrusted_envelope(envelope)
     try:
         validate_payload(payload)

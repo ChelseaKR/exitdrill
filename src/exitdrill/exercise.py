@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import cast
 
+from exitdrill.contracts import require_exact_keys
 from exitdrill.models import Coverage, Dimension
 from exitdrill.strict_json import StrictJsonError, load_strict_json
 
@@ -48,13 +50,8 @@ def _object(value: object, context: str) -> dict[str, object]:
     return cast(dict[str, object], value)
 
 
-def _exact(value: dict[str, object], expected: set[str], context: str) -> None:
-    unknown = sorted(set(value) - expected)
-    missing = sorted(expected - set(value))
-    if unknown:
-        raise ExercisePlanError(f"{context} has unknown field(s): {', '.join(unknown)}")
-    if missing:
-        raise ExercisePlanError(f"{context} is missing field(s): {', '.join(missing)}")
+def _exact(value: Mapping[str, object], expected: set[str], context: str) -> None:
+    require_exact_keys(value, expected, context, ExercisePlanError)
 
 
 def _string(value: dict[str, object], key: str, context: str) -> str:

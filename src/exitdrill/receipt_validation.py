@@ -7,6 +7,7 @@ from collections.abc import Mapping
 from enum import StrEnum
 from typing import cast
 
+from exitdrill.contracts import require_exact_keys
 from exitdrill.models import (
     TRUST_LIMITATIONS,
     Coverage,
@@ -54,12 +55,7 @@ def _object(value: object, context: str) -> Mapping[str, object]:
 
 
 def _exact_fields(value: Mapping[str, object], expected: set[str], context: str) -> None:
-    unknown = sorted(set(value) - expected)
-    missing = sorted(expected - set(value))
-    if unknown:
-        raise PayloadError(f"{context} has unknown field(s): {', '.join(unknown)}")
-    if missing:
-        raise PayloadError(f"{context} is missing field(s): {', '.join(missing)}")
+    require_exact_keys(value, expected, context, PayloadError)
 
 
 def _nonempty_string(value: Mapping[str, object], key: str, context: str) -> str:

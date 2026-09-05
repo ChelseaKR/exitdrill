@@ -7,6 +7,7 @@ from collections.abc import Callable, Mapping
 from pathlib import Path
 from typing import cast
 
+from exitdrill.contracts import require_exact_keys
 from exitdrill.models import (
     AttachmentRecord,
     AuditEvent,
@@ -75,12 +76,7 @@ def _load_object(path: Path) -> tuple[dict[str, object], str]:
 
 
 def _exact_keys(value: Mapping[str, object], allowed: set[str], context: str) -> None:
-    unknown = sorted(set(value) - allowed)
-    missing = sorted(allowed - set(value))
-    if unknown:
-        raise PackageError(f"{context} has unknown field(s): {', '.join(unknown)}")
-    if missing:
-        raise PackageError(f"{context} is missing field(s): {', '.join(missing)}")
+    require_exact_keys(value, allowed, context, PackageError)
 
 
 def _mapping(value: object, context: str) -> Mapping[str, object]:
