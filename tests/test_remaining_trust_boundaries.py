@@ -15,6 +15,13 @@ says which and why. Two branches in `evaluator.py` are unreachable even
 directly without simulating a failure the module is defended against rather
 than one it can produce; they are named at the end rather than left as
 unexplained red lines.
+
+The last section is the inverse case. Issue #96 removed two guards that were
+not unreachable but inert: a `try: ... except OSError: raise` in
+`strict_json.py` that changed nothing, and a `FileNotFoundError` entry in
+`evaluator.py` already covered by the `OSError` beside it. Each documented a
+real fact by construction rather than by assertion, so the facts are asserted
+here: removing a guard must not also remove the property it stood for.
 """
 
 from __future__ import annotations
@@ -59,6 +66,7 @@ from exitdrill.paths import (
     sha256_bounded_file,
 )
 from exitdrill.receipt import build_receipt
+from exitdrill.strict_json import StrictJsonError, load_strict_json
 
 PROJECT = Path(__file__).parents[1]
 EXAMPLE = PROJECT / "examples" / "synthetic-crm"
@@ -453,3 +461,53 @@ def test_attachment_root_is_still_the_only_way_in(tmp_path: Path) -> None:
 
     assert os.path.isdir(root)
     assert outside.read_bytes() == b"not yours"
+
+
+# ---------------------------------------------------------------------------
+# The facts two removed inert guards used to state (issue #96).
+# ---------------------------------------------------------------------------
+
+
+def test_read_failure_escapes_load_strict_json_as_itself(tmp_path: Path) -> None:
+    """`load_strict_json` wraps decode failures and lets read failures through.
+
+    This is what the removed `try: ... except OSError: raise` stood for. The
+    split is load-bearing for three callers: `loader._load_object` catches
+    `StrictJsonError` only, `comparison.load_receipt_snapshot` catches
+    `OSError` separately to give it a message that does not echo the path, and
+    `cli.main` catches `OSError` at the top level. If `StrictJsonError` ever
+    became an `OSError`, or a read failure were wrapped on its way out, all
+    three would silently change behaviour without any of them being edited.
+    """
+    assert not issubclass(StrictJsonError, OSError)
+
+    with pytest.raises(OSError) as read_failure:
+        load_strict_json(tmp_path / "absent.json", max_bytes=1024, size_label="1 KiB")
+    assert not isinstance(read_failure.value, StrictJsonError)
+
+    document = tmp_path / "present.json"
+    document.write_text("{", encoding="utf-8")
+    with pytest.raises(StrictJsonError, match="not valid JSON"):
+        load_strict_json(document, max_bytes=1024, size_label="1 KiB")
+
+
+def test_unreadable_attachment_needs_exactly_two_error_families(tmp_path: Path) -> None:
+    """`_byte_invalid_attachment_keys` names two families, and both are needed.
+
+    Its handler read `(BoundedPathError, FileNotFoundError, OSError)`; the
+    middle entry was already covered by the third. Dropping it is safe only
+    because a missing attachment surfaces as `FileNotFoundError`, which is an
+    `OSError`, while `BoundedPathError` is a `ValueError` and is therefore
+    reachable only by naming it. If either fact stopped holding, an unreadable
+    attachment would escape `run_drill` as an exception instead of being
+    counted invalid, which is the outcome
+    `test_attachment_bytes_fail_closed` pins from the other side.
+    """
+    assert issubclass(FileNotFoundError, OSError)
+    assert not issubclass(BoundedPathError, OSError)
+
+    root = tmp_path / "export-files"
+    root.mkdir()
+    with pytest.raises(OSError) as absent:
+        sha256_bounded_file(root, "attachments/absent.txt", max_bytes=1024)
+    assert not isinstance(absent.value, BoundedPathError)
