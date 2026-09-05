@@ -59,6 +59,7 @@ from exitdrill.paths import (
     sha256_bounded_file,
 )
 from exitdrill.receipt import build_receipt
+from exitdrill.strict_json import StrictJsonError, load_strict_json
 
 PROJECT = Path(__file__).parents[1]
 EXAMPLE = PROJECT / "examples" / "synthetic-crm"
@@ -434,6 +435,46 @@ def test_structurally_unreachable_restore_branches_are_named_not_forgotten() -> 
     assert "PRAGMA foreign_key_check" in source
     assert source.count("except sqlite3.IntegrityError:") == 2
     assert "PRAGMA foreign_keys = ON" in source or "foreign_keys" in source
+
+
+def test_the_json_recursion_arms_are_named_with_the_depth_that_still_reaches_them(
+    tmp_path: Path, parser_defeating_json_depth: int
+) -> None:
+    """Three `except RecursionError` arms, and what it now takes to observe each.
+
+    `strict_json.py`, `directus_canary.py` and `civicrm_target_canary.py` each
+    turn a decoder recursion failure into their own boundary error rather than
+    letting a raw interpreter error escape as itself. Issue #57 reached all
+    three with a 20,000-level document. CPython 3.14 parses that document, so on
+    that interpreter the same literal reaches each module's own depth bound
+    instead and the arm goes uncovered without anything going red -- the exact
+    shape of the defect ADR 0023 exists to remove, arriving through an
+    interpreter upgrade rather than a code edit (issue #90).
+
+    The arms are not unreachable on any interpreter `requires-python` admits.
+    The depth moved; it did not disappear. `parser_defeating_json_depth` finds
+    it and fails the run when it cannot, and the three bounds tests use it. This
+    records the reason and asserts the facts it rests on:
+
+    - a depth that defeats this decoder exists, and is at least the one #57 used;
+    - all three arms are still present, so none was quietly deleted once the
+      literal stopped reaching it;
+    - the 20,000-level document is still rejected by this module's own boundary,
+      whichever floor catches it, which is the property that made the 3.14 red
+      an expectation failure and not a security regression. The two canaries
+      assert the same property against their own copies of the boundary, in
+      `test_directus_canary_bounds.py` and `test_civicrm_target_canary_bounds.py`.
+    """
+    assert parser_defeating_json_depth >= 20_000
+
+    for module in ("strict_json.py", "directus_canary.py", "civicrm_target_canary.py"):
+        source = (PROJECT / "src" / "exitdrill" / module).read_text(encoding="utf-8")
+        assert "except RecursionError as exc:" in source
+
+    document = tmp_path / "deeply-nested.json"
+    document.write_text("[" * 20_000 + "]" * 20_000, encoding="utf-8")
+    with pytest.raises(StrictJsonError, match="JSON nesting exceeds"):
+        load_strict_json(document, max_bytes=1 << 20, size_label="test")
 
 
 def test_attachment_root_is_still_the_only_way_in(tmp_path: Path) -> None:

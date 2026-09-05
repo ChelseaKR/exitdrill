@@ -26,7 +26,9 @@ artifact). Nothing in this table is aspirational.
 
 | Metric | Target | Measured by | Gate | Owner |
 |--------|--------|-------------|------|-------|
-| Branch coverage [CQ-08] | >= 90% | `pytest --cov` with `--cov-fail-under=90` inside `make verify` | AUTO | maintainer |
+| Branch coverage, `src/exitdrill` [CQ-08] | >= 90% (99% today) | `coverage report --include='src/exitdrill/*' --fail-under=90` inside `make verify` | AUTO | maintainer |
+| Branch coverage, `scripts/` [CQ-08] | >= 80% (82% today) | `coverage report --include='scripts/*' --fail-under=80` inside `make verify`; the gate scripts run as subprocesses, so `tests/conftest.py` sets `COVERAGE_PROCESS_START` to make coverage follow them | AUTO | maintainer |
+| Branch coverage, both scopes together [CQ-08] | >= 90% (95% today) | `pytest --cov=exitdrill --cov=scripts` with `--cov-fail-under=90` inside `make verify` | AUTO | maintainer |
 | Ruff lint and format | 0 findings | `make lint` inside `make verify` | AUTO | maintainer |
 | Strict mypy (src, tests, scripts) | 0 errors | `make type` inside `make verify` | AUTO | maintainer |
 | SHA-pinned `uses:` [SEC-25] | 100% | zizmor job in `ci.yml` | AUTO | maintainer |

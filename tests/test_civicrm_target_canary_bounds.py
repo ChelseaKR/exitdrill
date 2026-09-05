@@ -84,10 +84,31 @@ def test_json_bounds_accept_every_committed_capture_document() -> None:
         _validate_json_bounds(json.loads(path.read_text(encoding="utf-8")))
 
 
-def test_decode_json_rejects_nesting_the_parser_cannot_walk() -> None:
-    """Deeper than CPython can recurse, so `json.loads` fails before any bound."""
-    with pytest.raises(CiviCRMTargetCanaryError, match="exceeds the parser nesting limit"):
+def test_decode_json_rejects_nesting_whichever_bound_catches_it() -> None:
+    """20,000 levels, rejected on every interpreter `requires-python` admits.
+
+    Which bound rejects it is an interpreter detail: 3.12 and 3.13 give out in
+    the decoder, 3.14 walks the document and `_validate_json_bounds` stops it.
+    Both name the nesting limit and both raise this canary's own error, which is
+    what the trust boundary owes its caller. See issue #90.
+    """
+    with pytest.raises(CiviCRMTargetCanaryError, match="nesting limit"):
         _decode_json(b"[" * 20_000 + b"]" * 20_000, "w")
+
+
+def test_decode_json_rejects_nesting_the_parser_cannot_walk(
+    parser_defeating_json_depth: int,
+) -> None:
+    """Deeper than this decoder can recurse, so `json.loads` fails before any bound.
+
+    The depth comes from `parser_defeating_json_depth` rather than a literal
+    because CPython 3.14 raised it; the fixture fails the run if no depth in its
+    range defeats the decoder, which is what keeps the `RecursionError` arm an
+    observable guard rather than an assumed one.
+    """
+    depth = parser_defeating_json_depth
+    with pytest.raises(CiviCRMTargetCanaryError, match="exceeds the parser nesting limit"):
+        _decode_json(b"[" * depth + b"]" * depth, "w")
 
 
 def test_decode_json_names_any_other_value_error_rather_than_leaking_it(
