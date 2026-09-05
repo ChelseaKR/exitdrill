@@ -58,12 +58,15 @@ permission model.
 - `receipt_validation.py` closes nested result fields and verifies dimension
   presence, counts, arithmetic, limitations, and shared result algebra.
 - `comparison.py` reduces two verified receipts to aggregate snapshots, gates
-  exact input-scope comparability, and emits deterministic per-dimension deltas.
+  exact input-scope comparability, emits deterministic per-dimension deltas, and
+  writes and re-verifies the resulting document through the same bounded atomic
+  path receipts and reports use.
 - `report.py` renders one semantically verified aggregate receipt as a
   deterministic, accessible, script-free offline HTML report with the complete
   claims boundary intact.
 - `cli.py` exposes the bounded Directus source and CiviCRM target normalizers
-  plus validation, drill, verification/replay, comparison, and offline reporting.
+  plus validation, drill, verification/replay, comparison, comparison
+  re-verification, and offline reporting.
 
 ## Architecture decision
 
@@ -448,6 +451,14 @@ same-count record substitution. The receipt contract does not bind the
 export-generation method or evaluator version, so comparison cannot causally
 attribute a change.
 
+`exitdrill compare` writes the canonical document to stdout by default, or to
+`--out PATH` through the same bounded `mkstemp` + `fsync` + `os.replace`
+sequence receipts and reports use. The bytes are identical either way; `--out`
+adds the size bound, atomic replacement, and refusal to write through a
+symlink that a shell redirection cannot give. The document is written before
+the policy below decides an exit code, so a nonzero exit still leaves the
+evidence on disk.
+
 The optional CLI policy `--fail-on-loss-signal-increase` is applied after the
 comparison document is complete and does not modify it. Invalid receipts,
 incomparable inputs, or command-usage errors exit 2. A comparable result exits 3
@@ -463,16 +474,36 @@ The public JSON Schema validates closed structure and every locally expressible
 invariant, and the packaged wheel now loads it at runtime to check its own
 output: `compare_snapshots` validates every comparison document it builds
 against the schema before returning it, and `verify_comparison_document`
-validates any caller-supplied document the same way. Cross-object equality is
-not expressible in standard Draft 2020-12, so schema conformance alone cannot
-detect a forged field that happens to keep the document well-formed.
-`verify_comparison_document` therefore also verifies both original receipts,
-recomputes the complete deterministic comparison, and requires canonical byte
-equality -- the semantic check runs first, since it gives the more precise
-error for a forged field, and the schema check runs after as a structural
-sanity net. This is the source-bound semantic verification path for
-summaries, measurement relationship, scope checks and reasons, deltas,
-transitions, signals, and assessments.
+validates any caller-supplied document the same way. The schema check is the
+only check `compare_snapshots` runs. It builds the document itself, from two
+frozen snapshots through a pure function, so recomputing that function and
+requiring canonical byte equality with the value just returned compared a
+document with itself and could not fail; that call is removed rather than
+dressed up (issue #82). The schema is different in kind: it is maintained
+separately from `_build_comparison` and can genuinely diverge from it.
+
+Cross-object equality is not expressible in standard Draft 2020-12, so schema
+conformance alone cannot detect a forged field that happens to keep the
+document well-formed. `verify_comparison_document` therefore also verifies both
+original receipts, recomputes the complete deterministic comparison, and
+requires canonical byte equality -- the semantic check runs first, since it
+gives the more precise error for a forged field, and the schema check runs
+after as a structural sanity net. This is the source-bound semantic
+verification path for summaries, measurement relationship, scope checks and
+reasons, deltas, transitions, signals, and assessments. It is where the
+recomputation is real, because the document arrives from outside.
+
+`exitdrill verify-comparison COMPARISON --reference REF.json --candidate
+CAND.json` is the CLI route into it, so a reader handed a `comparison.json`
+can check it against the two receipts it claims to describe rather than
+trusting it. It strict-loads the comparison document under the same 2 MiB
+bound as a receipt, strict-loads and verifies both receipts, and recomputes.
+Exit 0 means the recomputation matched; a forged field, the wrong receipt
+pair, a malformed or oversized document, and an unreadable operand all exit 2.
+Error text names the failure, never the operand path. Verification is still
+only self-consistency against caller-supplied receipts: the receipts remain
+unsigned, so this proves the comparison describes those two files, not that
+those two files are authentic.
 
 ## Trust claims
 
