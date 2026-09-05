@@ -6,6 +6,7 @@ import json
 import math
 import os
 import stat
+from collections.abc import Mapping
 from pathlib import Path
 
 from exitdrill.canonical import sha256_bytes
@@ -29,6 +30,39 @@ def _object_from_pairs(pairs: list[tuple[str, object]]) -> dict[str, object]:
             raise StrictJsonError("duplicate object key is not permitted")
         result[key] = value
     return result
+
+
+def require_exact_keys(
+    value: Mapping[str, object],
+    expected: set[str],
+    context: str,
+    error: type[Exception],
+) -> None:
+    """Reject a mapping whose key set is not exactly `expected`.
+
+    Closed-key rejection is how every document parser here refuses a field it
+    does not understand, and it used to be copied into four modules that
+    differed only in the exception they raised. `error` is the caller's own
+    exception type, bound once by a module-local alias so call sites stay three
+    arguments wide.
+
+    Both messages are part of the contract: tests match "unknown field(s)" and
+    "missing field(s)" by name, and unknown is reported before missing so that
+    a document with both faults names the extra field first. Field names are
+    safe to echo here because `expected` and the document's own keys are the
+    only text either message can contain.
+
+    The two canaries deliberately do not use this. `directus_canary._exact_keys`
+    and `civicrm_target_canary._exact_keys` compare the key sets in one step and
+    report "has an invalid field set", naming no field; their tests assert that
+    wording, so they are a different check rather than a fifth copy of this one.
+    """
+    unknown = sorted(set(value) - expected)
+    missing = sorted(expected - set(value))
+    if unknown:
+        raise error(f"{context} has unknown field(s): {', '.join(unknown)}")
+    if missing:
+        raise error(f"{context} is missing field(s): {', '.join(missing)}")
 
 
 def validate_json_value(

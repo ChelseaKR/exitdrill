@@ -3,11 +3,10 @@
 from __future__ import annotations
 
 import html
-import os
-import tempfile
 from pathlib import Path
 from typing import cast
 
+from exitdrill.atomic_write import write_bounded_file
 from exitdrill.models import JsonValue
 from exitdrill.receipt import load_receipt, verify_receipt
 
@@ -205,21 +204,10 @@ def render_receipt_file(path: Path) -> str:
 
 def write_report(path: Path, document: str) -> None:
     """Atomically write a bounded UTF-8 evidence report."""
-    encoded = document.encode("utf-8")
-    if len(encoded) > _MAX_REPORT_BYTES:
-        raise ReportError("report exceeds the 2 MiB limit")
-    path.parent.mkdir(parents=True, exist_ok=True)
-    descriptor, temporary_name = tempfile.mkstemp(
-        dir=path.parent,
-        prefix=f".{path.name}.",
-        suffix=".tmp",
+    write_bounded_file(
+        path,
+        document.encode("utf-8"),
+        max_bytes=_MAX_REPORT_BYTES,
+        size_message="report exceeds the 2 MiB limit",
+        error=ReportError,
     )
-    temporary = Path(temporary_name)
-    try:
-        with os.fdopen(descriptor, "wb") as handle:
-            handle.write(encoded)
-            handle.flush()
-            os.fsync(handle.fileno())
-        os.replace(temporary, path)
-    finally:
-        temporary.unlink(missing_ok=True)

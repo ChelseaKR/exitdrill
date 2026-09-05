@@ -187,7 +187,7 @@ def test_write_cleans_temporary_file_after_replace_failure(
     def fail_replace(_source: object, _target: object) -> None:
         raise OSError("synthetic replace failure")
 
-    monkeypatch.setattr("exitdrill.receipt.os.replace", fail_replace)
+    monkeypatch.setattr("exitdrill.atomic_write.os.replace", fail_replace)
     with pytest.raises(OSError, match="synthetic"):
         write_receipt(tmp_path / "receipt.json", receipt)  # type: ignore[arg-type]
     assert not list(tmp_path.glob(".receipt.json.*.tmp"))

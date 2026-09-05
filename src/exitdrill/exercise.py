@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import partial
 from pathlib import Path
 from typing import cast
 
 from exitdrill.models import Coverage, Dimension
-from exitdrill.strict_json import StrictJsonError, load_strict_json
+from exitdrill.strict_json import StrictJsonError, load_strict_json, require_exact_keys
 
 _MAX_PLAN_BYTES = 1024 * 1024
 _PLAN_KEYS = {
@@ -33,6 +34,9 @@ class ExercisePlanError(ValueError):
     """Raised when a synthetic exercise plan crosses the safe preflight boundary."""
 
 
+_exact = partial(require_exact_keys, error=ExercisePlanError)
+
+
 @dataclass(frozen=True, slots=True)
 class ExercisePlan:
     """Validated plan metadata; no connector, credentials, or target data."""
@@ -46,15 +50,6 @@ def _object(value: object, context: str) -> dict[str, object]:
     if not isinstance(value, dict):
         raise ExercisePlanError(f"{context} must be an object")
     return cast(dict[str, object], value)
-
-
-def _exact(value: dict[str, object], expected: set[str], context: str) -> None:
-    unknown = sorted(set(value) - expected)
-    missing = sorted(expected - set(value))
-    if unknown:
-        raise ExercisePlanError(f"{context} has unknown field(s): {', '.join(unknown)}")
-    if missing:
-        raise ExercisePlanError(f"{context} is missing field(s): {', '.join(missing)}")
 
 
 def _string(value: dict[str, object], key: str, context: str) -> str:
