@@ -1,5 +1,9 @@
 .claude/
 .coverage
+# `[tool.coverage.run] parallel = true` is what lets coverage follow the suite
+# into the gate scripts it runs as subprocesses. A completed run combines and
+# removes these; an interrupted one leaves them behind.
+.coverage.*
 .mypy_cache/
 .pytest_cache/
 .ruff_cache/
