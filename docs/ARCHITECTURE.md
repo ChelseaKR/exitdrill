@@ -28,6 +28,10 @@ permission model.
 
 ## Components
 
+- `contracts.py` holds the one closed-key check every parser uses to reject a
+  mapping whose key set is not exactly the expected set, in the two disclosure
+  levels the project needs: naming the offending fields for operator-authored
+  documents, and naming none of them for capture-derived canary input.
 - `strict_json.py` rejects duplicate keys, non-finite numbers, excessive
   nesting, invalid UTF-8, and documents beyond their byte budgets.
 - `loader.py` enforces strict versioned baseline and export contracts.
