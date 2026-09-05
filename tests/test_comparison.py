@@ -9,19 +9,23 @@ from typing import cast
 import pytest
 from jsonschema import Draft202012Validator, ValidationError
 
+from exitdrill import comparison as comparison_module
 from exitdrill.canonical import canonical_json_bytes, sha256_bytes
 from exitdrill.comparison import (
     ComparisonError,
     DimensionSnapshot,
     ReceiptSnapshot,
     _compare_dimension,
-    _comparison_has_observed_loss_signal_increase,
     _extra_transition,
     _validate_comparison_schema,
     compare_receipt_files,
     compare_snapshots,
+    comparison_has_observed_loss_signal_increase,
+    load_comparison,
     snapshot_receipt,
     verify_comparison_document,
+    verify_comparison_files,
+    write_comparison,
 )
 from exitdrill.evaluator import run_drill
 from exitdrill.loader import load_baseline, load_export
@@ -122,7 +126,7 @@ def test_duplicate_payload_reports_no_new_measurement(example_root: Path) -> Non
         item["assessment"] == "no_observed_loss_signal_change"
         for item in cast(list[dict[str, object]], result["dimensions"])
     )
-    assert _comparison_has_observed_loss_signal_increase(result) is False
+    assert comparison_has_observed_loss_signal_increase(result) is False
 
 
 def test_lossy_candidate_surfaces_each_dimension_increase(example_root: Path) -> None:
@@ -134,7 +138,7 @@ def test_lossy_candidate_surfaces_each_dimension_increase(example_root: Path) ->
     assert result["comparability"] == "comparable"
     assert summary["observed_loss_signal_increases"] == [item.value for item in Dimension]
     assert "score" not in result
-    assert _comparison_has_observed_loss_signal_increase(result) is True
+    assert comparison_has_observed_loss_signal_increase(result) is True
 
 
 def test_swapping_operands_negates_deltas_and_reverses_loss_direction(
@@ -153,7 +157,7 @@ def test_swapping_operands_negates_deltas_and_reverses_loss_direction(
         assert all(first_deltas[key] == -second_deltas[key] for key in first_deltas)
     reverse_summary = cast(dict[str, object], reverse["summary"])
     assert reverse_summary["observed_loss_signal_decreases"] == [item.value for item in Dimension]
-    assert _comparison_has_observed_loss_signal_increase(reverse) is False
+    assert comparison_has_observed_loss_signal_increase(reverse) is False
 
 
 def test_repeated_comparison_is_byte_deterministic(example_root: Path) -> None:
@@ -215,7 +219,7 @@ def test_extra_only_change_is_not_ranked_as_loss(example_root: Path) -> None:
     assert compared["assessment"] == "no_observed_loss_signal_change"
     assert compared["extra_count_transition"] == "changed_from_zero"
     assert compared["status_transition"] == "changed"
-    assert _comparison_has_observed_loss_signal_increase(result) is False
+    assert comparison_has_observed_loss_signal_increase(result) is False
 
 
 def test_mixed_missing_and_invalid_changes_remain_mixed(example_root: Path) -> None:
@@ -249,7 +253,7 @@ def test_mixed_missing_and_invalid_changes_remain_mixed(example_root: Path) -> N
     assert compared["assessment"] == "mixed_loss_signal_change"
     assert compared["observed_loss_signal_increases"] == ["invalid_count_increased"]
     assert compared["observed_loss_signal_decreases"] == ["missing_count_decreased"]
-    assert _comparison_has_observed_loss_signal_increase(result) is True
+    assert comparison_has_observed_loss_signal_increase(result) is True
 
 
 def test_equal_partial_coverage_forces_uncertain_assessment(example_root: Path) -> None:
@@ -275,7 +279,7 @@ def test_equal_partial_coverage_forces_uncertain_assessment(example_root: Path) 
     compared = cast(list[dict[str, object]], result["dimensions"])[0]
     assert compared["assessment"] == "uncertain"
     assert compared["observed_loss_signal_decreases"] == ["missing_count_decreased"]
-    assert _comparison_has_observed_loss_signal_increase(result) is False
+    assert comparison_has_observed_loss_signal_increase(result) is False
 
 
 def test_partial_coverage_keeps_uncertain_but_exposes_direct_increase(
@@ -302,7 +306,7 @@ def test_partial_coverage_keeps_uncertain_but_exposes_direct_increase(
     compared = cast(list[dict[str, object]], result["dimensions"])[0]
     assert compared["assessment"] == "uncertain"
     assert compared["observed_loss_signal_increases"] == ["missing_count_increased"]
-    assert _comparison_has_observed_loss_signal_increase(result) is True
+    assert comparison_has_observed_loss_signal_increase(result) is True
 
 
 def test_same_aggregates_with_distinct_payload_is_not_duplicate(example_root: Path) -> None:
@@ -366,7 +370,7 @@ def test_contract_or_scope_mismatch_is_explicitly_incomparable(
     assert result["comparability"] == "incomparable"
     assert reason in cast(list[str], result["incomparable_reasons"])
     assert result["dimensions"] == []
-    assert _comparison_has_observed_loss_signal_increase(result) is False
+    assert comparison_has_observed_loss_signal_increase(result) is False
 
 
 def test_multiple_scope_reasons_have_stable_contract_order(example_root: Path) -> None:
@@ -743,3 +747,218 @@ def test_public_comparison_schema_rejects_semantic_contradictions(
         invalid = _comparable_schema_contradiction(reference, contradiction)
     with pytest.raises(ValidationError):
         validator.validate(invalid)
+
+
+# ---------------------------------------------------------------------------
+# issue #82: the check compare_snapshots ran against its own output.
+# ---------------------------------------------------------------------------
+
+
+def test_compare_snapshots_no_longer_reverifies_the_document_it_just_built(
+    example_root: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """`_build_comparison` is pure in two frozen snapshots.
+
+    So recomputing it and requiring canonical byte equality with the value it
+    had just returned compared a document with itself: it reported a clean
+    result whether or not it was still checking anything, which is the defect
+    family ADR 0021, ADR 0022 and ADR 0023 record. Making the recomputation
+    raise proves `compare_snapshots` no longer calls it, and that
+    `verify_comparison_document` -- where the document is caller-supplied and
+    the check is real -- still does. This test fails if the call comes back.
+    """
+
+    def _refuse(*_args: object, **_kwargs: object) -> None:
+        raise AssertionError("compare_snapshots must not re-verify its own output")
+
+    reference = _good_receipt(example_root)
+    candidate = _lossy_receipt(example_root)
+    expected = compare_snapshots(snapshot_receipt(reference), snapshot_receipt(candidate))
+    monkeypatch.setattr(comparison_module, "_verify_comparison_against_snapshots", _refuse)
+
+    assert compare_snapshots(snapshot_receipt(reference), snapshot_receipt(candidate)) == expected
+    with pytest.raises(AssertionError, match="must not re-verify"):
+        verify_comparison_document(expected, reference, candidate)
+
+
+# ---------------------------------------------------------------------------
+# issue #97: the comparison document as a written, re-verifiable artifact.
+# ---------------------------------------------------------------------------
+
+
+def test_written_comparison_round_trips_through_the_verifier(
+    tmp_path: Path,
+    example_root: Path,
+) -> None:
+    reference_path = tmp_path / "reference.json"
+    candidate_path = tmp_path / "candidate.json"
+    _write(reference_path, _good_receipt(example_root))
+    _write(candidate_path, _lossy_receipt(example_root))
+    comparison = compare_receipt_files(reference_path, candidate_path)
+    written = tmp_path / "nested" / "comparison.json"
+
+    write_comparison(written, comparison)
+
+    assert written.read_bytes() == canonical_json_bytes(comparison) + b"\n"
+    assert load_comparison(written) == comparison
+    assert verify_comparison_files(written, reference_path, candidate_path) == comparison
+
+
+def test_write_comparison_refuses_a_document_over_the_limit(tmp_path: Path) -> None:
+    """Exercised against the writer's contract, not through `compare_snapshots`.
+
+    A real comparison document holds five fixed dimensions and two metadata
+    blocks, so it cannot approach 2 MiB; the bound is a fail-closed floor for
+    any caller handing this writer a document from somewhere else. Stating the
+    condition directly is what ADR 0023 asks for in place of a pragma.
+    """
+    parent = tmp_path / "not-created"
+    oversized = cast(dict[str, JsonValue], {"comparability": "x" * (2 * 1024 * 1024)})
+
+    with pytest.raises(ComparisonError, match="2 MiB"):
+        write_comparison(parent / "comparison.json", oversized)
+    assert not parent.exists()
+
+
+def test_write_comparison_replaces_an_output_symlink_without_following_it(
+    tmp_path: Path,
+    example_root: Path,
+) -> None:
+    """The concrete difference from the shell redirection this replaced.
+
+    `> comparison.json` writes through a symlink and truncates whatever is on
+    the far end. `mkstemp` beside the target plus `os.replace` cannot.
+    """
+    comparison = compare_snapshots(
+        snapshot_receipt(_good_receipt(example_root)),
+        snapshot_receipt(_lossy_receipt(example_root)),
+    )
+    outside = tmp_path / "outside.json"
+    outside.write_text("do not overwrite", encoding="utf-8")
+    path = tmp_path / "comparison.json"
+    path.symlink_to(outside)
+
+    write_comparison(path, comparison)
+
+    assert outside.read_text(encoding="utf-8") == "do not overwrite"
+    assert not path.is_symlink()
+    assert load_comparison(path) == comparison
+
+
+def test_write_comparison_leaves_no_partial_file_after_a_replace_failure(
+    tmp_path: Path,
+    example_root: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    comparison = compare_snapshots(
+        snapshot_receipt(_good_receipt(example_root)),
+        snapshot_receipt(_lossy_receipt(example_root)),
+    )
+
+    def fail_replace(_source: object, _target: object) -> None:
+        raise OSError("synthetic replace failure")
+
+    monkeypatch.setattr("exitdrill.comparison.os.replace", fail_replace)
+    with pytest.raises(OSError, match="synthetic"):
+        write_comparison(tmp_path / "comparison.json", comparison)
+    assert not (tmp_path / "comparison.json").exists()
+    assert not list(tmp_path.glob(".comparison.json.*.tmp"))
+
+
+def test_load_comparison_rejects_a_non_object_or_oversized_document(tmp_path: Path) -> None:
+    path = tmp_path / "comparison.json"
+
+    path.write_text("[]", encoding="utf-8")
+    with pytest.raises(ComparisonError, match="JSON object"):
+        load_comparison(path)
+
+    path.write_bytes(b" " * (2 * 1024 * 1024 + 1))
+    with pytest.raises(ComparisonError, match="comparison exceeds the 2 MiB limit"):
+        load_comparison(path)
+
+
+def test_load_comparison_rejects_a_malformed_document(tmp_path: Path) -> None:
+    path = tmp_path / "comparison.json"
+
+    path.write_text('{"comparability":', encoding="utf-8")
+    with pytest.raises(ComparisonError, match="not valid JSON"):
+        load_comparison(path)
+
+    marker = "invented-sensitive-duplicate"
+    path.write_text(f'{{"{marker}": 1, "{marker}": 2}}', encoding="utf-8")
+    with pytest.raises(ComparisonError, match="duplicate object key") as raised:
+        load_comparison(path)
+    assert marker not in str(raised.value)
+
+
+def test_load_comparison_read_failure_does_not_disclose_the_path(tmp_path: Path) -> None:
+    marker = "invented-private-missing-comparison"
+
+    with pytest.raises(ComparisonError, match="comparison input could not be read") as raised:
+        load_comparison(tmp_path / f"{marker}.json")
+    assert marker not in str(raised.value)
+    assert str(tmp_path) not in str(raised.value)
+
+
+def test_verify_comparison_files_rejects_a_mismatched_receipt_pair(
+    tmp_path: Path,
+    example_root: Path,
+) -> None:
+    """An unforged document paired with receipts it does not describe.
+
+    Nothing inside the document is wrong, so only recomputation from the two
+    receipts actually supplied can catch it.
+    """
+    reference_path = tmp_path / "reference.json"
+    candidate_path = tmp_path / "candidate.json"
+    _write(reference_path, _good_receipt(example_root))
+    _write(candidate_path, _lossy_receipt(example_root))
+    written = tmp_path / "comparison.json"
+    write_comparison(written, compare_receipt_files(reference_path, candidate_path))
+
+    with pytest.raises(ComparisonError, match="does not match its source receipts"):
+        verify_comparison_files(written, reference_path, reference_path)
+    with pytest.raises(ComparisonError, match="does not match its source receipts"):
+        verify_comparison_files(written, candidate_path, reference_path)
+
+
+def test_verify_comparison_files_rejects_a_forged_field(
+    tmp_path: Path,
+    example_root: Path,
+) -> None:
+    reference_path = tmp_path / "reference.json"
+    candidate_path = tmp_path / "candidate.json"
+    _write(reference_path, _good_receipt(example_root))
+    _write(candidate_path, _lossy_receipt(example_root))
+    forged = compare_receipt_files(reference_path, candidate_path)
+    summary = cast(dict[str, JsonValue], forged["summary"])
+    summary["no_observed_loss_signal_change"] = summary["observed_loss_signal_increases"]
+    summary["observed_loss_signal_increases"] = []
+    written = tmp_path / "comparison.json"
+    write_comparison(written, forged)
+
+    with pytest.raises(ComparisonError, match="does not match its source receipts"):
+        verify_comparison_files(written, reference_path, candidate_path)
+
+
+def test_verify_comparison_files_rejects_an_unusable_source_receipt(
+    tmp_path: Path,
+    example_root: Path,
+) -> None:
+    """The receipt operands stay a trust boundary in this direction too."""
+    reference_path = tmp_path / "reference.json"
+    candidate_path = tmp_path / "candidate.json"
+    _write(reference_path, _good_receipt(example_root))
+    _write(candidate_path, _lossy_receipt(example_root))
+    written = tmp_path / "comparison.json"
+    write_comparison(written, compare_receipt_files(reference_path, candidate_path))
+    candidate_path.write_text('{"schema_version":', encoding="utf-8")
+
+    with pytest.raises(ReceiptError, match="not valid JSON"):
+        verify_comparison_files(written, reference_path, candidate_path)
+
+    marker = "invented-private-missing-receipt"
+    with pytest.raises(ReceiptError, match="comparison input could not be read") as raised:
+        verify_comparison_files(written, reference_path, tmp_path / f"{marker}.json")
+    assert marker not in str(raised.value)

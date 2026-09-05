@@ -90,10 +90,26 @@ To compare two same-scope receipts:
 
 ```sh
 exitdrill compare reference-receipt.json candidate-receipt.json
+
+exitdrill compare reference-receipt.json candidate-receipt.json \
+  --out comparison.json
+
+exitdrill verify-comparison comparison.json \
+  --reference reference-receipt.json \
+  --candidate candidate-receipt.json
 ```
 
 The caller supplies the order. ExitDrill rejects comparisons whose drill,
 baseline, contract, coverage, or expected counts differ.
+
+Without `--out` the canonical document goes to stdout. With it, the same bytes
+are written through the bounded atomic path receipts and reports use, and
+stdout carries a short summary instead. `verify-comparison` recomputes the
+whole document from the two receipts and requires canonical byte equality, so a
+reader who did not run the comparison can check it rather than trust it. It
+exits 2 on any mismatch. The receipts it recomputes from are still unsigned:
+this proves a comparison describes those two files, not that those files are
+authentic.
 
 ## Receipts and trust
 
