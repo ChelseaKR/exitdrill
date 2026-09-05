@@ -144,15 +144,19 @@ def test_write_rejects_oversized_valid_receipt_before_filesystem_mutation(
     tmp_path: Path,
     example_root: Path,
 ) -> None:
+    # `drill_id`, not the envelope's claimed time, is the padding site: the
+    # claimed time is now required to be offset-aware ISO 8601, and `drill_id`
+    # is the remaining unbounded free-text field a valid payload carries.
     receipt = _receipt(example_root)
-    envelope = receipt["envelope"]
-    assert isinstance(envelope, dict)
-    envelope["claimed_generated_at"] = "x" * (2 * 1024 * 1024)
+    payload = receipt["payload"]
+    assert isinstance(payload, dict)
+    payload["drill_id"] = "x" * (2 * 1024 * 1024)
+    _rehash(receipt)
     assert verify_receipt(receipt) == receipt["payload_sha256"]  # type: ignore[arg-type]
     parent = tmp_path / "not-created"
     path = parent / "receipt.json"
 
-    with pytest.raises(ReceiptError, match="2 MiB"):
+    with pytest.raises(ReceiptError, match="receipt exceeds the 2 MiB limit"):
         write_receipt(path, receipt)  # type: ignore[arg-type]
     assert not parent.exists()
     assert not path.exists()
@@ -195,7 +199,10 @@ def test_load_rejects_nonobject_and_oversized(tmp_path: Path) -> None:
     with pytest.raises(ReceiptError, match="JSON object"):
         load_receipt(path)
     path.write_bytes(b" " * (2 * 1024 * 1024 + 1))
-    with pytest.raises(ReceiptError, match="2 MiB"):
+    # The full message, not just "2 MiB": `strict_json` composes it from the
+    # noun `load_receipt` supplies, and "2 MiB" alone matched the generic
+    # wording too, so nothing observed which noun came out (issue #85).
+    with pytest.raises(ReceiptError, match="receipt exceeds the 2 MiB limit"):
         load_receipt(path)
 
 
@@ -204,13 +211,19 @@ def test_load_accepts_valid_receipt_at_exact_byte_limit(
     example_root: Path,
 ) -> None:
     receipt = _receipt(example_root)
-    envelope = receipt["envelope"]
-    assert isinstance(envelope, dict)
-    envelope["claimed_generated_at"] = ""
+    payload = receipt["payload"]
+    assert isinstance(payload, dict)
+    # Padded through `drill_id` for the reason given on the oversized case:
+    # the envelope's claimed time no longer accepts arbitrary text. The
+    # rehashed digest is a fixed 64 characters, so growing `drill_id` by one
+    # character grows the document by exactly one byte.
+    payload["drill_id"] = "x"
+    _rehash(receipt)
     max_bytes = 2 * 1024 * 1024
     padding = max_bytes - len(canonical_json_bytes(receipt))
     assert padding > 0
-    envelope["claimed_generated_at"] = "x" * padding
+    payload["drill_id"] = "x" * (padding + 1)
+    _rehash(receipt)
     document = canonical_json_bytes(receipt)
     assert len(document) == max_bytes
     path = tmp_path / "exact-limit-receipt.json"
@@ -225,7 +238,7 @@ def test_load_rejects_non_regular_document_without_blocking(tmp_path: Path) -> N
         pytest.skip("FIFO creation is unavailable on this platform")
     path = tmp_path / "receipt.fifo"
     os.mkfifo(path)
-    with pytest.raises(ReceiptError, match="not a regular file"):
+    with pytest.raises(ReceiptError, match="receipt path is not a regular file"):
         load_receipt(path)
 
 
@@ -242,7 +255,17 @@ def test_load_rejects_ambiguous_document_wrappers(
         document = b"\xef\xbb\xbf" + document
     path = tmp_path / "wrapped-receipt.json"
     path.write_bytes(document)
-    with pytest.raises(ReceiptError, match="not valid JSON"):
+    with pytest.raises(ReceiptError, match="receipt is not valid JSON"):
+        load_receipt(path)
+
+
+def test_load_rejects_invalid_utf8_receipt_bytes(tmp_path: Path, example_root: Path) -> None:
+    """`strict_json`'s UTF-8 rejection is already covered from the loader side.
+    This covers it from the receipt side, which is what observes that the
+    message names the receipt rather than the generic noun (issue #85)."""
+    path = tmp_path / "invalid-utf8-receipt.json"
+    path.write_bytes(canonical_json_bytes(_receipt(example_root)) + b"\xff")
+    with pytest.raises(ReceiptError, match="receipt is not valid UTF-8"):
         load_receipt(path)
 
 
@@ -256,7 +279,7 @@ def test_load_rejects_integer_beyond_parser_digit_budget(
     )
     path = tmp_path / "huge-integer-receipt.json"
     path.write_bytes(document)
-    with pytest.raises(ReceiptError, match="not valid JSON"):
+    with pytest.raises(ReceiptError, match="receipt is not valid JSON"):
         load_receipt(path)
 
 
@@ -355,6 +378,89 @@ def test_verify_rejects_empty_claimed_time(example_root: Path) -> None:
     envelope["claimed_generated_at"] = " "
     with pytest.raises(ReceiptError, match="non-empty"):
         verify_receipt(receipt)  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize(
+    ("claimed", "message"),
+    [
+        ("not a timestamp at all", "must be an ISO 8601 timestamp"),
+        # Offset-naive: parseable, but it does not say when.
+        ("2026-07-22T20:00:00", "must include a UTC offset"),
+        # Surrounding whitespace. `build_receipt` never emits it, so the value
+        # is parsed unstripped and this is a rejection, not a normalization.
+        (" 2026-07-22T20:00:00Z ", "must be an ISO 8601 timestamp"),
+    ],
+)
+def test_verify_rejects_a_claimed_time_outside_the_shape_build_receipt_emits(
+    example_root: Path,
+    claimed: str,
+    message: str,
+) -> None:
+    """Issue #83. `--claimed-generated-at "sometime last spring"` used to
+    produce a receipt that verified and rendered. Requiring the shape is not a
+    trust claim: `signature_status` and `trusted_time` still carry the
+    disclaimer, and both are checked separately below."""
+    receipt = _receipt(example_root)
+    envelope = receipt["envelope"]
+    assert isinstance(envelope, dict)
+    envelope["claimed_generated_at"] = claimed
+    with pytest.raises(ReceiptError, match=f"receipt envelope claimed time {message}"):
+        verify_receipt(receipt)  # type: ignore[arg-type]
+
+
+def test_verify_accepts_a_non_utc_offset_claimed_time(example_root: Path) -> None:
+    """Positive control for the case above, and the boundary the parser draws:
+    an explicit offset is required, not specifically `Z`."""
+    receipt = _receipt(example_root)
+    envelope = receipt["envelope"]
+    assert isinstance(envelope, dict)
+    envelope["claimed_generated_at"] = "2026-07-22T20:00:00+05:30"
+    assert verify_receipt(receipt) == receipt["payload_sha256"]  # type: ignore[arg-type]
+
+
+def test_verify_rejects_a_dimension_below_the_restoration_floor(example_root: Path) -> None:
+    """Issue #81. The receipt every dimension of which claims that the export
+    was complete, nothing restored, and nothing invalid.
+
+    `evaluator._dimension_result` cannot emit this: it floors `invalid_count`
+    at `exported_count - restored_count`, so a dimension the reference model
+    refused entirely is a `fail`. Before the floor was re-derived here, this
+    receipt verified as `pass` and `render_receipt_report` rendered
+    "Structurally restorable" with a Restored column of 0 beside an Exported
+    column of 2.
+    """
+    receipt = _receipt(example_root)
+    payload = receipt["payload"]
+    assert isinstance(payload, dict)
+    for raw in _dimensions(payload):
+        assert isinstance(raw, dict)
+        dimension = cast(dict[str, object], raw)
+        assert dimension["exported_count"] != 0
+        assert dimension["status"] == "pass"
+        dimension["restored_count"] = 0
+    _rehash(receipt)
+
+    with pytest.raises(ReceiptError, match=r"dimensions\[0\].invalid_count is below"):
+        verify_receipt(receipt)  # type: ignore[arg-type]
+
+
+def test_verify_accepts_a_dimension_exactly_at_the_restoration_floor(example_root: Path) -> None:
+    """Positive control for the case above, and the boundary the floor draws:
+    `invalid_count` equal to the shortfall is what the evaluator emits, so it
+    has to verify. Written the way the evaluator would write it -- one refused
+    row makes the dimension `fail`, which makes the drill not structurally
+    restorable and adds one remediation signal."""
+    receipt = _receipt(example_root)
+    payload = receipt["payload"]
+    assert isinstance(payload, dict)
+    dimension = _first_dimension(payload)
+    assert dimension["exported_count"] == 2
+    dimension.update({"restored_count": 1, "invalid_count": 1, "status": "fail"})
+    payload["overall_status"] = "not_structurally_restorable"
+    payload["observed_remediation_signals"] = 1
+    _rehash(receipt)
+
+    assert verify_receipt(receipt) == receipt["payload_sha256"]  # type: ignore[arg-type]
 
 
 def test_verify_rejects_non_finite_in_memory_value(example_root: Path) -> None:
@@ -500,6 +606,13 @@ def test_verify_rejects_non_digest_checksum(example_root: Path) -> None:
         (
             lambda payload: _first_dimension(payload).update({"restored_count": 3}),
             "exceeds exported_count",
+        ),
+        (
+            # A partial shortfall, distinct from the whole-receipt case above:
+            # one of the two exported rows was refused by the reference model
+            # and the dimension still claims nothing invalid.
+            lambda payload: _first_dimension(payload).update({"restored_count": 1}),
+            "invalid_count is below the restoration shortfall",
         ),
         (
             lambda payload: _first_dimension(payload).update({"expected_count": 3}),

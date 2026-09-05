@@ -169,9 +169,13 @@ def test_repeated_comparison_is_byte_deterministic(example_root: Path) -> None:
 
 
 def test_untrusted_envelope_text_is_ignored_and_not_disclosed(example_root: Path) -> None:
+    # The marker is timestamp-shaped because `claimed_generated_at` now has to
+    # be offset-aware ISO 8601 (issue #83); the envelope no longer carries any
+    # free text. The offset is one no fixture uses, so the marker is still a
+    # value that can only have come from this envelope.
     reference = _good_receipt(example_root)
     candidate = deepcopy(reference)
-    marker = "invented-private-marker\n\u2603"
+    marker = "1970-01-02T03:04:05+13:45"
     candidate["envelope"] = {
         "claimed_generated_at": marker,
         "signature_status": "not_signed",
@@ -513,7 +517,9 @@ def test_files_are_strictly_validated_and_paths_are_not_serialized(
         compare_receipt_files(reference_path, candidate_path)
 
     candidate_path.write_bytes(b" " * (2 * 1024 * 1024 + 1))
-    with pytest.raises(ReceiptError, match="2 MiB"):
+    # Matched in full: "2 MiB" alone also matched `strict_json`'s generic
+    # noun, so it could not see which one came out (issue #85).
+    with pytest.raises(ReceiptError, match="receipt exceeds the 2 MiB limit"):
         compare_receipt_files(reference_path, candidate_path)
 
 

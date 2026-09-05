@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import re
 import subprocess
+import sys
 import tempfile
 import tomllib
 from pathlib import Path
-from shutil import which
+from shutil import copy2, which
 from types import ModuleType
 from typing import cast
 from zipfile import ZipFile
@@ -18,6 +20,36 @@ import pytest
 
 PROJECT = Path(__file__).parents[1]
 PACKAGED_PREFIX = "exitdrill/schemas/"
+
+# Several gates below run a real external tool -- `node` for the browser-lab
+# syntax check and the binding gate, `uv` for the lockfile-drift probe -- and
+# have nothing to run without it. Skipping is the right answer for a local
+# checkout that has neither installed. It is the wrong answer for CI, where a
+# silent skip is the same "reported success having checked nothing" shape that
+# `lint-lab`'s `test "$checked" -gt 0`, `check_wheel.py`'s `if not referenced`,
+# and the binding gate's `checked === 0` floor all exist to refuse (issue #89).
+#
+# So the environment is asserted rather than inferred: set
+# EXITDRILL_REQUIRE_GATE_TOOLS=1 and a missing tool fails instead of skipping.
+# The flag is deliberate and project-owned rather than keyed off `CI`, which is
+# a variable GitHub happens to set and any other runner may not.
+REQUIRE_GATE_TOOLS = "EXITDRILL_REQUIRE_GATE_TOOLS"
+_REQUIRE_GATE_TOOLS_VALUES = {None, "", "0", "1"}
+
+
+def _gate_tools_are_required() -> bool:
+    return os.environ.get(REQUIRE_GATE_TOOLS) == "1"
+
+
+def _required_tool(name: str, purpose: str) -> str:
+    """Resolve an external tool a gate needs, or decide what its absence means."""
+    found = which(name)
+    if found is not None:
+        return found
+    missing = f"{name} is required to {purpose}"
+    if _gate_tools_are_required():
+        pytest.fail(f"{missing}, and {REQUIRE_GATE_TOOLS}=1 promised this environment provides it")
+    pytest.skip(missing)
 
 
 def _committed_schemas() -> list[Path]:
@@ -353,9 +385,7 @@ def test_lab_syntax_gate_covers_every_committed_lab_script_anywhere_in_the_tree(
 
 
 def test_every_committed_lab_script_parses() -> None:
-    node = which("node")
-    if node is None:  # pragma: no cover - exercised by the Node-enabled CI gate
-        pytest.skip("node is required to syntax-check the browser-lab scripts")
+    node = _required_tool("node", "syntax-check the browser-lab scripts")
     for script in _committed_lab_scripts():
         completed = subprocess.run(  # noqa: S603 - resolved interpreter and repository script
             [node, "--check", str(script)],
@@ -373,9 +403,7 @@ def test_committed_browser_captures_bind_to_their_scripts_declared_output() -> N
     Playwright, or Docker. See scripts/check_browser_capture_bindings.mjs
     for exactly which fields this can and cannot verify.
     """
-    node = which("node")
-    if node is None:  # pragma: no cover - exercised by the Node-enabled CI gate
-        pytest.skip("node is required to check the browser-capture bindings")
+    node = _required_tool("node", "check the browser-capture bindings")
     completed = subprocess.run(  # noqa: S603 - resolved interpreter and repository script
         [node, str(PROJECT / "scripts" / "check_browser_capture_bindings.mjs")],
         cwd=PROJECT,
@@ -425,13 +453,6 @@ def test_strict_type_checking_covers_the_committed_gate_scripts() -> None:
     assert set(metadata["tool"]["mypy"]["files"]) == {"src", "tests", "scripts"}
 
 
-def _uv_or_skip() -> str:
-    uv = which("uv")
-    if uv is None:  # pragma: no cover - exercised by the uv-provisioned CI gate
-        pytest.skip("uv is required to exercise the lockfile-drift gate")
-    return uv
-
-
 def _uv(uv: str, *arguments: str, cwd: Path) -> int:
     completed = subprocess.run(  # noqa: S603 - resolved interpreter and fixed arguments
         [uv, *arguments],
@@ -450,7 +471,7 @@ def test_frozen_lockfile_flag_cannot_observe_declared_dependency_drift(tmp_path:
     asserted against real `uv` behaviour rather than assumed. The probe project
     declares no dependencies, so both commands resolve offline.
     """
-    uv = _uv_or_skip()
+    uv = _required_tool("uv", "exercise the lockfile-drift gate")
     project = tmp_path / "drift-probe"
     project.mkdir()
     manifest = project / "pyproject.toml"
@@ -599,9 +620,7 @@ def test_the_binding_gate_fails_when_it_has_nothing_to_check() -> None:
     an emptied binding table printed "verified 0 committed browser-*.json
     files" and exited 0 through `make demo-civicrm-target-canary`.
     """
-    node = which("node")
-    if node is None:  # pragma: no cover - exercised by the Node-enabled CI gate
-        pytest.skip("node is required to exercise the binding gate")
+    node = _required_tool("node", "exercise the binding gate")
     source = _BINDING_GATE.read_text(encoding="utf-8")
     emptied, substitutions = re.subn(
         r"^const BINDINGS = \[.*?^\];$",
@@ -625,3 +644,358 @@ def test_the_binding_gate_fails_when_it_has_nothing_to_check() -> None:
 
     assert completed.returncode != 0, completed.stdout
     assert "verified 0" not in completed.stdout
+
+
+# ---------------------------------------------------------------------------
+# The fabricated `pageErrors` stub, and the two facts that make it safe.
+# ---------------------------------------------------------------------------
+
+_CASE_SEARCH_CAPTURE = PROJECT / "scripts" / "civicrm_browser_case_search_workflow.mjs"
+_PAGE_ERRORS_STUB_OWNER = _CASE_SEARCH_CAPTURE.name
+_PAGE_ERRORS_GUARD = re.compile(r"pageErrors\.length\s*!==\s*2")
+_PAGE_ERRORS_REFERENCE = re.compile(r"\bpageErrors\b")
+
+# Every capture script the binding gate reads. Pinned so that a script dropped
+# from BINDINGS cannot be mistaken below for one whose literal was checked and
+# found clean.
+_BOUND_CAPTURE_SCRIPTS = {
+    "civicrm_browser_access_allow_control.mjs",
+    "civicrm_browser_access_denial.mjs",
+    "civicrm_browser_case_search_workflow.mjs",
+    "civicrm_browser_workflow.mjs",
+}
+
+
+def _declared_literals() -> dict[str, str]:
+    """The exact literal source the binding gate extracts from each capture script.
+
+    Read out of the gate itself rather than re-derived here: the gate takes the
+    first `process.stdout.write(` and the first `JSON.stringify(` after it, and
+    a second copy of those rules in Python could drift from the ones actually
+    applied. Grepping whole files is not an option either -- all four scripts
+    collect `pageErrors` for their own assertions, so a file-wide search reports
+    every one of them and proves nothing about what they declare as output.
+    """
+    node = _required_tool("node", "read the binding gate's declared literals")
+    completed = subprocess.run(  # noqa: S603 - resolved interpreter and repository script
+        [node, str(_BINDING_GATE), "--print-declared-literals"],
+        cwd=PROJECT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert completed.returncode == 0, completed.stderr
+    return cast("dict[str, str]", json.loads(completed.stdout))
+
+
+def test_the_case_search_capture_still_proves_the_page_errors_stub() -> None:
+    """`evaluateLiteral` fabricates `pageErrors = { length: 2 }` for every literal.
+
+    That is not a SENTINEL. A SENTINEL reaching a field the gate does compare
+    fails loudly; a plausible `2` can quietly satisfy the comparison instead. It
+    is safe only because this script cannot reach its declared literal unless
+    `pageErrors.length === 2`, which is what turns the fabricated value into a
+    proven one. Nothing pinned that guard until this test (issue #87).
+    """
+    source = _CASE_SEARCH_CAPTURE.read_text(encoding="utf-8")
+
+    assert _PAGE_ERRORS_GUARD.search(source), (
+        f"{_PAGE_ERRORS_STUB_OWNER} no longer requires pageErrors.length === 2 before reaching "
+        "its declared literal, but scripts/check_browser_capture_bindings.mjs still stubs "
+        "pageErrors as a fabricated { length: 2 } when it evaluates that literal; without the "
+        "guard the gate compares a committed capture against a number nothing establishes"
+    )
+
+
+def test_only_the_script_that_proves_it_reads_page_errors_in_its_declared_literal() -> None:
+    """The other half of the same stub's justification (issue #87).
+
+    `browser-contact-summary-workflow.json` and `browser-workflow.json` both
+    record an occurrence_count of 2, so a literal in `civicrm_browser_workflow.mjs`
+    that started emitting `pageErrors.length` would be compared against the
+    fabricated 2, match, and leave the success line reading "verified 9".
+    """
+    literals = _declared_literals()
+
+    assert set(literals) == _BOUND_CAPTURE_SCRIPTS
+    reading_page_errors = sorted(
+        name for name, literal in literals.items() if _PAGE_ERRORS_REFERENCE.search(literal)
+    )
+
+    assert reading_page_errors == [_PAGE_ERRORS_STUB_OWNER], (
+        "only the script that proves pageErrors.length === 2 may read pageErrors inside the "
+        "literal the binding gate evaluates with a fabricated { length: 2 } stub"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Proof that each binding-gate floor can fail, run against a copied tree.
+# ---------------------------------------------------------------------------
+
+_NATIVE_DIR = PROJECT / "examples" / "civicrm-6.16.2-target-roundtrip" / "native"
+
+
+def _binding_gate_probe_tree(root: Path) -> Path:
+    """Copy the gate, its four capture scripts, and the nine captures into `root`.
+
+    The gate resolves its own ROOT from `import.meta.url`, so a probe placed at
+    `root/scripts/` reads these copies rather than the committed originals.
+    Every break below therefore mutates a copy: the nine `browser-*.json` files
+    are pinned evidence from a lab run that cannot be reproduced offline, and a
+    capture script edited in place would invalidate its committed capture.
+    """
+    (root / "scripts").mkdir(parents=True)
+    native = root / "examples" / "civicrm-6.16.2-target-roundtrip" / "native"
+    native.mkdir(parents=True)
+    copy2(_BINDING_GATE, root / "scripts" / _BINDING_GATE.name)
+    for script in sorted((PROJECT / "scripts").glob("civicrm_browser_*.mjs")):
+        copy2(script, root / "scripts" / script.name)
+    for capture in sorted(_NATIVE_DIR.glob("browser-*.json")):
+        copy2(capture, native / capture.name)
+    return root / "scripts" / _BINDING_GATE.name
+
+
+def _run_binding_gate_probe(
+    tmp_path: Path, edits: dict[str, tuple[str, str]]
+) -> subprocess.CompletedProcess[str]:
+    """Run the gate over a copied tree in which `edits` replaced one string per file."""
+    node = _required_tool("node", "exercise the binding gate")
+    probe = _binding_gate_probe_tree(tmp_path / "probe")
+    for name, (before, after) in edits.items():
+        target = probe.parent / name
+        source = target.read_text(encoding="utf-8")
+        assert source.count(before) == 1, f"{name}: expected exactly one {before!r} to replace"
+        target.write_text(source.replace(before, after), encoding="utf-8")
+    return subprocess.run(  # noqa: S603 - resolved interpreter and generated script
+        [node, str(probe)],
+        cwd=tmp_path,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+
+def test_the_binding_gate_probe_tree_reproduces_the_committed_verdict(tmp_path: Path) -> None:
+    """The control for every break below: unedited, the copied tree still verifies nine.
+
+    Without this, a probe that failed for an unrelated reason -- a file the copy
+    forgot, a path the gate could not resolve -- would look like proof that the
+    floor under test had fired.
+    """
+    completed = _run_binding_gate_probe(tmp_path, {})
+
+    assert completed.returncode == 0, completed.stderr
+    assert "verified 9 committed browser-*.json files" in completed.stdout
+
+
+@pytest.mark.parametrize(
+    ("label", "replacement", "found"),
+    [
+        (
+            "a plain progress line",
+            'process.stdout.write("step: done\\n");\n  process.stdout.write(',
+            2,
+        ),
+        (
+            "an earlier JSON-shaped write, the quiet case",
+            "process.stdout.write(`${JSON.stringify({ progress: 1 })}\\n`);\n  "
+            "process.stdout.write(",
+            2,
+        ),
+        ("the only write removed", "void (", 0),
+    ],
+)
+def test_the_binding_gate_requires_exactly_one_stdout_write(
+    label: str, replacement: str, found: int, tmp_path: Path
+) -> None:
+    """Issue #88: the gate binds to whichever literal follows the FIRST write.
+
+    A capture script that gains an earlier write rebinds this gate to a
+    different literal. The loud outcome is an evaluation failure; the quiet one
+    is an earlier write that is itself JSON-shaped, which gets compared against
+    the committed capture while the success line still reads "verified 9".
+    """
+    completed = _run_binding_gate_probe(
+        tmp_path,
+        {"civicrm_browser_access_denial.mjs": ("process.stdout.write(", replacement)},
+    )
+
+    assert completed.returncode != 0, f"{label}: {completed.stdout}"
+    assert "verified" not in completed.stdout
+    assert f"expected exactly one process.stdout.write( call, found {found}" in completed.stderr, (
+        completed.stderr
+    )
+
+
+def test_the_binding_gate_rejects_page_errors_in_another_scripts_literal(tmp_path: Path) -> None:
+    """Issue #87: the fabricated stub is only safe for the script that proves it.
+
+    `browser-contact-summary-workflow.json` records an occurrence_count of 2, so
+    this edit -- a second capture script emitting `pageErrors.length`, with no
+    `pageErrors.length === 2` guard behind it -- is the silent case: the stub
+    supplies a 2, the comparison matches, and the gate reports "verified 9"
+    having compared a committed capture against a fabricated number.
+    """
+    # Anchored on the contact-summary block's own schema_version, because two
+    # blocks in this script declare an occurrence_count of 2.
+    tail = (
+        "\n          },\n        ],\n        retained_artifacts: [],\n"
+        '        schema_version: "exitdrill/civicrm-contact-summary-workflow-observation/v0.1",'
+    )
+    completed = _run_binding_gate_probe(
+        tmp_path,
+        {
+            "civicrm_browser_workflow.mjs": (
+                f"occurrence_count: 2,{tail}",
+                f"occurrence_count: pageErrors.length,{tail}",
+            )
+        },
+    )
+
+    assert completed.returncode != 0, completed.stdout
+    assert "verified" not in completed.stdout
+    assert "its declared literal reads pageErrors" in completed.stderr, completed.stderr
+
+
+def test_the_binding_gate_rejects_a_stub_whose_guard_is_gone(tmp_path: Path) -> None:
+    """The guard the stub rests on, broken in the copy rather than assumed about."""
+    completed = _run_binding_gate_probe(
+        tmp_path,
+        {"civicrm_browser_case_search_workflow.mjs": ("pageErrors.length !== 2 ||", "false ||")},
+    )
+
+    assert completed.returncode != 0, completed.stdout
+    assert "nothing here requires pageErrors.length === 2" in completed.stderr, completed.stderr
+
+
+def test_the_binding_gate_rejects_a_stub_nothing_reads_any_more(tmp_path: Path) -> None:
+    """A fabrication that outlives its one literal must be deleted, not left live."""
+    completed = _run_binding_gate_probe(
+        tmp_path,
+        {
+            "civicrm_browser_case_search_workflow.mjs": (
+                "occurrence_count: pageErrors.length",
+                "occurrence_count: 2",
+            )
+        },
+    )
+
+    assert completed.returncode != 0, completed.stdout
+    assert "no longer reads pageErrors" in completed.stderr, completed.stderr
+
+
+def test_the_binding_gate_rejects_a_nested_exclusion_path(tmp_path: Path) -> None:
+    """`DYNAMIC_FIELD_PATHS` is named for paths but holds top-level keys (issue #87).
+
+    A nested exclusion cannot be expressed, and before this said so it failed as
+    `expected live-only field "..." is missing`, which reads as a broken capture
+    rather than as an unsupported exclusion.
+    """
+    completed = _run_binding_gate_probe(
+        tmp_path,
+        {
+            _BINDING_GATE.name: (
+                '"browser-keyboard.json": ["tab_steps_to_roles_summary"],',
+                '"browser-keyboard.json": ["tab_steps_to_roles_summary"],\n'
+                '  "browser-workflow.json": ["known_runtime_errors.0.occurrence_count"],',
+            )
+        },
+    )
+
+    assert completed.returncode != 0, completed.stdout
+    assert "reads as a nested path" in completed.stderr, completed.stderr
+
+
+def test_the_binding_gate_refuses_an_argument_it_does_not_recognize() -> None:
+    """The introspection flag must not turn a typo into a run that checks nothing."""
+    node = _required_tool("node", "exercise the binding gate")
+    completed = subprocess.run(  # noqa: S603 - resolved interpreter and repository script
+        [node, str(_BINDING_GATE), "--print-declared-literal"],
+        cwd=PROJECT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert completed.returncode != 0
+    assert completed.stdout == ""
+    assert "unrecognized argument(s): --print-declared-literal" in completed.stderr
+
+
+# ---------------------------------------------------------------------------
+# The suite's own environment: a gate that skips itself is not a gate.
+# ---------------------------------------------------------------------------
+
+
+def test_the_gate_tool_requirement_is_set_to_a_value_this_suite_understands() -> None:
+    """A misspelled value must not silently disable the requirement it was set for.
+
+    This runs whether or not the tools are present, so
+    `EXITDRILL_REQUIRE_GATE_TOOLS: "true"` in a workflow fails here instead of
+    quietly restoring the skips it was added to remove.
+    """
+    raw = os.environ.get(REQUIRE_GATE_TOOLS)
+
+    assert raw in _REQUIRE_GATE_TOOLS_VALUES, (
+        f"{REQUIRE_GATE_TOOLS}={raw!r} is not understood: set it to 1 to require the gate tools, "
+        "or unset it to let a local checkout without them skip"
+    )
+
+
+def test_a_missing_gate_tool_fails_when_the_environment_promised_it(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Issue #89: under the flag, an absent tool is a failure, not a skip.
+
+    The outcome is captured and then asserted on, rather than wrapped in
+    `pytest.raises(pytest.fail.Exception)`. A `pytest.raises` that went unmet
+    because `_required_tool` skipped instead would skip this test too, and a
+    proof that turns itself into a skip when the thing it proves stops holding
+    is the exact defect this test exists to close. Measured: with the fail arm
+    deleted, the `pytest.raises` form reported green.
+    """
+    monkeypatch.setenv(REQUIRE_GATE_TOOLS, "1")
+    monkeypatch.setattr(sys.modules[__name__], "which", lambda _name: None)
+
+    outcome: BaseException | None = None
+    try:
+        _required_tool("node", "check the browser-capture bindings")
+    except (pytest.fail.Exception, pytest.skip.Exception) as raised:
+        outcome = raised
+
+    assert isinstance(outcome, pytest.fail.Exception), (
+        f"under {REQUIRE_GATE_TOOLS}=1 a missing gate tool must fail the suite, but "
+        f"_required_tool produced {type(outcome).__name__}, which is how CI loses a gate quietly"
+    )
+    assert "node is required to check the browser-capture bindings" in str(outcome)
+    assert f"{REQUIRE_GATE_TOOLS}=1" in str(outcome)
+
+
+@pytest.mark.parametrize("value", [None, "", "0"])
+def test_a_missing_gate_tool_skips_when_nothing_promised_it(
+    value: str | None, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A local checkout without node or uv still skips rather than fails."""
+    monkeypatch.delenv(REQUIRE_GATE_TOOLS, raising=False)
+    if value is not None:
+        monkeypatch.setenv(REQUIRE_GATE_TOOLS, value)
+    monkeypatch.setattr(sys.modules[__name__], "which", lambda _name: None)
+
+    with pytest.raises(pytest.skip.Exception) as error:
+        _required_tool("uv", "exercise the lockfile-drift gate")
+
+    assert "uv is required to exercise the lockfile-drift gate" in str(error.value)
+
+
+@pytest.mark.parametrize("value", [None, "1"])
+def test_a_present_gate_tool_is_returned_under_either_setting(
+    value: str | None, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The requirement only changes what absence means, never what presence means."""
+    monkeypatch.delenv(REQUIRE_GATE_TOOLS, raising=False)
+    if value is not None:
+        monkeypatch.setenv(REQUIRE_GATE_TOOLS, value)
+
+    resolved = _required_tool("git", "enumerate the committed browser-lab scripts")
+
+    assert Path(resolved).name.startswith("git")
