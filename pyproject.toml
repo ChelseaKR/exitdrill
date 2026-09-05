@@ -16,6 +16,8 @@ classifiers = [
   "Development Status :: 3 - Alpha",
   "License :: OSI Approved :: Apache Software License",
   "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
   "Topic :: System :: Archiving :: Backup",
 ]
 dependencies = ["jsonschema>=4.23"]

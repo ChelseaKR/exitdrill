@@ -185,7 +185,6 @@ def test_json_bounds_accept_the_committed_capture_documents() -> None:
     [
         (b"\xff", "is not valid UTF-8"),
         (b"{", "is not valid JSON"),
-        (b"[" * 20_000 + b"]" * 20_000, "exceeds the parser nesting limit"),
         (b'{"a":1,"a":2}', "duplicate JSON object key is not permitted"),
         (b"[]", "must be an object"),
     ],
@@ -193,6 +192,21 @@ def test_json_bounds_accept_the_committed_capture_documents() -> None:
 def test_decode_json_rejects_each_malformed_document_class(document: bytes, message: str) -> None:
     with pytest.raises(DirectusCanaryError, match=message):
         _decode_json(document, "w")
+
+
+def test_decode_json_rejects_nesting_the_parser_cannot_walk(
+    json_the_parser_cannot_walk: str,
+) -> None:
+    """The fifth malformed document class, held out of the table above.
+
+    Its depth is probed per interpreter rather than fixed, so it cannot be a
+    parametrize constant: a literal 20,000 levels stopped defeating the 3.14
+    decoder while still defeating 3.12 and 3.13, and the nesting bound below
+    caught the document instead of this arm (issue #90). See
+    `json_the_parser_cannot_walk`.
+    """
+    with pytest.raises(DirectusCanaryError, match="exceeds the parser nesting limit"):
+        _decode_json(json_the_parser_cannot_walk.encode("utf-8"), "w")
 
 
 def test_decode_json_names_any_other_value_error_rather_than_leaking_it(

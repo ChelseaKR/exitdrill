@@ -84,10 +84,16 @@ def test_json_bounds_accept_every_committed_capture_document() -> None:
         _validate_json_bounds(json.loads(path.read_text(encoding="utf-8")))
 
 
-def test_decode_json_rejects_nesting_the_parser_cannot_walk() -> None:
-    """Deeper than CPython can recurse, so `json.loads` fails before any bound."""
+def test_decode_json_rejects_nesting_the_parser_cannot_walk(
+    json_the_parser_cannot_walk: str,
+) -> None:
+    """Deeper than this interpreter can recurse, so `json.loads` fails before any bound.
+
+    The depth is probed rather than hard-coded, because it moves between
+    interpreters; see `json_the_parser_cannot_walk` and issue #90.
+    """
     with pytest.raises(CiviCRMTargetCanaryError, match="exceeds the parser nesting limit"):
-        _decode_json(b"[" * 20_000 + b"]" * 20_000, "w")
+        _decode_json(json_the_parser_cannot_walk.encode("utf-8"), "w")
 
 
 def test_decode_json_names_any_other_value_error_rather_than_leaking_it(
