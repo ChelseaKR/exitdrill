@@ -6,6 +6,67 @@ All notable changes will be documented here.
 
 ### Added
 
+- `exitdrill compare --out PATH` writes the canonical comparison document to a
+  file instead of stdout, through the same bounded `mkstemp` + `fsync` +
+  `os.replace` sequence `write_receipt` and `write_report` already use, under a
+  2 MiB bound. The bytes are identical either way; `--out` adds the size bound,
+  atomic replacement, and refusal to write through a symlink that a shell
+  redirection cannot give. Stdout stays the default, so no existing caller
+  changes; with the flag, stdout carries a four-field summary and the document
+  goes to the path. It is written before `--fail-on-loss-signal-increase`
+  decides an exit code, so a nonzero exit still leaves the evidence on disk.
+  `write_comparison` is deliberately a third copy of that write sequence rather
+  than a premature extraction of it; issue #93 covers the one shared writer.
+- `exitdrill verify-comparison COMPARISON --reference REF --candidate CAND`
+  recomputes a comparison document from both source receipts, so a reader
+  handed a `comparison.json` can check it against the two receipts it claims to
+  describe rather than trusting it. It strict-loads the document under the same
+  2 MiB bound a receipt gets, strict-loads and verifies both receipts,
+  recomputes the whole comparison, and requires canonical byte equality. Exit 0
+  means the recomputation matched; a forged field, the wrong receipt pair, a
+  malformed or oversized document, and an unreadable operand all exit 2 through
+  the `ComparisonError` the CLI now catches alongside the other bounded
+  failures. Error text names the failure, never the operand path. The receipts
+  remain unsigned: this proves a comparison describes those two files, not that
+  those two files are authentic.
+- `tests/test_documentation.py` now fails the merge gate when a CLI subcommand
+  is described in no committed document, and `tests/test_documented_counts.py`
+  when a declared input bound is published in none (issues #98 and #99).
+  `validate-exercise` had shipped with its own module, a committed example
+  plan, an accepted ADR, and the first step of `make demo`, and appeared in no
+  committed `.md` file. Of the nine bounds outside the canaries -- not the
+  eight issue #99 counted; `comparison.py` gained one with `verify-comparison`
+  between the issue being filed and being worked -- four were stated nowhere at
+  all, including the 4 MiB baseline/export limit a reader with a real system
+  meets first. Two more, the 64-level nesting bound and the 200,000-node
+  ceiling that applies to every document the tool reads, appeared only as bare
+  values inside a threat-table control, with no name, no module, and no place
+  to look them up. Every bound the two canary verifiers declare was
+  undocumented.
+  Both checks enumerate rather than restate -- argparse for the subcommands,
+  an AST walk for the `_MAX_*` constants -- so something added tomorrow is
+  covered without anyone remembering a case here. The bounds check requires a
+  table row naming the module and the constant to carry the exact value in a
+  cell of its own, so it fails on a bound that moves without the document, a
+  bound added with no row, and a row whose value drifts from the source. Each
+  guard was proved by neutering it and confirming only its own cases failed.
+- `docs/THREAT-MODEL.md` gains a "Declared input bounds" section: every
+  `_MAX_*` constant under `src/exitdrill/`, in two tables, with what each one
+  covers. It also states the two things the numbers alone do not say -- that
+  the bounds are fixed constants with no override flag, deliberately, because a
+  fail-closed offline evaluator that can be argued into reading more is not
+  fail-closed; and that the depth and node limits apply after `json.loads`
+  returns, which is why the decoder's own recursion limit is a separate,
+  earlier guard. The README's boundary section now links it, since "will it
+  read my export" is a question a reader asks before trying the tool.
+- `docs/ARCHITECTURE.md` gains a "Synthetic exercise preflight boundary"
+  section for `validate-exercise`, and the README describes the invocation. The
+  argument for leaving it out of the README was real -- it is preflight for
+  Track B work the freeze blocks -- but it is the first step of `make demo`,
+  which the README tells an evaluator to run, so the README would otherwise
+  describe a demo whose first line of output it cannot explain. It is placed
+  after the receipt pipeline rather than inside it, because it validates a
+  different document and belongs to neither end of that flow.
 - `tests/test_gates.py` now binds the offline binding gate's blind spot to the
   README. Three new checks: every field in `DYNAMIC_FIELD_PATHS` must have a
   disclosure phrase in a pinned table, every one of those phrases must appear
@@ -320,6 +381,38 @@ All notable changes will be documented here.
 
 ### Changed
 
+- `comparison.comparison_has_observed_loss_signal_increase` loses its
+  underscore prefix (issue #94). It decides the documented
+  `--fail-on-loss-signal-increase` exit 3 that `docs/ARCHITECTURE.md` specifies
+  and `make demo-compare-policy` asserts in CI, so `cli.py` importing it is a
+  contract rather than a reach into another module's internals. It stays out of
+  the package `__all__` on purpose: exit-code policy is CLI surface, and
+  `tests/test_packaging.py` pins that a library caller gets the comparison
+  document and reads it themselves. No library caller could have depended on
+  the old name.
+- `compare_snapshots` no longer re-verifies the document it just built (issue
+  #82). It builds that document itself, from two frozen snapshots through a
+  pure function, so recomputing the function and requiring canonical byte
+  equality with the value just returned compared a document with itself and
+  could not fail. That is the defect Track A exists to remove, so the call is
+  deleted rather than dressed up. The schema check stays, because the schema is
+  maintained separately from `_build_comparison` and can genuinely diverge from
+  it. Source-bound recomputation stays where a caller-supplied document makes
+  it real: `verify_comparison_document`, and the `verify-comparison` route into
+  it. No output changes; a check that could not fail simply stops running.
+- The README and `AGENTS.md` said "at least 90% branch coverage", which was
+  true and no longer precise: `make verify` applies three floors, not one --
+  `src/exitdrill` at 90%, `scripts/` at 80%, and both scopes together at 90%.
+  Both now say so, and the README's Development section names what the CI job
+  around `make verify` adds: every interpreter `requires-python` admits, the
+  browser-lab syntax check, both declared demo outcomes with the comparison
+  policy, and the offline CiviCRM canary.
+- `docs/plans/improvement-plan.md` recorded two open "Known limits" that are
+  now closed -- that coverage did not measure `scripts/` (issue #86) and that
+  nothing pinned the binding gate's `pageErrors` stub (issue #87). Each finding
+  is kept as written with what closed it recorded underneath, rather than
+  edited away: the plan is the record of an audit, and a plan that reads clean
+  in hindsight is not the audit that happened.
 - The receipt envelope's `claimed_generated_at` must now be an ISO 8601
   timestamp with an explicit UTC offset, the same contract
   `baseline.captured_at`, `export.exported_at` and every `occurred_at`

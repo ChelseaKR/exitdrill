@@ -78,7 +78,12 @@ the guard restored. Logged to `/private/tmp/er-audit/exitdrill-break-restore.log
 The third break is the important one: before this change, adding an exclusion
 weakened the gate while its success line still read "verified 9".
 
-## Known limits this plan does not close
+## Known limits this plan did not close
+
+Both were closed later, on `integration/wave-1`. The findings are kept as
+written, with what closed them recorded underneath, because the finding is the
+record and deleting it would leave the plan claiming a clean audit it did not
+have.
 
 - **Coverage does not measure `scripts/`.** The two acceptance scripts are
   roughly 52KB of Python that decide whether the canaries pass. They are
@@ -88,9 +93,33 @@ weakened the gate while its success line still read "verified 9".
   either adding `scripts` to `[tool.coverage.run] source` and accepting a lower
   floor until the branches are covered, or a second coverage target. Left open
   deliberately rather than half-done.
+
+  **Closed** (issue #86). `scripts` is now in `[tool.coverage.run] source` and
+  in pytest's `--cov`, with `parallel = true`, and `tests/conftest.py` sets
+  `COVERAGE_PROCESS_START` and `COVERAGE_FILE` at session start so coverage
+  follows the suite into the subprocesses that run those gate scripts. The
+  subprocess call sites stay subprocesses: they assert on a real invocation's
+  exit code and stdout, which importing the module would stop proving. The
+  first of the two routes above was taken, with the lower floor stated rather
+  than averaged away: `make verify` applies three floors rather than one --
+  `src/exitdrill` at 90%, `scripts/` at 80%, and both scopes together at 90% --
+  so neither scope can hide behind the other. Measured on `integration/wave-1`
+  at `454ddeb`: `src/exitdrill` 99%, `scripts/` 82%, combined 94.94%.
+
 - **The binding gate stubs `pageErrors` as `{ length: 2 }` for every script.**
   Verified correct today: only `civicrm_browser_case_search_workflow.mjs`
   references `pageErrors` inside its declared output literal, and that script
   aborts unless `pageErrors.length === 2`. Nothing pins that this stays true. A
   future script whose literal reads `pageErrors` without that assertion would
   be compared against a fabricated 2.
+
+  **Closed** (issue #87). `assertPageErrorsStubStillProven` in
+  `scripts/check_browser_capture_bindings.mjs` now checks both halves of that
+  "verified correct today" on every run instead of recording them in a comment.
+  Any script other than `civicrm_browser_case_search_workflow.mjs` whose
+  extracted literal reads `pageErrors` is a hard error, and that one script must
+  still carry its `pageErrors.length !== 2` abort or the gate refuses to run.
+  The check reads the extracted literal rather than the whole file, because all
+  four capture scripts mention `pageErrors` legitimately outside their literal.
+  The future script this bullet worried about now fails the gate instead of
+  being silently compared against a fabricated 2.
