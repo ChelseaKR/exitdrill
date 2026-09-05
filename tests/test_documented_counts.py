@@ -35,6 +35,17 @@ from typing import cast
 
 import pytest
 
+from exitdrill import (
+    civicrm_target_canary,
+    comparison,
+    directus_canary,
+    evaluator,
+    exercise,
+    loader,
+    receipt,
+    report,
+    strict_json,
+)
 from exitdrill.civicrm_target_canary import normalize_civicrm_target_canary
 from exitdrill.directus_canary import normalize_directus_canary
 from exitdrill.evaluator import run_drill
@@ -44,6 +55,7 @@ from exitdrill.models import JsonValue
 PROJECT = Path(__file__).parents[1]
 README = PROJECT / "README.md"
 ARCHITECTURE = PROJECT / "docs" / "ARCHITECTURE.md"
+THREAT_MODEL = PROJECT / "docs" / "THREAT-MODEL.md"
 DIRECTUS_README = PROJECT / "examples" / "directus-11.17.4-civic-case" / "README.md"
 DIRECTUS_NATIVE = PROJECT / "examples" / "directus-11.17.4-civic-case" / "native"
 CIVICRM_NATIVE = PROJECT / "examples" / "civicrm-6.16.2-target-roundtrip" / "native"
@@ -274,6 +286,181 @@ def test_architecture_evidence_index_counts_match_the_emitted_index() -> None:
         ARCHITECTURE,
         f"of the {word(len(entries))} fixed sibling artifacts, checks their lengths and digests,",
     )
+
+
+# ---------------------------------------------------------------------------
+# THREAT-MODEL claims about the declared input bounds.
+# ---------------------------------------------------------------------------
+#
+# Five of these were declared in source and documented nowhere (issue #99): a
+# reader who hit one got a refusal naming a limit no document admitted to
+# having. The rows are bound the same way the counts above are, so a raised or
+# lowered constant fails here rather than leaving the published ceiling wrong.
+#
+# Each case pins the label, the rendered value, and the constant the row cites,
+# and stops at the pipe that closes that cell. The "Applies to" prose is
+# deliberately left unbound: it explains a bound, it does not state one.
+
+
+def binary_size(value: int) -> str:
+    """Render a byte bound the way the bounds table spells it.
+
+    Raises rather than falling back to a byte count for a bound that is not a
+    whole number of KiB. A fallback would render a string the table does not
+    contain and report it as a documentation failure, which is the wrong
+    diagnosis for a constant that simply changed shape.
+    """
+    for unit_size, unit in ((1024 * 1024, "MiB"), (1024, "KiB")):
+        if value % unit_size == 0:
+            return f"{value // unit_size} {unit}"
+    raise ValueError(f"byte bound is not a whole number of KiB: {value}")
+
+
+# label, the "Declared in" cell, and every constant that cell names.
+_BYTE_BOUNDS: tuple[tuple[str, str, tuple[int, ...]], ...] = (
+    (
+        "Baseline / export document",
+        "`loader.py` `_MAX_DOCUMENT_BYTES`",
+        (loader._MAX_DOCUMENT_BYTES,),
+    ),
+    ("Receipt document", "`receipt.py` `_MAX_RECEIPT_BYTES`", (receipt._MAX_RECEIPT_BYTES,)),
+    (
+        "Comparison document",
+        "`comparison.py` `_MAX_COMPARISON_BYTES`",
+        (comparison._MAX_COMPARISON_BYTES,),
+    ),
+    ("Exercise plan document", "`exercise.py` `_MAX_PLAN_BYTES`", (exercise._MAX_PLAN_BYTES,)),
+    ("Rendered report", "`report.py` `_MAX_REPORT_BYTES`", (report._MAX_REPORT_BYTES,)),
+    (
+        "Per-attachment bytes",
+        "`evaluator.py` `_MAX_ATTACHMENT_BYTES`",
+        (evaluator._MAX_ATTACHMENT_BYTES,),
+    ),
+    (
+        "Cumulative attachment bytes",
+        "`evaluator.py` `_MAX_TOTAL_ATTACHMENT_BYTES`",
+        (evaluator._MAX_TOTAL_ATTACHMENT_BYTES,),
+    ),
+    (
+        "Capture manifest",
+        "`directus_canary.py`, `civicrm_target_canary.py` `_MAX_MANIFEST_BYTES`",
+        (directus_canary._MAX_MANIFEST_BYTES, civicrm_target_canary._MAX_MANIFEST_BYTES),
+    ),
+    (
+        "Bundle JSON file",
+        "`directus_canary.py`, `civicrm_target_canary.py` `_MAX_JSON_BYTES`",
+        (directus_canary._MAX_JSON_BYTES, civicrm_target_canary._MAX_JSON_BYTES),
+    ),
+    (
+        "Bundle asset file",
+        "`directus_canary.py`, `civicrm_target_canary.py` `_MAX_ASSET_BYTES`",
+        (directus_canary._MAX_ASSET_BYTES, civicrm_target_canary._MAX_ASSET_BYTES),
+    ),
+    (
+        "Cumulative bundle bytes",
+        "`directus_canary.py`, `civicrm_target_canary.py` `_MAX_BUNDLE_BYTES`",
+        (directus_canary._MAX_BUNDLE_BYTES, civicrm_target_canary._MAX_BUNDLE_BYTES),
+    ),
+    (
+        "Evidence index",
+        "`civicrm_target_canary.py` `_MAX_EVIDENCE_INDEX_BYTES`",
+        (civicrm_target_canary._MAX_EVIDENCE_INDEX_BYTES,),
+    ),
+    (
+        "Indexed evidence artifact",
+        "`civicrm_target_canary.py` `_MAX_EVIDENCE_ARTIFACT_BYTES`",
+        (civicrm_target_canary._MAX_EVIDENCE_ARTIFACT_BYTES,),
+    ),
+)
+
+_COUNT_BOUNDS: tuple[tuple[str, str, tuple[int, ...]], ...] = (
+    ("JSON nesting depth", "`strict_json.py` `_MAX_JSON_DEPTH`", (strict_json._MAX_JSON_DEPTH,)),
+    ("JSON node count", "`strict_json.py` `_MAX_JSON_NODES`", (strict_json._MAX_JSON_NODES,)),
+    (
+        "Canary JSON nesting depth",
+        "`directus_canary.py`, `civicrm_target_canary.py` `_MAX_JSON_DEPTH`",
+        (directus_canary._MAX_JSON_DEPTH, civicrm_target_canary._MAX_JSON_DEPTH),
+    ),
+    (
+        "Canary JSON node count",
+        "`directus_canary.py`, `civicrm_target_canary.py` `_MAX_JSON_NODES`",
+        (directus_canary._MAX_JSON_NODES, civicrm_target_canary._MAX_JSON_NODES),
+    ),
+    (
+        "Integer magnitude",
+        "`directus_canary.py` `_MAX_SQLITE_INTEGER`, `civicrm_target_canary.py` `_MAX_INTEGER`",
+        (directus_canary._MAX_SQLITE_INTEGER, civicrm_target_canary._MAX_INTEGER),
+    ),
+)
+
+
+def _bound_row(label: str, rendered: str, declared_in: str, values: tuple[int, ...]) -> str:
+    """Render one bounds row, requiring the constants a shared cell names to agree.
+
+    A row that cites two modules is claiming one value for both. If they ever
+    diverge the row cannot be true of either, so this fails before the document
+    is consulted rather than passing on whichever constant was listed first.
+    """
+    assert len(set(values)) == 1, f"{label} cites constants that disagree: {values}"
+    return f"| {label} | {rendered} | {declared_in} |"
+
+
+@pytest.mark.parametrize(
+    ("label", "declared_in", "values"), _BYTE_BOUNDS, ids=[row[0] for row in _BYTE_BOUNDS]
+)
+def test_threat_model_documents_each_declared_byte_bound(
+    label: str, declared_in: str, values: tuple[int, ...]
+) -> None:
+    assert_documented(THREAT_MODEL, _bound_row(label, binary_size(values[0]), declared_in, values))
+
+
+@pytest.mark.parametrize(
+    ("label", "declared_in", "values"), _COUNT_BOUNDS, ids=[row[0] for row in _COUNT_BOUNDS]
+)
+def test_threat_model_documents_each_declared_count_bound(
+    label: str, declared_in: str, values: tuple[int, ...]
+) -> None:
+    assert_documented(THREAT_MODEL, _bound_row(label, f"{values[0]:,}", declared_in, values))
+
+
+def test_every_declared_bound_constant_appears_in_the_bounds_tables() -> None:
+    """The tables above are only complete while nothing new is declared.
+
+    The bound cases enumerate constants by hand, so a bound added to a module
+    tomorrow would be documented nowhere and every case here would still pass
+    -- exactly the failure issue #99 reported. This discovers the constants
+    instead of listing them, and fails until a new one is named in the tables.
+    """
+    modules = (
+        civicrm_target_canary,
+        comparison,
+        directus_canary,
+        evaluator,
+        exercise,
+        loader,
+        receipt,
+        report,
+        strict_json,
+    )
+    declared = {
+        (f"`{module.__name__.rpartition('.')[2]}.py`", f"`{name}`")
+        for module in modules
+        for name, value in vars(module).items()
+        if name.startswith("_MAX_") and isinstance(value, int) and not isinstance(value, bool)
+    }
+    assert declared, "no bound constants were discovered, so this proves nothing"
+
+    cells = [
+        flat(line.split("|")[3])
+        for line in THREAT_MODEL.read_text(encoding="utf-8").splitlines()
+        if line.count("|") == 5 and line.startswith("| ")
+    ]
+    missing = sorted(
+        f"{module} {name}"
+        for module, name in declared
+        if not any(module in cell and name in cell for cell in cells)
+    )
+    assert not missing, f"declared bounds named in no bounds row: {missing}"
 
 
 # ---------------------------------------------------------------------------
