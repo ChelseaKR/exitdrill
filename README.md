@@ -111,6 +111,27 @@ exits 2 on any mismatch. The receipts it recomputes from are still unsigned:
 this proves a comparison describes those two files, not that those files are
 authentic.
 
+One command stands outside that pipeline, and it is the first thing `make demo`
+runs:
+
+```sh
+exitdrill validate-exercise examples/synthetic-exercise/plan.json
+```
+
+It validates a plan for a *future* target exercise and executes nothing. There
+is no connector, credential, URL, mapping, target, or result path in it, and a
+valid plan is not evidence that the controls it declares exist. What it checks
+is that the plan requires an empty, isolated, egress-blocked target with
+automations off, a baseline captured before the export with per-dimension
+coverage, target read-back and human attestation, and exactly the five lookup,
+relationship, attachment, allow, and deny probes. Two fields are checked
+against fixed values rather than merely being present: `data_mode` must be
+`synthetic_only` and the target sandbox's `production_data_allowed` must be
+`false`, so a plan that would cross the synthetic-only boundary is rejected
+before anyone acts on it. Its status is `synthetic_protocol_valid` and its
+decision scope is `plan_only_no_target_execution`. See
+[ADR 0002](docs/decisions/0002-synthetic-exercise-preflight.md).
+
 ## Receipts and trust
 
 - Receipts contain aggregates and input digests, not record fields or attachment
@@ -190,6 +211,15 @@ connector, evidence family, or data category.
 Real, production-derived, or merely deidentified exports remain prohibited until
 the [data-governance gate](docs/DATA-GOVERNANCE.md) is satisfied.
 
+Whether ExitDrill would read your export at all is a separate and smaller
+question, and the answer is a fixed set of ceilings rather than a judgement. A
+baseline or normalized export document is bounded at 4 MiB, any single document
+at 64 levels of nesting and 200,000 JSON nodes, one attachment at 16 MiB, and
+all attachments in a drill at 128 MiB. No flag raises any of them.
+[Declared input bounds](docs/THREAT-MODEL.md#declared-input-bounds) lists every
+one, what each covers, and why the node ceiling usually binds before the byte
+bound does.
+
 ## Development
 
 ```sh
@@ -197,7 +227,17 @@ make verify
 make package
 ```
 
-The merge gate runs Ruff, strict mypy, pytest, and at least 90% branch coverage.
+`make verify` is the merge gate: Ruff format and lint, strict mypy over `src`,
+`tests`, and `scripts`, and pytest under three separate branch-coverage floors
+-- `src/exitdrill` at 90%, `scripts/` at 80%, and both scopes together at 90%.
+Three floors rather than one, because a single combined number lets either
+scope hide behind the other; the gate scripts under `scripts/` decide whether
+the canaries pass, and their lower floor states where that code is rather than
+where it should be. The CI job that runs `make verify` runs it on every
+interpreter `requires-python` admits -- 3.12, 3.13, and 3.14 -- and also runs
+the browser-lab syntax check, both declared demo outcomes with the comparison
+policy, and the offline CiviCRM canary.
+
 The release workflow is dispatch-only: it verifies a signed annotated tag
 against trusted main, rebuilds and re-verifies at that exact commit, and can
 publish a GitHub Release. No tag or release exists yet, and no package-registry
@@ -230,7 +270,7 @@ recorded as N/A with a reason; there are no silent skips.
 
 | Standard | State |
 |---|---|
-| Code Quality | Applies: Single root `pyproject.toml`, `uv.lock`, Ruff lint and format, strict mypy over `src`, `tests`, and `scripts`, pytest with at least 90% branch coverage, pre-commit hooks, and `make verify` as the merge gate. |
+| Code Quality | Applies: Single root `pyproject.toml`, `uv.lock`, Ruff lint and format, strict mypy over `src`, `tests`, and `scripts`, pytest under three branch-coverage floors (`src/exitdrill` at 90%, `scripts/` at 80%, both together at 90%), pre-commit hooks, and `make verify` as the merge gate. |
 | Security & Supply-Chain | Applies: SHA-pinned actions, scoped workflow permissions, Semgrep, gitleaks, strict pip-audit plus npm audit, zizmor, Dependabot, and private vulnerability reporting per [SECURITY.md](SECURITY.md). |
 | CI/CD | Applies: `ci.yml` runs the same `make` targets a contributor runs locally; the release workflow is dispatch-only, verifies a signed annotated tag against trusted main, and separates verification from publication authority. No tag or release exists yet. See [docs/RELEASE.md](docs/RELEASE.md) for the full release posture. |
 | Release & Versioning | Applies: `.github/workflows/release.yml` runs only on maintainer dispatch, verifies an SSH-signed annotated tag against trusted main, and hands publication to a separate job that never checks out code. No tag or release exists yet and no package registry is configured. |

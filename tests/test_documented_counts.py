@@ -22,14 +22,23 @@ re-pointed rather than silently lost.
 
 Whitespace is collapsed on both sides, because the documents hard-wrap and a
 claim can straddle a line break. Nothing else about the sentence is relaxed.
+
+The second half of the module applies the same rule to the declared input
+bounds, which had the same defect in a worse form: the values were enforced in
+`src/exitdrill` and published nowhere at all. Those are enumerated from the
+source rather than listed here, so the check covers a bound added after it was
+written.
 """
 
 from __future__ import annotations
 
+import ast
 import json
 import tempfile
 from collections.abc import Iterator
 from contextlib import contextmanager
+from dataclasses import dataclass
+from importlib import import_module
 from pathlib import Path
 from typing import cast
 
@@ -44,6 +53,8 @@ from exitdrill.models import JsonValue
 PROJECT = Path(__file__).parents[1]
 README = PROJECT / "README.md"
 ARCHITECTURE = PROJECT / "docs" / "ARCHITECTURE.md"
+THREAT_MODEL = PROJECT / "docs" / "THREAT-MODEL.md"
+SOURCE = PROJECT / "src" / "exitdrill"
 DIRECTUS_README = PROJECT / "examples" / "directus-11.17.4-civic-case" / "README.md"
 DIRECTUS_NATIVE = PROJECT / "examples" / "directus-11.17.4-civic-case" / "native"
 CIVICRM_NATIVE = PROJECT / "examples" / "civicrm-6.16.2-target-roundtrip" / "native"
@@ -291,3 +302,174 @@ def test_the_binding_reports_a_claim_the_document_does_not_make() -> None:
         assert_documented(README, f"{word(11).capitalize()} target-interface probes pass,")
     with pytest.raises(AssertionError):
         assert_documented(ARCHITECTURE, "disclosure summary receives focus on press 4242;")
+
+
+# ---------------------------------------------------------------------------
+# Every declared input bound, and the table that publishes it.
+# ---------------------------------------------------------------------------
+#
+# Five of the eight bounds the evaluator enforced were stated in no committed
+# document, including the 4 MiB baseline/export limit and the 200,000-node
+# ceiling that applies to every document the tool reads (issue #99). A reader
+# whose export was too large got exit 2 and a message, and nowhere to find out
+# that the limit existed or what the rest of them were.
+#
+# Publishing the numbers by hand would have reproduced the defect this module
+# was written to remove: a table of hand-written values with nothing tying them
+# to the constants they describe. So the check enumerates instead. It walks the
+# source for module-level `_MAX_*` assignments, renders each value the way the
+# tables spell it out, and requires a table row naming that module and that
+# constant to carry that exact value in a cell of its own.
+#
+# It therefore fails in three directions rather than one: a bound that moves
+# without the table, a bound added with no row at all, and a table row whose
+# value drifts from the source. There were nine bounds outside the canaries
+# when this was written, not the eight the issue counted -- `comparison.py`
+# gained one with the `verify-comparison` surface -- which is the drift itself,
+# arriving between an issue being filed and being worked.
+
+
+@dataclass(frozen=True)
+class DeclaredBound:
+    """One module-level `_MAX_*` constant, and where it is declared."""
+
+    module: str
+    name: str
+    value: int
+
+
+def render_bound(name: str, value: int) -> str:
+    """Render a bound the way `docs/THREAT-MODEL.md` spells it out.
+
+    Byte bounds are written in the unit they divide into exactly, because that
+    is how they are declared in the source (`4 * 1024 * 1024`) and how an
+    operator reads the rejection message. Everything else is a plain count.
+    Deliberately has no fallback that quietly returns something matchable: a
+    value the tables cannot express should fail here rather than silently look
+    documented.
+    """
+    if not name.endswith("_BYTES"):
+        return f"{value:,}"
+    if value % (1024 * 1024) == 0:
+        return f"{value // (1024 * 1024)} MiB"
+    if value % 1024 == 0:
+        return f"{value // 1024} KiB"
+    return f"{value:,} bytes"
+
+
+def _declared_bounds() -> tuple[DeclaredBound, ...]:
+    """Every module-level `_MAX_*` constant declared under `src/exitdrill`.
+
+    The AST decides where a constant is declared, so a name merely imported
+    into another module cannot be credited to it. The value comes from the
+    imported module rather than the AST, because these are written as
+    expressions (`16 * 1024 * 1024`) that `ast.literal_eval` will not fold.
+    """
+    found: list[DeclaredBound] = []
+    for path in sorted(SOURCE.glob("*.py")):
+        if path.name == "__init__.py":
+            continue
+        module = import_module(f"exitdrill.{path.stem}")
+        for node in ast.parse(path.read_text(encoding="utf-8")).body:
+            targets = node.targets if isinstance(node, ast.Assign) else []
+            for target in targets:
+                if not isinstance(target, ast.Name) or not target.id.startswith("_MAX_"):
+                    continue
+                value = getattr(module, target.id)
+                assert isinstance(value, int), f"{path.name}:{target.id} is not an integer bound"
+                found.append(DeclaredBound(path.name, target.id, value))
+    return tuple(found)
+
+
+def _table_rows(document: Path) -> tuple[tuple[str, ...], ...]:
+    """Split a Markdown document into rows of stripped cells."""
+    rows: list[tuple[str, ...]] = []
+    for line in document.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if stripped.startswith("|") and stripped.endswith("|"):
+            rows.append(tuple(cell.strip() for cell in stripped.strip("|").split("|")))
+    return tuple(rows)
+
+
+def _row_documents(row: tuple[str, ...], bound: DeclaredBound) -> bool:
+    """Whether one table row publishes this exact bound.
+
+    The backticks around the names are load-bearing, not decoration: without
+    them `_MAX_ATTACHMENT_BYTES` would match the row for
+    `_MAX_TOTAL_ATTACHMENT_BYTES` and a missing row would look documented. The
+    value has to be a whole cell rather than a substring for the same reason --
+    a depth of 3 is a substring of a published 32.
+    """
+    joined = " ".join(row)
+    return (
+        f"`{bound.name}`" in joined
+        and f"`{bound.module}`" in joined
+        and render_bound(bound.name, bound.value) in row
+    )
+
+
+def test_the_bound_renderer_is_correct() -> None:
+    """If `render_bound` were wrong, every bound below would fail for that reason.
+
+    Pinned so a reader of a failure can rule it out immediately, and so the
+    unit boundaries are stated rather than inferred from the current values.
+    """
+    assert render_bound("_MAX_DOCUMENT_BYTES", 4 * 1024 * 1024) == "4 MiB"
+    assert render_bound("_MAX_MANIFEST_BYTES", 64 * 1024) == "64 KiB"
+    assert render_bound("_MAX_ODD_BYTES", 1500) == "1,500 bytes"
+    assert render_bound("_MAX_JSON_DEPTH", 64) == "64"
+    assert render_bound("_MAX_JSON_NODES", 200_000) == "200,000"
+
+
+def test_the_bound_discovery_finds_every_module_that_declares_one() -> None:
+    """A discovery that silently found nothing would pass the check below.
+
+    Two independent routes to the same set of modules: the AST walk the check
+    uses, and a plain text search. A parse change that stopped seeing
+    module-level assignments would leave the text search naming modules the
+    walk does not, and fail here rather than reporting a clean documented set.
+    """
+    bounds = _declared_bounds()
+    walked = {bound.module for bound in bounds}
+    searched = {
+        path.name
+        for path in sorted(SOURCE.glob("*.py"))
+        if "_MAX_" in path.read_text(encoding="utf-8") and path.name != "__init__.py"
+    }
+
+    assert walked == searched
+    assert len(bounds) >= len(walked)
+    assert ("strict_json.py", "_MAX_JSON_NODES") in {(item.module, item.name) for item in bounds}
+
+
+def test_every_declared_input_bound_is_published_with_its_value() -> None:
+    """Track A5, applied to the bounds: declared in source, or stated in a document."""
+    rows = _table_rows(THREAT_MODEL)
+    assert rows, "the threat model has no tables"
+
+    undocumented = [
+        f"{bound.module}:{bound.name} = {render_bound(bound.name, bound.value)}"
+        for bound in _declared_bounds()
+        if not any(_row_documents(row, bound) for row in rows)
+    ]
+
+    assert not undocumented, (
+        "docs/THREAT-MODEL.md publishes no row carrying this module, this constant, "
+        f"and this exact value: {undocumented}"
+    )
+
+
+def test_the_bound_binding_rejects_a_wrong_value_and_a_missing_row() -> None:
+    """Guards against a matcher that passed for any input.
+
+    Both cases run against the real threat model, so the difference between
+    them and the check above is only the bound they are asked about.
+    """
+    rows = _table_rows(THREAT_MODEL)
+    real = DeclaredBound("strict_json.py", "_MAX_JSON_NODES", 200_000)
+    drifted = DeclaredBound("strict_json.py", "_MAX_JSON_NODES", 300_000)
+    invented = DeclaredBound("strict_json.py", "_MAX_INVENTED_BYTES", 4 * 1024 * 1024)
+
+    assert any(_row_documents(row, real) for row in rows)
+    assert not any(_row_documents(row, drifted) for row in rows)
+    assert not any(_row_documents(row, invented) for row in rows)

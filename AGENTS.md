@@ -32,7 +32,8 @@ exit.
 ## Engineering conventions
 
 - Python 3.12+, standard-library runtime, `src/` layout.
-- Strict mypy, Ruff, and branch coverage ≥90%.
+- Strict mypy, Ruff, and three branch-coverage floors: `src/exitdrill` ≥90%,
+  `scripts/` ≥80%, both scopes together ≥90%. None of them may be lowered.
 - Add a negative test for every parser or trust-boundary behavior.
 - Keep all fixtures invented and visibly synthetic.
 - Do not copy code, schemas, or mappings from adjacent portfolio projects.

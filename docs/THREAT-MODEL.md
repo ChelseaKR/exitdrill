@@ -69,6 +69,93 @@
 | Successful normalization presented as safe exit | structural-only labels and limitations | marketing pressure remains |
 | Connector treadmill | no public SDK and one-target discovery gate | bespoke work may still dominate |
 
+## Declared input bounds
+
+Every document and byte stream the tool reads is bounded before it is parsed,
+and every document it writes is bounded before it is written. The tables below
+are the complete inventory of those bounds.
+
+Five of these values already appear in the threat table above, inside the
+controls that apply them: the nesting and node ceilings under "Ambiguous or
+hostile JSON", the two attachment budgets under "Attachment metadata without
+bytes", and the receipt bound under "Invalid programmatic receipt creates an
+official-looking artifact". Naming a value inside a control is not the same as
+publishing a bound a reader can look up, and every other bound was enforced in
+the source and stated in no document at all. That is the failure mode this
+section exists to close.
+
+The bounds are fixed constants. No CLI flag, environment variable, or
+configuration file exposes any of them, and none deliberately does: a
+fail-closed offline evaluator that can be argued into reading more is not
+fail-closed. Raising one is a source change and a review.
+
+A document outside a bound is rejected with exit 2 and a message naming the
+bound, before any of its content is interpreted -- `exitdrill: document exceeds
+the 4 MiB limit`, `exitdrill: JSON exceeds the node limit of 200000`.
+
+### Evaluator, receipt, comparison, and report path
+
+| Bound | Value | Declared in | Applies to |
+|---|---|---|---|
+| `_MAX_DOCUMENT_BYTES` | 4 MiB | `loader.py` | one baseline or one normalized export document |
+| `_MAX_PLAN_BYTES` | 1 MiB | `exercise.py` | one synthetic exercise plan |
+| `_MAX_RECEIPT_BYTES` | 2 MiB | `receipt.py` | one receipt, read or written |
+| `_MAX_COMPARISON_BYTES` | 2 MiB | `comparison.py` | one comparison document, read or written |
+| `_MAX_REPORT_BYTES` | 2 MiB | `report.py` | one rendered HTML report, written |
+| `_MAX_ATTACHMENT_BYTES` | 16 MiB | `evaluator.py` | one attachment file |
+| `_MAX_TOTAL_ATTACHMENT_BYTES` | 128 MiB | `evaluator.py` | every attachment byte read in one drill |
+| `_MAX_JSON_DEPTH` | 64 | `strict_json.py` | nesting depth of every document above |
+| `_MAX_JSON_NODES` | 200,000 | `strict_json.py` | node count of every document above |
+
+The 4 MiB document bound is the one a reader with a real system meets first,
+and "our export is bigger than that" is not the right comparison: it bounds the
+normalized JSON, not the attachment bytes, which carry their own two budgets.
+The node ceiling usually binds before the byte bound does. Measured against
+`validate_json_value` rather than estimated: an export whose entities each
+carry ten scalar fields is accepted up to 18,181 entities and rejected at
+18,182.
+
+The depth and node limits apply after `json.loads` returns, walking the decoded
+value. They bound what the rest of the program then handles, not what the
+decoder allocates while decoding. The decoder's own recursion limit is a
+separate, earlier guard on the interpreters where it fires, and
+`load_strict_json` converts its `RecursionError` into the same bounded
+rejection; on CPython 3.14 the decoder walks a document the earlier
+interpreters refuse and the depth bound rejects it instead. Both paths raise
+`StrictJsonError` and neither returns a value, which is the property the suite
+pins across every interpreter `requires-python` admits. A maximally wide
+in-bound document still consumes bounded decoder work, which is the residual
+risk the "Ambiguous or hostile JSON" row above records.
+
+### Canary capture verifiers
+
+The two canary verifiers read an untrusted capture bundle before anything else
+in the project sees it, and each declares its own bounds rather than sharing
+the evaluator's. They are tighter, because a capture bundle is a known fixed
+profile rather than an arbitrary customer export.
+
+| Bound | Value | Declared in | Applies to |
+|---|---|---|---|
+| `_MAX_MANIFEST_BYTES` | 64 KiB | `directus_canary.py`, `civicrm_target_canary.py` | one capture manifest |
+| `_MAX_JSON_BYTES` | 512 KiB | `directus_canary.py`, `civicrm_target_canary.py` | one captured JSON document in a bundle |
+| `_MAX_ASSET_BYTES` | 16 MiB | `directus_canary.py`, `civicrm_target_canary.py` | one captured attachment in a bundle |
+| `_MAX_BUNDLE_BYTES` | 32 MiB | `directus_canary.py`, `civicrm_target_canary.py` | every byte read from one capture bundle |
+| `_MAX_JSON_DEPTH` | 32 | `directus_canary.py`, `civicrm_target_canary.py` | nesting depth inside a capture bundle |
+| `_MAX_JSON_NODES` | 20,000 | `directus_canary.py`, `civicrm_target_canary.py` | node count inside a capture bundle |
+| `_MAX_SQLITE_INTEGER`, `_MAX_INTEGER` | 9,223,372,036,854,775,807 | `directus_canary.py`, `civicrm_target_canary.py` | largest integer accepted from a capture |
+| `_MAX_EVIDENCE_INDEX_BYTES` | 64 KiB | `civicrm_target_canary.py` | one `evidence-index.json` |
+| `_MAX_EVIDENCE_ARTIFACT_BYTES` | 10 MiB | `civicrm_target_canary.py` | one artifact the index binds |
+
+The two integer bounds are the same value under two names because they guard
+two different things: the Directus verifier rejects what SQLite's reference
+model cannot store, and the CiviCRM verifier rejects what its own closed
+envelope contract will not carry.
+
+`tests/test_documented_counts.py` binds these tables to the constants. Every
+`_MAX_*` declared under `src/exitdrill/` must appear here with its exact
+declared value, so a bound that moves without this document moving fails
+`make verify`, and so does a bound added with no row at all.
+
 ## Misuse cases
 
 - Using the receipt as proof that a vendor exported or deleted all customer data.

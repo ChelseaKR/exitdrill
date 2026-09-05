@@ -33,7 +33,9 @@ permission model.
 - `loader.py` enforces strict versioned baseline and export contracts.
 - `exercise.py` validates a synthetic-only safety/evidence plan for a future
   target exercise; it contains no connector, transform, credential, or target
-  execution path.
+  execution path. `validate-exercise` is the command that invokes it, and it is
+  the first step of `make demo`. See the preflight boundary below and
+  [ADR 0002](decisions/0002-synthetic-exercise-preflight.md).
 - `directus_canary.py` is a source-specific, fail-closed verifier and normalizer
   for exactly the Directus 11.17.4 synthetic civic-case canary profile. It
   verifies the capture manifest and declared bytes before mapping them into the
@@ -65,8 +67,15 @@ permission model.
   deterministic, accessible, script-free offline HTML report with the complete
   claims boundary intact.
 - `cli.py` exposes the bounded Directus source and CiviCRM target normalizers
-  plus validation, drill, verification/replay, comparison, comparison
-  re-verification, and offline reporting.
+  plus validation, synthetic exercise preflight, drill, verification/replay,
+  comparison, comparison re-verification, and offline reporting.
+
+Every subcommand `cli.py` exposes is described in a committed document, and
+`tests/test_documentation.py` fails the merge gate if one is not. Every
+declared input bound under `src/exitdrill/` is listed in
+[docs/THREAT-MODEL.md](THREAT-MODEL.md#declared-input-bounds), and
+`tests/test_documented_counts.py` fails the merge gate if one is missing or has
+drifted from its documented value.
 
 ## Architecture decision
 
@@ -79,6 +88,41 @@ Three options were considered:
 | One real source capture → real target → read-back → workflows | Required for an operational claim | Smallest credible operational exit claim |
 
 The canonical model is an adapter boundary, not proof of successful exit.
+
+## Synthetic exercise preflight boundary
+
+`exitdrill validate-exercise PLAN` is the narrowest surface the CLI exposes and
+the only one whose input is neither a baseline, an export, a receipt, a
+comparison, nor a capture bundle. It validates a plan for an exercise that has
+not happened, against a real target this project does not have and may not
+build until the freeze lifts. It is the first step of `make demo`, so it is
+also the first output an evaluator sees.
+
+It executes nothing. There is no connector, credential, URL, command, mapping,
+load, read-back, or result interface in `exercise.py`, which is why the plan
+contract can be strict without being dangerous: the worst a hostile plan can do
+is be rejected. The plan is read through the same bounded strict-JSON path
+every other document uses, under a 1 MiB limit, and the accepted key set is
+exact at every level, so an unknown field is a rejection rather than an
+ignored extra.
+
+Two of the fields it checks are checked against a fixed value rather than for
+presence. `data_mode` must be `synthetic_only`, and the target sandbox's
+`production_data_allowed` must be `false`. Those two are `AGENTS.md` invariant
+9 expressed where a plan is written, before anyone acts on it, and they are the
+reason this command is worth having inside a freeze that blocks the exercise
+itself. The remaining requirements -- an empty, isolated, egress-blocked target
+with automations disabled, a baseline captured before the export with declared
+per-dimension coverage, a customer-obtainable export mechanism, target
+read-back and human attestation, and exactly the five lookup, relationship,
+attachment, allow, and deny probes -- are checked the same way.
+
+Its status is `synthetic_protocol_valid` and its decision scope is
+`plan_only_no_target_execution`. A valid plan means the checklist is complete,
+not that any control it declares exists: nothing here observes a target. The
+label is the only thing separating the two readings, which is the residual risk
+the "Synthetic preflight is mistaken for a target drill" row of the threat
+model records. See [ADR 0002](decisions/0002-synthetic-exercise-preflight.md).
 
 ## API-response capture boundary
 
