@@ -689,6 +689,15 @@ def _fail(message: str) -> CiviCRMTargetCanaryError:
 def _exact_keys(
     value: Mapping[str, object], expected: set[str] | frozenset[str], where: str
 ) -> None:
+    """Not `strict_json.require_exact_keys`, and deliberately not folded into it.
+
+    Issue #91 listed this among six copies of one validator. It is not a copy:
+    the shared one reports the offending names ("has unknown field(s): x, y"),
+    this reports only that the key set is wrong. That difference is asserted by
+    name in `tests/test_civicrm_target_canary.py`, so adopting the shared
+    wording would change what this canary tells an operator, not just where the
+    code lives. `directus_canary._exact_keys` carries the same check verbatim.
+    """
     if set(value) != set(expected):
         raise _fail(f"{where} has an invalid field set")
 

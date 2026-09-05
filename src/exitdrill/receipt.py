@@ -2,16 +2,21 @@
 
 from __future__ import annotations
 
-import os
-import tempfile
 from datetime import UTC, datetime
+from functools import partial
 from pathlib import Path
 from typing import cast
 
-from exitdrill.canonical import canonical_json_bytes, sha256_bytes
+from exitdrill.atomic_write import write_bounded_file
+from exitdrill.canonical import canonical_json_bytes, is_sha256_hex, sha256_bytes
 from exitdrill.models import DrillResult, JsonValue
 from exitdrill.receipt_validation import PayloadError, validate_payload
-from exitdrill.strict_json import StrictJsonError, load_strict_json, validate_json_value
+from exitdrill.strict_json import (
+    StrictJsonError,
+    load_strict_json,
+    require_exact_keys,
+    validate_json_value,
+)
 from exitdrill.timestamps import TimestampError, parse_timestamp
 
 _RECEIPT_KEYS = {"envelope", "payload", "payload_sha256", "schema_version"}
@@ -21,6 +26,9 @@ _MAX_RECEIPT_BYTES = 2 * 1024 * 1024
 
 class ReceiptError(ValueError):
     """Raised when a receipt is malformed or fails verification."""
+
+
+_require_exact_fields = partial(require_exact_keys, error=ReceiptError)
 
 
 def build_receipt(
@@ -44,26 +52,15 @@ def build_receipt(
 
 
 def write_receipt(path: Path, receipt: dict[str, JsonValue]) -> None:
-    """Atomically write a receipt."""
+    """Atomically write a receipt, after verifying it and before touching disk."""
     verify_receipt(receipt)
-    document = canonical_json_bytes(receipt) + b"\n"
-    if len(document) > _MAX_RECEIPT_BYTES:
-        raise ReceiptError("receipt exceeds the 2 MiB limit")
-    path.parent.mkdir(parents=True, exist_ok=True)
-    descriptor, temporary_name = tempfile.mkstemp(
-        dir=path.parent,
-        prefix=f".{path.name}.",
-        suffix=".tmp",
+    write_bounded_file(
+        path,
+        canonical_json_bytes(receipt) + b"\n",
+        max_bytes=_MAX_RECEIPT_BYTES,
+        size_message="receipt exceeds the 2 MiB limit",
+        error=ReceiptError,
     )
-    temporary = Path(temporary_name)
-    try:
-        with os.fdopen(descriptor, "wb") as handle:
-            handle.write(document)
-            handle.flush()
-            os.fsync(handle.fileno())
-        os.replace(temporary, path)
-    finally:
-        temporary.unlink(missing_ok=True)
 
 
 def load_receipt(path: Path) -> dict[str, JsonValue]:
@@ -112,15 +109,6 @@ def _require_untrusted_envelope(envelope: dict[str, JsonValue]) -> None:
         raise ReceiptError("receipt envelope overstates its trust status")
 
 
-def _require_exact_fields(value: dict[str, object], expected: set[str], context: str) -> None:
-    unknown = sorted(set(value) - expected)
-    missing = sorted(expected - set(value))
-    if unknown:
-        raise ReceiptError(f"{context} has unknown field(s): {', '.join(unknown)}")
-    if missing:
-        raise ReceiptError(f"{context} is missing field(s): {', '.join(missing)}")
-
-
 def verify_receipt(receipt: dict[str, JsonValue]) -> str:
     """Verify receipt self-consistency without claiming authenticity."""
     if not isinstance(receipt, dict):
@@ -151,13 +139,9 @@ def verify_receipt(receipt: dict[str, JsonValue]) -> str:
         validate_payload(payload)
     except PayloadError as exc:
         raise ReceiptError(str(exc)) from exc
-    if not _is_sha256(claimed_hash):
+    if not is_sha256_hex(claimed_hash):
         raise ReceiptError("receipt payload checksum must be a lowercase SHA-256 digest")
     actual_hash = sha256_bytes(canonical_json_bytes(payload))
     if actual_hash != claimed_hash:
         raise ReceiptError("receipt payload checksum mismatch")
     return actual_hash
-
-
-def _is_sha256(value: str) -> bool:
-    return len(value) == 64 and all(character in "0123456789abcdef" for character in value)

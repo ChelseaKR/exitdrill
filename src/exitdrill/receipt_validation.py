@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-import re
 from collections.abc import Mapping
 from enum import StrEnum
+from functools import partial
 from typing import cast
 
+from exitdrill.canonical import is_sha256_hex
 from exitdrill.models import (
     TRUST_LIMITATIONS,
     Coverage,
@@ -16,8 +17,8 @@ from exitdrill.models import (
     classify_dimension_status,
     classify_overall_status,
 )
+from exitdrill.strict_json import require_exact_keys
 
-_SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 _PAYLOAD_KEYS = {
     "baseline_sha256",
     "decision_scope",
@@ -47,19 +48,13 @@ class PayloadError(ValueError):
     """Raised when a receipt payload violates the closed result contract."""
 
 
+_exact_fields = partial(require_exact_keys, error=PayloadError)
+
+
 def _object(value: object, context: str) -> Mapping[str, object]:
     if not isinstance(value, Mapping):
         raise PayloadError(f"{context} must be an object")
     return cast(Mapping[str, object], value)
-
-
-def _exact_fields(value: Mapping[str, object], expected: set[str], context: str) -> None:
-    unknown = sorted(set(value) - expected)
-    missing = sorted(expected - set(value))
-    if unknown:
-        raise PayloadError(f"{context} has unknown field(s): {', '.join(unknown)}")
-    if missing:
-        raise PayloadError(f"{context} is missing field(s): {', '.join(missing)}")
 
 
 def _nonempty_string(value: Mapping[str, object], key: str, context: str) -> str:
@@ -178,7 +173,7 @@ def validate_payload(raw: object) -> None:
         raise PayloadError("receipt payload decision scope is unsupported")
     for key in ("baseline_sha256", "export_sha256"):
         item = _nonempty_string(value, key, "receipt payload")
-        if not _SHA256_PATTERN.fullmatch(item):
+        if not is_sha256_hex(item):
             raise PayloadError(f"receipt payload.{key} must be a lowercase SHA-256 digest")
     _nonempty_string(value, "drill_id", "receipt payload")
     _nonempty_string(value, "source_system", "receipt payload")

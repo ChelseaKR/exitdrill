@@ -4,7 +4,12 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from pathlib import Path
+
+# Unanchored, and always applied with `fullmatch`. Anchoring as well would put
+# two mechanisms on one bound and leave a reader guessing which is load-bearing.
+_SHA256_HEX_PATTERN = re.compile(r"[0-9a-f]{64}")
 
 
 def canonical_json_bytes(value: object) -> bytes:
@@ -30,3 +35,13 @@ def sha256_file(path: Path) -> str:
         for chunk in iter(lambda: handle.read(64 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def is_sha256_hex(value: str) -> bool:
+    """Report whether a string is a lowercase SHA-256 digest.
+
+    The predicate that recognises the two functions above lives beside them so
+    that "digest shape" has one answer. Callers state their own rejection
+    message; this reports only the shape.
+    """
+    return _SHA256_HEX_PATTERN.fullmatch(value) is not None
