@@ -207,6 +207,12 @@ running the synthetic demo without help and explaining whether the receipt
 answers their exit question. Until that happens, the project will not add another
 connector, evidence family, or data category.
 
+Input size is bounded before that question arises: a baseline or export document
+is capped at 4 MiB and every document the tool reads is capped at 64 levels of
+JSON nesting and 200,000 JSON nodes, with no override flag. All of the declared
+bounds, and what each one covers, are listed under
+[declared input bounds](docs/THREAT-MODEL.md#declared-input-bounds).
+
 Real, production-derived, or merely deidentified exports remain prohibited until
 the [data-governance gate](docs/DATA-GOVERNANCE.md) is satisfied.
 

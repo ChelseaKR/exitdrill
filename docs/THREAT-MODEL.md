@@ -69,6 +69,72 @@
 | Successful normalization presented as safe exit | structural-only labels and limitations | marketing pressure remains |
 | Connector treadmill | no public SDK and one-target discovery gate | bespoke work may still dominate |
 
+## Declared input bounds
+
+Every bound below is a fixed constant in `src/exitdrill/`. None of them has a
+CLI flag, an environment variable, or any other override. That is deliberate
+for a fail-closed offline evaluator: a resource bound an operator can raise
+under deadline pressure is not a bound. Changing one is a source change that
+goes through the merge gate, and the table below is bound to the constants by
+`tests/test_documented_counts.py`, so a changed constant fails the build until
+this document is updated with it.
+
+### Documents the CLI reads and writes
+
+| Bound | Value | Declared in | Applies to |
+|---|---|---|---|
+| Baseline / export document | 4 MiB | `loader.py` `_MAX_DOCUMENT_BYTES` | each `baseline.json` and `export.json` read by `load_baseline` / `load_export` |
+| Receipt document | 2 MiB | `receipt.py` `_MAX_RECEIPT_BYTES` | a receipt on both the read and the pre-write encoded path |
+| Comparison document | 2 MiB | `comparison.py` `_MAX_COMPARISON_BYTES` | a comparison document on both the read and the pre-write encoded path |
+| Exercise plan document | 1 MiB | `exercise.py` `_MAX_PLAN_BYTES` | a plan read by `load_exercise_plan` |
+| Rendered report | 2 MiB | `report.py` `_MAX_REPORT_BYTES` | the UTF-8 encoded report, checked before any file is created |
+| Per-attachment bytes | 16 MiB | `evaluator.py` `_MAX_ATTACHMENT_BYTES` | one attachment's on-disk size, taken from the same descriptor used to hash it |
+| Cumulative attachment bytes | 128 MiB | `evaluator.py` `_MAX_TOTAL_ATTACHMENT_BYTES` | the sum across one drill's attachments, consumed before each bounded read |
+| JSON nesting depth | 64 | `strict_json.py` `_MAX_JSON_DEPTH` | every document read through `load_strict_json` |
+| JSON node count | 200,000 | `strict_json.py` `_MAX_JSON_NODES` | every document read through `load_strict_json` |
+
+The last two are the broadest bounds in the project: every row above them is a
+byte limit on one kind of document, while these two apply to all of them, since
+each baseline, export, receipt, comparison, and plan is decoded by the same
+`load_strict_json`. A node is any JSON value, scalars included, so an export of
+roughly 20,000 entities carrying ten fields each is already near the node
+ceiling; the 4 MiB document bound is on the normalized JSON, not on the
+attachment bytes it references.
+
+Both are enforced by `validate_json_value` after `json.loads` returns, walking
+the decoded value with an explicit stack. They therefore cannot protect the
+parser itself, which is why the C parser's own recursion limit is caught
+separately and earlier as `JSON nesting exceeds the parser limit`. Issue #90
+tracks that guard on Python 3.14.
+
+Exceeding a bound is a load failure, not a truncation: no partial document is
+ever evaluated. The two attachment budgets are the exception to that shape —
+an attachment over either budget is counted invalid for that key and the drill
+continues, because a single oversized file is a finding about the export, not a
+reason to abandon the other dimensions.
+
+### Capture bundles read by the two canaries
+
+Both canaries normalize a committed synthetic capture bundle before the
+evaluator sees anything, and neither reads it through `load_strict_json`: each
+carries its own reader and its own stricter depth and node bounds, so the
+limits above do not cover a bundle. The evaluator's bounds still apply to the
+`export.json` a canary emits, because that is loaded like any other export.
+Values are identical across the two modules except where the row names only
+one.
+
+| Bound | Value | Declared in | Applies to |
+|---|---|---|---|
+| Capture manifest | 64 KiB | `directus_canary.py`, `civicrm_target_canary.py` `_MAX_MANIFEST_BYTES` | the `capture-manifest.json` that pins the bundle |
+| Bundle JSON file | 512 KiB | `directus_canary.py`, `civicrm_target_canary.py` `_MAX_JSON_BYTES` | each non-asset file listed in the manifest |
+| Bundle asset file | 16 MiB | `directus_canary.py`, `civicrm_target_canary.py` `_MAX_ASSET_BYTES` | each file under `assets/` |
+| Cumulative bundle bytes | 32 MiB | `directus_canary.py`, `civicrm_target_canary.py` `_MAX_BUNDLE_BYTES` | the running total of bytes actually read, rechecked after each file |
+| Canary JSON nesting depth | 32 | `directus_canary.py`, `civicrm_target_canary.py` `_MAX_JSON_DEPTH` | each decoded bundle document |
+| Canary JSON node count | 20,000 | `directus_canary.py`, `civicrm_target_canary.py` `_MAX_JSON_NODES` | each decoded bundle document |
+| Integer magnitude | 9,223,372,036,854,775,807 | `directus_canary.py` `_MAX_SQLITE_INTEGER`, `civicrm_target_canary.py` `_MAX_INTEGER` | every integer field decoded from a bundle, which is also non-negative unless a caller declares otherwise |
+| Evidence index | 64 KiB | `civicrm_target_canary.py` `_MAX_EVIDENCE_INDEX_BYTES` | `evidence-index.json` |
+| Indexed evidence artifact | 10 MiB | `civicrm_target_canary.py` `_MAX_EVIDENCE_ARTIFACT_BYTES` | each artifact size the evidence index declares |
+
 ## Misuse cases
 
 - Using the receipt as proof that a vendor exported or deleted all customer data.
