@@ -7,6 +7,7 @@ from collections.abc import Callable, Mapping
 from pathlib import Path
 from typing import cast
 
+from exitdrill.canonical import is_sha256_hex
 from exitdrill.contracts import require_exact_keys
 from exitdrill.models import (
     AttachmentRecord,
@@ -30,7 +31,6 @@ from exitdrill.timestamps import TimestampError, parse_timestamp
 
 _MAX_DOCUMENT_BYTES = 4 * 1024 * 1024
 _ID_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$")
-_SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 _SCALAR_TYPES = {"string", "number", "boolean"}
 _BASELINE_KEYS = {
     "schema_version",
@@ -107,7 +107,7 @@ def _identifier(value: Mapping[str, object], key: str, context: str) -> str:
 
 def _sha256(value: Mapping[str, object], key: str, context: str) -> str:
     item = _string(value, key, context)
-    if not _SHA256_PATTERN.fullmatch(item):
+    if not is_sha256_hex(item):
         raise PackageError(f"{context}.{key} must be a lowercase SHA-256 digest")
     return item
 
