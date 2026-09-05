@@ -184,6 +184,23 @@ All notable changes will be documented here.
 
 ### Fixed
 
+- `requires-python` admitted 3.12, 3.13 and 3.14 while CI ran only 3.12, so two
+  of the three declared interpreters were never exercised (issue #90). Measured
+  on the unrun ones: 3.13 is clean, and 3.14 failed three tests. All three
+  wrote their input as a literal 20,000 levels of nesting to reach the
+  `RecursionError` arm that `strict_json`, `directus_canary` and
+  `civicrm_target_canary` each put between a raw interpreter error and their
+  trust boundary. CPython 3.14 bounds decoder recursion by remaining C stack
+  rather than by a fixed count, so 20,000 parses there and the depth check
+  caught the document instead -- the arm stopped being exercised on 3.14 while
+  the same literal still defeated 3.12 and 3.13. The trust boundary held
+  throughout: the document was rejected fail-closed on every version, only by a
+  different guard than the tests named. The three now take their input from a
+  `json_the_parser_cannot_walk` fixture that searches for a depth the running
+  decoder actually refuses and fails the run if none exists, and the `verify`
+  job runs under a 3.12/3.13/3.14 matrix so a declared interpreter cannot go
+  unrun again. Measured after: coverage reports each of the three arms executed
+  on 3.14, where all three were missing before.
 - A receipt claiming every row exported, none restored, and none invalid
   verified as `pass` and rendered as "Structurally restorable" (issue #81).
   `evaluator._dimension_result` floors `invalid_count` at
