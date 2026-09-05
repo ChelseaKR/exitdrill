@@ -62,6 +62,7 @@ def load_strict_json(
     *,
     max_bytes: int,
     size_label: str,
+    document_label: str = "document",
 ) -> tuple[object, str]:
     """Read and decode one bounded JSON document from a single byte snapshot.
 
@@ -71,16 +72,26 @@ def load_strict_json(
     `StrictJsonError`, `comparison.load_receipt_snapshot` catches `OSError`
     separately to give it its own non-disclosing message, and `cli.main`
     catches `OSError` at the top level.
+
+    `document_label` names what the caller is loading, so a rejection reads
+    "receipt exceeds the 2 MiB limit" rather than the generic noun. Callers
+    used to patch that noun in afterwards with `str(exc).replace(...)`, a
+    string-literal coupling across a module boundary that nothing bound
+    (issue #85): rewording a message here matched nothing there and silently
+    reverted the caller to the generic wording. Composing the message at the
+    raise site is the same shape the two canaries' `where` parameter already
+    uses. The label must stay a caller-supplied constant -- never a path or
+    other input-derived text, which these messages deliberately withhold.
     """
     resolved = path.resolve(strict=True)
     flags = os.O_RDONLY | getattr(os, "O_NONBLOCK", 0) | getattr(os, "O_NOFOLLOW", 0)
     descriptor = os.open(resolved, flags)
     with os.fdopen(descriptor, "rb") as handle:
         if not stat.S_ISREG(os.fstat(handle.fileno()).st_mode):
-            raise StrictJsonError("document path is not a regular file")
+            raise StrictJsonError(f"{document_label} path is not a regular file")
         document = handle.read(max_bytes + 1)
     if len(document) > max_bytes:
-        raise StrictJsonError(f"document exceeds the {size_label} limit")
+        raise StrictJsonError(f"{document_label} exceeds the {size_label} limit")
     try:
         text = document.decode("utf-8")
         raw = json.loads(
@@ -90,13 +101,13 @@ def load_strict_json(
         )
         validate_json_value(raw)
     except UnicodeDecodeError as exc:
-        raise StrictJsonError("document is not valid UTF-8") from exc
+        raise StrictJsonError(f"{document_label} is not valid UTF-8") from exc
     except json.JSONDecodeError as exc:
-        raise StrictJsonError(f"document is not valid JSON: {exc}") from exc
+        raise StrictJsonError(f"{document_label} is not valid JSON: {exc}") from exc
     except RecursionError as exc:
         raise StrictJsonError("JSON nesting exceeds the parser limit") from exc
     except ValueError as exc:
         if isinstance(exc, StrictJsonError):
             raise
-        raise StrictJsonError(f"document is not valid JSON: {exc}") from exc
+        raise StrictJsonError(f"{document_label} is not valid JSON: {exc}") from exc
     return raw, sha256_bytes(document)

@@ -117,6 +117,10 @@ def _validate_dimension(
             "invalid_count",
         )
     }
+    # Every relation `evaluator._dimension_result` guarantees is re-derived
+    # here, because this validator accepts exactly the payloads `run_drill`
+    # can emit (see `validate_payload`). Each unenforced relation is a receipt
+    # no drill could have written that verifies anyway.
     if counts["missing_count"] > counts["expected_count"]:
         raise PayloadError(f"{context}.missing_count exceeds expected_count")
     if counts["extra_count"] > counts["exported_count"]:
@@ -125,6 +129,15 @@ def _validate_dimension(
         raise PayloadError(f"{context}.restored_count exceeds exported_count")
     if counts["invalid_count"] > counts["exported_count"]:
         raise PayloadError(f"{context}.invalid_count exceeds exported_count")
+    # The evaluator's fail-closed restoration floor, restated: a caller may
+    # never report fewer invalid items than the reference model refused, so
+    # `invalid_count >= exported_count - restored_count` holds for every
+    # dimension `_dimension_result` produces. `restored_count` had an upper
+    # bound and no lower one, so a receipt claiming every row exported, none
+    # restored, and none invalid passed as `pass` and rendered as
+    # structurally restorable (issue #81).
+    if counts["invalid_count"] < counts["exported_count"] - counts["restored_count"]:
+        raise PayloadError(f"{context}.invalid_count is below the restoration shortfall")
     if (
         counts["expected_count"] - counts["missing_count"]
         != counts["exported_count"] - counts["extra_count"]
@@ -143,7 +156,20 @@ def _validate_dimension(
 
 
 def validate_payload(raw: object) -> None:
-    """Validate one complete aggregate result payload without trusting its hash."""
+    """Validate one complete aggregate result payload without trusting its hash.
+
+    The accepted set is exactly the set `run_drill` can emit, not a larger
+    one; issue #81 asked for that to be decided rather than assumed. A
+    receipt is read by people who will not re-run the drill, so a payload
+    this validator accepts is a claim the tool stands behind, and any
+    relation the evaluator guarantees but this validator omits is a receipt
+    no drill could have produced that verifies anyway. Every such relation is
+    re-derived: the count bounds and the restoration floor in
+    `_validate_dimension`, the expected/exported intersection identity, the
+    dimension and overall status algebra, the remediation-signal sum, and the
+    full trust-limitation list. Nothing here authenticates the payload; a
+    caller still needs `--baseline`/`--export` replay for that.
+    """
     value = _object(raw, "receipt payload")
     _exact_fields(value, _PAYLOAD_KEYS, "receipt payload")
     if value.get("schema_version") != "exitdrill/drill-result/v0.3":

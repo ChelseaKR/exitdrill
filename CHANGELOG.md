@@ -184,6 +184,33 @@ All notable changes will be documented here.
 
 ### Fixed
 
+- A receipt claiming every row exported, none restored, and none invalid
+  verified as `pass` and rendered as "Structurally restorable" (issue #81).
+  `evaluator._dimension_result` floors `invalid_count` at
+  `exported_count - restored_count`, so no drill can emit that dimension, but
+  `receipt_validation` bounded `restored_count` from above and never from
+  below. `_validate_dimension` now re-derives the floor. Measured before the
+  fix, not assumed: a receipt built from the synthetic example with every
+  `restored_count` zeroed and rehashed passed `verify_receipt` and rendered a
+  Restored column of 0 beside an Exported column of 2. `validate_payload`'s
+  docstring now settles the question the issue raised: the accepted set is
+  exactly the set `run_drill` can emit, and every other relation the
+  evaluator guarantees was checked and found already enforced.
+- `load_receipt` patched `strict_json`'s error message afterwards with
+  `str(exc).replace("document exceeds", "receipt exceeds", 1)`, a
+  string-literal coupling across a module boundary that nothing bound (issue
+  #85). Measured: deleting the rewrite left all 137 tests over
+  `test_receipt.py`, `test_comparison.py` and `test_report.py` passing,
+  because every assertion matched on `"2 MiB"`, which both wordings contain.
+  The live failure was the reverse direction -- rewording `strict_json`'s
+  message would make `.replace()` match nothing and silently revert the
+  caller to the generic noun. `load_strict_json` now takes a
+  `document_label` beside its existing `size_label` and composes each
+  document-scoped message at the raise site, the shape the two canaries'
+  `where` parameter already uses; `load_exercise_plan` passes its own noun
+  too, and `_load_object` keeps the default, which is the noun it already
+  used. Each of the six labelled raise sites is pinned by a test that fails
+  if the noun reverts.
 - `scripts/check_browser_capture_bindings.mjs` reported success having compared
   nothing. `checked` was counted but never floored, so an emptied `BINDINGS`
   table printed "verified 0 committed browser-*.json files bind to the literal
@@ -293,6 +320,20 @@ All notable changes will be documented here.
 
 ### Changed
 
+- The receipt envelope's `claimed_generated_at` must now be an ISO 8601
+  timestamp with an explicit UTC offset, the same contract
+  `baseline.captured_at`, `export.exported_at` and every `occurred_at`
+  already meet through `timestamps.parse_timestamp` (issue #83). It
+  previously accepted any non-blank string, so `exitdrill drill
+  --claimed-generated-at "sometime last spring"` wrote a receipt that
+  `verify` accepted and `report` rendered. This narrows the accepted receipt
+  contract without advancing `exitdrill/receipt/v0.3`: `build_receipt` has
+  only ever emitted offset-aware ISO 8601, so no receipt this tool wrote
+  stops verifying, but a hand-edited or hand-built one with a loose value
+  now does. Invariant 8 is unchanged and the field is still untrusted --
+  shape validation is not authentication, and `signature_status` and
+  `trusted_time` remain what carry the disclaimer; the shape only makes the
+  value mean the same thing to every reader.
 - The release workflow is now dispatch-only and split-authority: a shared
   read-only authorization job verifies a signed annotated tag against trusted
   main, the build job re-runs `make verify` and both declared demo outcomes at

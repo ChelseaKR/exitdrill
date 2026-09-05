@@ -12,6 +12,7 @@ from exitdrill.canonical import canonical_json_bytes, sha256_bytes
 from exitdrill.models import DrillResult, JsonValue
 from exitdrill.receipt_validation import PayloadError, validate_payload
 from exitdrill.strict_json import StrictJsonError, load_strict_json, validate_json_value
+from exitdrill.timestamps import TimestampError, parse_timestamp
 
 _RECEIPT_KEYS = {"envelope", "payload", "payload_sha256", "schema_version"}
 _ENVELOPE_KEYS = {"claimed_generated_at", "signature_status", "trusted_time"}
@@ -72,10 +73,10 @@ def load_receipt(path: Path) -> dict[str, JsonValue]:
             path,
             max_bytes=_MAX_RECEIPT_BYTES,
             size_label="2 MiB",
+            document_label="receipt",
         )
     except StrictJsonError as exc:
-        message = str(exc).replace("document exceeds", "receipt exceeds", 1)
-        raise ReceiptError(message) from exc
+        raise ReceiptError(str(exc)) from exc
     if not isinstance(raw, dict):
         raise ReceiptError("receipt must be a JSON object")
     return cast(dict[str, JsonValue], raw)
@@ -83,12 +84,27 @@ def load_receipt(path: Path) -> dict[str, JsonValue]:
 
 def _require_untrusted_envelope(envelope: dict[str, JsonValue]) -> None:
     """Check the two envelope fields that guard against a receipt overstating
-    its own trustworthiness: a claimed generation time that is at least a
-    non-empty string, and a signature/trusted-time pair that both explicitly
-    disclaim authenticity."""
+    its own trustworthiness: a claimed generation time in the one shape this
+    tool emits, and a signature/trusted-time pair that both explicitly
+    disclaim authenticity.
+
+    Requiring offset-aware ISO 8601 here is a shape check, not a trust claim
+    (issue #83). Invariant 8 stands: `signature_status` and `trusted_time`
+    are what carry the disclaimer, and a well-formed claimed time is no more
+    authenticated than a malformed one. What the shape buys is that the value
+    means the same thing to every reader, on the same terms as
+    `baseline.captured_at` and `export.exported_at`, which go through this
+    same parser in `loader._timestamp`. `build_receipt` has only ever emitted
+    this shape, so the contract `verify_receipt` accepts now matches the
+    contract `run_drill` writes rather than being wider than it. The value is
+    parsed unstripped, because that is what `build_receipt` produces."""
     claimed_time = envelope.get("claimed_generated_at")
     if not isinstance(claimed_time, str) or not claimed_time.strip():
         raise ReceiptError("receipt envelope claimed time must be a non-empty string")
+    try:
+        parse_timestamp(claimed_time, "receipt envelope claimed time")
+    except TimestampError as exc:
+        raise ReceiptError(str(exc)) from exc
     if (
         envelope.get("signature_status") != "not_signed"
         or envelope.get("trusted_time") is not False
