@@ -76,16 +76,20 @@ def load_strict_json(
     uses. The label must stay a caller-supplied constant -- never a path or
     other input-derived text, which these messages deliberately withhold.
     """
-    try:
-        resolved = path.resolve(strict=True)
-        flags = os.O_RDONLY | getattr(os, "O_NONBLOCK", 0) | getattr(os, "O_NOFOLLOW", 0)
-        descriptor = os.open(resolved, flags)
-        with os.fdopen(descriptor, "rb") as handle:
-            if not stat.S_ISREG(os.fstat(handle.fileno()).st_mode):
-                raise StrictJsonError(f"{document_label} path is not a regular file")
-            document = handle.read(max_bytes + 1)
-    except OSError:
-        raise
+    # `OSError` from the snapshot below escapes unwrapped, on purpose: it is
+    # the half of this function's failures callers handle separately from
+    # `StrictJsonError`. `loader._load_object` catches `StrictJsonError` only,
+    # `comparison._load_comparison_receipt` catches `OSError` to give it its
+    # own message, and `cli.main` catches `OSError` at the top level. That split
+    # used to be written as an `except OSError: raise` no-op handler, which
+    # said this while obliging every reader to prove it changed nothing.
+    resolved = path.resolve(strict=True)
+    flags = os.O_RDONLY | getattr(os, "O_NONBLOCK", 0) | getattr(os, "O_NOFOLLOW", 0)
+    descriptor = os.open(resolved, flags)
+    with os.fdopen(descriptor, "rb") as handle:
+        if not stat.S_ISREG(os.fstat(handle.fileno()).st_mode):
+            raise StrictJsonError(f"{document_label} path is not a regular file")
+        document = handle.read(max_bytes + 1)
     if len(document) > max_bytes:
         raise StrictJsonError(f"{document_label} exceeds the {size_label} limit")
     try:

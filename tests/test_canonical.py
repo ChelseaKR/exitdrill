@@ -1,6 +1,11 @@
 from pathlib import Path
 
-from exitdrill.canonical import canonical_json_bytes, sha256_bytes, sha256_file
+from exitdrill.canonical import (
+    canonical_json_bytes,
+    is_sha256_hex,
+    sha256_bytes,
+    sha256_file,
+)
 
 
 def test_canonical_json_and_hashes_are_stable(tmp_path: Path) -> None:
@@ -10,3 +15,16 @@ def test_canonical_json_and_hashes_are_stable(tmp_path: Path) -> None:
     expected = "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824"
     assert sha256_bytes(b"hello") == expected
     assert sha256_file(path) == expected
+
+
+def test_is_sha256_hex_accepts_only_what_the_hashers_emit() -> None:
+    digest = sha256_bytes(b"hello")
+    assert is_sha256_hex(digest)
+    assert not is_sha256_hex(digest.upper())
+    assert not is_sha256_hex(digest[:-1])
+    assert not is_sha256_hex(digest + "0")
+    assert not is_sha256_hex("")
+    assert not is_sha256_hex(digest[:-1] + "g")
+    # `fullmatch` is what makes the match total, so a trailing newline -- which
+    # a `$` anchor would have tolerated on its own -- is still rejected.
+    assert not is_sha256_hex(digest + "\n")

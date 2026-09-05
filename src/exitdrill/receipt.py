@@ -9,7 +9,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import cast
 
-from exitdrill.canonical import canonical_json_bytes, sha256_bytes
+from exitdrill.canonical import canonical_json_bytes, is_sha256_hex, sha256_bytes
 from exitdrill.contracts import require_exact_keys
 from exitdrill.models import DrillResult, JsonValue
 from exitdrill.receipt_validation import PayloadError, validate_payload
@@ -148,13 +148,9 @@ def verify_receipt(receipt: dict[str, JsonValue]) -> str:
         validate_payload(payload)
     except PayloadError as exc:
         raise ReceiptError(str(exc)) from exc
-    if not _is_sha256(claimed_hash):
+    if not is_sha256_hex(claimed_hash):
         raise ReceiptError("receipt payload checksum must be a lowercase SHA-256 digest")
     actual_hash = sha256_bytes(canonical_json_bytes(payload))
     if actual_hash != claimed_hash:
         raise ReceiptError("receipt payload checksum mismatch")
     return actual_hash
-
-
-def _is_sha256(value: str) -> bool:
-    return len(value) == 64 and all(character in "0123456789abcdef" for character in value)

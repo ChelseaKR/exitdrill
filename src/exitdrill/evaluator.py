@@ -263,7 +263,11 @@ def _byte_invalid_attachment_keys(
                 max_bytes=_MAX_ATTACHMENT_BYTES,
                 total_budget=total_budget,
             )
-        except (BoundedPathError, FileNotFoundError, OSError):
+        # A missing attachment arrives as `FileNotFoundError` from the strict
+        # resolve inside `sha256_bounded_file`; it is an `OSError` subclass, so
+        # the second entry already covers it and naming it here only implied a
+        # distinction that does not exist.
+        except (BoundedPathError, OSError):
             invalid.add(item.key)
             continue
         if actual_hash != item.content_sha256:
