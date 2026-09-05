@@ -7,8 +7,8 @@ from shutil import copytree
 import pytest
 
 from exitdrill.comparison import (
-    _comparison_has_observed_loss_signal_increase,
     compare_snapshots,
+    comparison_has_observed_loss_signal_increase,
     snapshot_receipt,
 )
 from exitdrill.evaluator import DrillError, run_drill
@@ -510,7 +510,7 @@ def test_new_attachment_corruption_is_visible_to_the_comparison_gate(
     comparison = compare_snapshots(*snapshots)
 
     assert comparison["comparability"] == "comparable"
-    assert _comparison_has_observed_loss_signal_increase(comparison)
+    assert comparison_has_observed_loss_signal_increase(comparison)
     summary = comparison["summary"]
     assert isinstance(summary, dict)
     assert summary["observed_loss_signal_increases"] == ["attachments"]

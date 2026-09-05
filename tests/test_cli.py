@@ -844,3 +844,275 @@ def test_failed_drill_returns_nonzero(
         == 2
     )
     assert _stdout(capsys)["overall_status"] == "not_structurally_restorable"
+
+
+# ---------------------------------------------------------------------------
+# issue #97: --out, and the CLI route into verify_comparison_document.
+# ---------------------------------------------------------------------------
+
+
+def _written_comparison(tmp_path: Path, example_root: Path) -> tuple[Path, Path, Path]:
+    """Produce the three files `verify-comparison` takes, through the CLI itself."""
+    reference, candidate = _comparison_receipts(tmp_path, example_root)
+    comparison = tmp_path / "comparison.json"
+    assert main(["compare", str(reference), str(candidate), "--out", str(comparison)]) == 0
+    return comparison, reference, candidate
+
+
+def test_compare_out_writes_the_same_bytes_stdout_would_have(
+    tmp_path: Path,
+    example_root: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """`--out` replaced a shell redirection, so it must not change the artifact."""
+    reference, candidate = _comparison_receipts(tmp_path, example_root)
+    assert main(["compare", str(reference), str(candidate)]) == 0
+    redirected = capsys.readouterr().out.encode("utf-8")
+    comparison = tmp_path / "nested" / "comparison.json"
+
+    assert main(["compare", str(reference), str(candidate), "--out", str(comparison)]) == 0
+
+    assert comparison.read_bytes() == redirected
+    summary = _stdout(capsys)
+    assert summary["status"] == "comparison_written"
+    assert summary["comparability"] == "comparable"
+    assert summary["comparison"] == str(comparison)
+    assert not list(tmp_path.glob("**/.comparison.json.*.tmp"))
+
+
+def test_compare_out_keeps_the_policy_exit_code_and_writes_first(
+    tmp_path: Path,
+    example_root: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """The policy is applied after the document is complete and does not edit it.
+
+    Both nonzero exits must therefore still leave the evidence on disk, the way
+    `drill --out` leaves a receipt for a failed drill. Exit 3 and the exit 2 an
+    incomparable pair produces are both checked, because a write moved behind
+    either return would still satisfy the other.
+    """
+    reference, candidate = _comparison_receipts(tmp_path, example_root)
+    comparison = tmp_path / "comparison.json"
+
+    assert (
+        main(
+            [
+                "compare",
+                str(reference),
+                str(candidate),
+                "--out",
+                str(comparison),
+                "--fail-on-loss-signal-increase",
+            ]
+        )
+        == 3
+    )
+    capsys.readouterr()
+    written = json.loads(comparison.read_text(encoding="utf-8"))
+    assert written["comparability"] == "comparable"
+    assert written["summary"]["observed_loss_signal_increases"] != []
+
+    incomparable_receipt = _good_receipt(example_root)
+    payload = _payload(incomparable_receipt)
+    payload["baseline_sha256"] = "0" * 64
+    incomparable_receipt["payload_sha256"] = sha256_bytes(canonical_json_bytes(payload))
+    incomparable = tmp_path / "incomparable-receipt.json"
+    write_receipt(incomparable, incomparable_receipt)
+    scoped = tmp_path / "incomparable.json"
+
+    assert main(["compare", str(reference), str(incomparable), "--out", str(scoped)]) == 2
+    assert _stdout(capsys)["comparability"] == "incomparable"
+    assert json.loads(scoped.read_text(encoding="utf-8"))["comparability"] == "incomparable"
+
+
+def test_compare_out_reports_an_unwritable_destination_as_exit_two(
+    tmp_path: Path,
+    example_root: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    reference, candidate = _comparison_receipts(tmp_path, example_root)
+    blocked = tmp_path / "blocked"
+    blocked.write_text("not a directory", encoding="utf-8")
+
+    assert (
+        main(["compare", str(reference), str(candidate), "--out", str(blocked / "out.json")]) == 2
+    )
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert captured.err.startswith("exitdrill: ")
+
+
+def test_verify_comparison_cli_accepts_a_document_it_wrote(
+    tmp_path: Path,
+    example_root: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    comparison, reference, candidate = _written_comparison(tmp_path, example_root)
+    capsys.readouterr()
+
+    assert (
+        main(
+            [
+                "verify-comparison",
+                str(comparison),
+                "--reference",
+                str(reference),
+                "--candidate",
+                str(candidate),
+            ]
+        )
+        == 0
+    )
+    output = _stdout(capsys)
+    assert output["status"] == "recomputation_verified"
+    assert output["comparability"] == "comparable"
+    assert output["decision_scope"] == "offline_aggregate_receipt_change_only"
+    written = json.loads(comparison.read_text(encoding="utf-8"))
+    assert output["reference_payload_sha256"] == written["reference"]["payload_sha256"]
+    assert output["candidate_payload_sha256"] == written["candidate"]["payload_sha256"]
+
+
+def test_verify_comparison_cli_rejects_a_forged_field(
+    tmp_path: Path,
+    example_root: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Schema conformance cannot see this: the document stays well-formed."""
+    comparison, reference, candidate = _written_comparison(tmp_path, example_root)
+    capsys.readouterr()
+    document = json.loads(comparison.read_text(encoding="utf-8"))
+    document["summary"]["no_observed_loss_signal_change"] = document["summary"][
+        "observed_loss_signal_increases"
+    ]
+    document["summary"]["observed_loss_signal_increases"] = []
+    comparison.write_text(json.dumps(document), encoding="utf-8")
+
+    assert (
+        main(
+            [
+                "verify-comparison",
+                str(comparison),
+                "--reference",
+                str(reference),
+                "--candidate",
+                str(candidate),
+            ]
+        )
+        == 2
+    )
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert "does not match its source receipts" in captured.err
+
+
+def test_verify_comparison_cli_rejects_a_mismatched_receipt_pair(
+    tmp_path: Path,
+    example_root: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Nothing in the document is forged; the operands are simply the wrong pair."""
+    comparison, reference, candidate = _written_comparison(tmp_path, example_root)
+    capsys.readouterr()
+
+    for operands in ((reference, reference), (candidate, reference)):
+        assert (
+            main(
+                [
+                    "verify-comparison",
+                    str(comparison),
+                    "--reference",
+                    str(operands[0]),
+                    "--candidate",
+                    str(operands[1]),
+                ]
+            )
+            == 2
+        )
+        captured = capsys.readouterr()
+        assert captured.out == ""
+        assert "does not match its source receipts" in captured.err
+
+
+def test_verify_comparison_cli_rejects_a_malformed_document_without_stdout(
+    tmp_path: Path,
+    example_root: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    comparison, reference, candidate = _written_comparison(tmp_path, example_root)
+    capsys.readouterr()
+    argv = [
+        "verify-comparison",
+        str(comparison),
+        "--reference",
+        str(reference),
+        "--candidate",
+        str(candidate),
+    ]
+
+    comparison.write_text('{"comparability":', encoding="utf-8")
+    assert main(argv) == 2
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert "not valid JSON" in captured.err
+
+    comparison.write_text("[]", encoding="utf-8")
+    assert main(argv) == 2
+    assert "must be a JSON object" in capsys.readouterr().err
+
+    comparison.write_bytes(b" " * (2 * 1024 * 1024 + 1))
+    assert main(argv) == 2
+    assert "comparison exceeds the 2 MiB limit" in capsys.readouterr().err
+
+
+def test_verify_comparison_cli_read_error_does_not_disclose_operand_paths(
+    tmp_path: Path,
+    example_root: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    comparison, reference, candidate = _written_comparison(tmp_path, example_root)
+    capsys.readouterr()
+    marker = "invented-private-missing-operand"
+    missing = tmp_path / f"{marker}.json"
+
+    for argv in (
+        [
+            "verify-comparison",
+            str(missing),
+            "--reference",
+            str(reference),
+            "--candidate",
+            str(candidate),
+        ],
+        [
+            "verify-comparison",
+            str(comparison),
+            "--reference",
+            str(missing),
+            "--candidate",
+            str(candidate),
+        ],
+    ):
+        assert main(argv) == 2
+        captured = capsys.readouterr()
+        assert captured.out == ""
+        assert "comparison input could not be read" in captured.err
+        assert marker not in captured.err
+        assert str(tmp_path) not in captured.err
+
+
+def test_verify_comparison_cli_usage_error_is_exit_two(
+    tmp_path: Path,
+    example_root: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Both receipt operands are required: a one-sided call cannot verify anything."""
+    comparison, reference, _candidate = _written_comparison(tmp_path, example_root)
+    capsys.readouterr()
+
+    with pytest.raises(SystemExit) as raised:
+        main(["verify-comparison", str(comparison), "--reference", str(reference)])
+    assert raised.value.code == 2
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert "usage:" in captured.err
