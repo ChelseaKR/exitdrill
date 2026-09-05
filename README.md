@@ -254,4 +254,4 @@ ExitDrill is available under the [Apache License 2.0](LICENSE).
 
 This is independent work, published so it can be read and checked rather than taken on
 trust. If your organization is planning a platform migration or an exit and wants help
-running one, see [consulting and workshops](https://chelseakr.com/consulting/).
+running one, [get in touch](https://chelseakr.com/contact).
