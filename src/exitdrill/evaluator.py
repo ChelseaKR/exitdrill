@@ -58,6 +58,15 @@ def _dimension_result(
     # `invalid_count` is the caller's own count of distinct invalid items. The
     # restoration shortfall is a fail-closed floor beneath it: a caller may
     # never report fewer invalid items than the reference model refused.
+    #
+    # Only two dimensions have an invalid population of their own to supply.
+    # `entities` passes field-value mismatches, which restore cleanly and so
+    # are invisible to the floor; `attachments` passes the union of byte
+    # verification and restoration failures, which is larger than either
+    # population alone. `relationships`, `permissions`, and `audit_events` pass
+    # 0 and rely on this floor alone: their only failure mode is the reference
+    # model refusing a row, and `loader._require_unique` has already rejected
+    # duplicate keys, so `len(actual) - restored_count` is the whole count.
     effective_invalid = max(invalid_count, len(actual) - restored_count)
     status = classify_dimension_status(
         coverage,
@@ -256,7 +265,11 @@ def _byte_invalid_attachment_keys(
                 max_bytes=_MAX_ATTACHMENT_BYTES,
                 total_budget=total_budget,
             )
-        except (BoundedPathError, FileNotFoundError, OSError):
+        # A missing or unreadable file arrives as an `OSError` subclass --
+        # `FileNotFoundError` from `resolve_bounded_file`'s strict resolve is
+        # the common one. `BoundedPathError` is a `ValueError`, so it has to be
+        # named separately. Either way the declared bytes cannot be verified.
+        except (BoundedPathError, OSError):
             invalid.add(item.key)
             continue
         if actual_hash != item.content_sha256:
@@ -326,7 +339,7 @@ def run_drill(
             {item.key for item in baseline.relationships},
             {item.key for item in package.relationships},
             restored[Dimension.RELATIONSHIPS],
-            len(package.relationships) if restored[Dimension.RELATIONSHIPS] == 0 else 0,
+            0,
         ),
         _dimension_result(
             Dimension.ATTACHMENTS,
@@ -342,7 +355,7 @@ def run_drill(
             {item.key for item in baseline.permissions},
             {item.key for item in package.permissions},
             restored[Dimension.PERMISSIONS],
-            len(package.permissions) if restored[Dimension.PERMISSIONS] == 0 else 0,
+            0,
         ),
         _dimension_result(
             Dimension.AUDIT_EVENTS,
@@ -350,7 +363,7 @@ def run_drill(
             {item.key for item in baseline.audit_events},
             {item.key for item in package.audit_events},
             restored[Dimension.AUDIT_EVENTS],
-            len(package.audit_events) if restored[Dimension.AUDIT_EVENTS] == 0 else 0,
+            0,
         ),
     )
     return DrillResult(

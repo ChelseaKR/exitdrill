@@ -165,8 +165,85 @@ def test_orphaned_scoped_records_fail_restore(copied_example: Path, dimension: s
     assert selected.invalid_count == 1
 
 
+def _add_orphaned_scoped_record(root: Path, dimension: str) -> None:
+    """Declare a second permission or audit event whose scope entity is absent.
+
+    The baseline and export declare the same key, so it produces no missing or
+    extra count, and the fixture's original record still restores. Its only
+    possible failure is the reference model's foreign key refusing it, which
+    leaves the dimension with a partial shortfall rather than the
+    all-or-nothing zero a one-record fixture can only produce.
+    """
+    record = (
+        {
+            "principal_id": "worker-001",
+            "scope_type": "case",
+            "scope_id": "case-404",
+            "role": "case_manager",
+        }
+        if dimension == "permissions"
+        else {
+            "event_id": "event-404",
+            "object_type": "case",
+            "object_id": "case-404",
+            "action": "status_changed",
+            "occurred_at": "2026-07-21T12:00:00Z",
+        }
+    )
+    for name in ("baseline.json", "export.json"):
+        path = root / name
+        raw = _json(path)
+        records = raw[dimension]
+        assert isinstance(records, list)
+        records.append(dict(record))
+        _write(path, raw)
+
+
+@pytest.mark.parametrize("dimension", ["permissions", "audit_events"])
+def test_partial_scoped_shortfall_is_counted_by_the_fail_closed_floor(
+    copied_example: Path,
+    dimension: str,
+) -> None:
+    """These dimensions have no invalid population of their own; the floor is it.
+
+    `run_drill` passes 0 for relationships, permissions, and audit events, so
+    `_dimension_result`'s `max(invalid_count, len(actual) - restored_count)` is
+    the only thing that can report a refused row for them. A floor narrowed to
+    an all-or-nothing flag -- everything invalid when nothing restored, nothing
+    invalid otherwise -- would still satisfy every other permission and audit
+    case here, because the fixture declares exactly one of each and cannot tell
+    a shortfall from a flag. This is the case that can: one of two rows
+    restores, so the count must be 1 rather than 0 or 2.
+
+    Relationships already have this proof in
+    `test_one_orphan_does_not_erase_valid_reference_readback`.
+    """
+    _add_orphaned_scoped_record(copied_example, dimension)
+
+    selected = next(
+        item for item in _run(copied_example).dimensions if item.dimension.value == dimension
+    )
+
+    assert selected.exported_count == 2
+    assert selected.restored_count == 1
+    assert (selected.missing_count, selected.extra_count) == (0, 0)
+    assert selected.invalid_count == 1
+    assert selected.status is DimensionStatus.FAIL
+
+
 @pytest.mark.parametrize("mode", ["missing", "corrupt", "escape"])
 def test_attachment_bytes_fail_closed(copied_example: Path, mode: str) -> None:
+    """Each mode reaches the byte check by a different route.
+
+    `missing` and `escape` are what prove both entries in
+    `_byte_invalid_attachment_keys`'s handler: a missing file raises
+    `FileNotFoundError`, an `OSError`, and a path that leaves the root while
+    still existing raises `BoundedPathError`, a `ValueError`. The escape target
+    is therefore `../baseline.json`, which the fixture really has. Measured:
+    with `../../baseline.json`, which resolves to nothing, this mode raised
+    `FileNotFoundError` too, and deleting `BoundedPathError` from the handler
+    left the whole suite green.
+    """
     export_path = copied_example / "export.json"
     attachment = copied_example / "export-files" / "attachments" / "intake.txt"
     if mode == "missing":
@@ -175,7 +252,7 @@ def test_attachment_bytes_fail_closed(copied_example: Path, mode: str) -> None:
         attachment.write_text("changed", encoding="utf-8")
     else:
         raw = _json(export_path)
-        raw["attachments"][0]["relative_path"] = "../../baseline.json"  # type: ignore[index]
+        raw["attachments"][0]["relative_path"] = "../baseline.json"  # type: ignore[index]
         _write(export_path, raw)
     result = _run(copied_example)
     attachments = result.dimensions[2]

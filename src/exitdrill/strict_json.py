@@ -63,17 +63,22 @@ def load_strict_json(
     max_bytes: int,
     size_label: str,
 ) -> tuple[object, str]:
-    """Read and decode one bounded JSON document from a single byte snapshot."""
-    try:
-        resolved = path.resolve(strict=True)
-        flags = os.O_RDONLY | getattr(os, "O_NONBLOCK", 0) | getattr(os, "O_NOFOLLOW", 0)
-        descriptor = os.open(resolved, flags)
-        with os.fdopen(descriptor, "rb") as handle:
-            if not stat.S_ISREG(os.fstat(handle.fileno()).st_mode):
-                raise StrictJsonError("document path is not a regular file")
-            document = handle.read(max_bytes + 1)
-    except OSError:
-        raise
+    """Read and decode one bounded JSON document from a single byte snapshot.
+
+    An `OSError` from the resolve, open, or read below escapes unwrapped, and
+    that split is load-bearing: callers separate "could not be read" from "was
+    read and is not acceptable JSON". `loader._load_object` catches only
+    `StrictJsonError`, `comparison.load_receipt_snapshot` catches `OSError`
+    separately to give it its own non-disclosing message, and `cli.main`
+    catches `OSError` at the top level.
+    """
+    resolved = path.resolve(strict=True)
+    flags = os.O_RDONLY | getattr(os, "O_NONBLOCK", 0) | getattr(os, "O_NOFOLLOW", 0)
+    descriptor = os.open(resolved, flags)
+    with os.fdopen(descriptor, "rb") as handle:
+        if not stat.S_ISREG(os.fstat(handle.fileno()).st_mode):
+            raise StrictJsonError("document path is not a regular file")
+        document = handle.read(max_bytes + 1)
     if len(document) > max_bytes:
         raise StrictJsonError(f"document exceeds the {size_label} limit")
     try:
