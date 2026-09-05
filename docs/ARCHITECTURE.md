@@ -405,8 +405,14 @@ attachments, so the evaluator tracks the failing key set for each and reports
 `len(byte_failures | unrestorable)`. Taking the larger of the two counts would
 conceal every failure in the smaller set. The restoration shortfall stays a
 fail-closed floor beneath any per-dimension count, so a dimension can never
-report fewer invalid items than the reference model refused. Every other
-dimension has exactly one reachable failure mode.
+report fewer invalid items than the reference model refused.
+
+Only entities and attachments contribute a per-dimension count at all, because
+only their items can be invalid while still restoring -- a wrong value in a
+declared required field, or bytes that fail verification. Relationships,
+permissions, and audit events have exactly one reachable failure mode,
+reference-model restoration, so they compute no independent count and the floor
+alone reports them.
 
 ## Result algebra
 
