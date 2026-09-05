@@ -437,3 +437,115 @@ def test_new_attachment_corruption_is_visible_to_the_comparison_gate(
     summary = comparison["summary"]
     assert isinstance(summary, dict)
     assert summary["observed_loss_signal_increases"] == ["attachments"]
+
+
+def _add_unrestorable_record(root: Path, section: str, record: dict[str, object]) -> None:
+    """Declare a record, in baseline and export alike, that references no entity.
+
+    Identical on both sides, so it produces no missing or extra count, and its
+    only possible failure is the reference model's foreign key refusing it.
+    """
+    for name in ("baseline.json", "export.json"):
+        path = root / name
+        raw = _json(path)
+        records = raw[section]
+        assert isinstance(records, list)
+        records.append(dict(record))
+        _write(path, raw)
+
+
+_UNRESTORABLE_RECORDS: tuple[tuple[Dimension, str, dict[str, object]], ...] = (
+    (
+        Dimension.RELATIONSHIPS,
+        "relationships",
+        {
+            "type": "case_subject",
+            "from_type": "case",
+            "from_id": "case-001",
+            "to_type": "person",
+            "to_id": "person-404",
+        },
+    ),
+    (
+        Dimension.PERMISSIONS,
+        "permissions",
+        {
+            "principal_id": "worker-001",
+            "scope_type": "case",
+            "scope_id": "case-404",
+            "role": "case_manager",
+        },
+    ),
+    (
+        Dimension.AUDIT_EVENTS,
+        "audit_events",
+        {
+            "event_id": "event-002",
+            "object_type": "case",
+            "object_id": "case-404",
+            "action": "status_changed",
+            "occurred_at": "2026-07-21T12:00:00Z",
+        },
+    ),
+)
+
+
+@pytest.mark.parametrize(
+    ("dimension", "section", "record"),
+    _UNRESTORABLE_RECORDS,
+    ids=[section for _, section, _ in _UNRESTORABLE_RECORDS],
+)
+def test_restoration_only_dimensions_report_exactly_the_shortfall(
+    copied_example: Path,
+    dimension: Dimension,
+    section: str,
+    record: dict[str, object],
+) -> None:
+    """These three dimensions pass no count of their own, so the floor is the count.
+
+    A relationship, permission, or audit event can only be invalid by failing
+    to restore, so each passes `0` to `_dimension_result` and the fail-closed
+    restoration floor reports it. Pinning `invalid_count` to the shortfall
+    keeps that arrangement legible: if one of these dimensions ever grows a
+    second failure mode, this assertion is what says the count, the comment in
+    `_dimension_result`, and the architecture note all have to change together.
+    """
+    _add_unrestorable_record(copied_example, section, record)
+
+    selected = next(item for item in _run(copied_example).dimensions if item.dimension is dimension)
+
+    assert selected.exported_count == 2
+    assert selected.restored_count == 1
+    assert (selected.missing_count, selected.extra_count) == (0, 0)
+    assert selected.invalid_count == selected.exported_count - selected.restored_count
+    assert selected.status is DimensionStatus.FAIL
+
+
+def test_entities_report_invalid_items_the_restoration_floor_cannot_see(
+    copied_example: Path,
+) -> None:
+    """Entities pass a real count, so theirs is not reducible to the floor.
+
+    A wrong value in a declared required field restores perfectly well: the
+    reference model refuses nothing and the shortfall is zero. Only the
+    caller's own count of field mismatches makes the loss visible, which is
+    what separates this dimension from the three above.
+    """
+    path = copied_example / "export.json"
+    raw = _json(path)
+    entities = raw["entities"]
+    assert isinstance(entities, list)
+    first = entities[0]
+    assert isinstance(first, dict)
+    fields = first["fields"]
+    assert isinstance(fields, dict)
+    fields["display_name"] = "Someone Else"
+    _write(path, raw)
+
+    result = _run(copied_example)
+    entity = next(item for item in result.dimensions if item.dimension is Dimension.ENTITIES)
+
+    assert entity.restored_count == entity.exported_count
+    assert (entity.missing_count, entity.extra_count) == (0, 0)
+    assert entity.invalid_count == 1
+    assert entity.status is DimensionStatus.FAIL

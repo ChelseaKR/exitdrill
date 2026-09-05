@@ -58,6 +58,13 @@ def _dimension_result(
     # `invalid_count` is the caller's own count of distinct invalid items. The
     # restoration shortfall is a fail-closed floor beneath it: a caller may
     # never report fewer invalid items than the reference model refused.
+    #
+    # Only ENTITIES and ATTACHMENTS supply a count of their own, because only
+    # their items can be invalid while still restoring: an entity can hold a
+    # wrong value in a declared required field, and an attachment can carry
+    # bytes that fail verification. RELATIONSHIPS, PERMISSIONS and AUDIT_EVENTS
+    # have no such failure mode -- reference-model restoration is their only
+    # check -- so they pass 0 and this floor alone reports them.
     effective_invalid = max(invalid_count, len(actual) - restored_count)
     status = classify_dimension_status(
         coverage,
@@ -326,7 +333,7 @@ def run_drill(
             {item.key for item in baseline.relationships},
             {item.key for item in package.relationships},
             restored[Dimension.RELATIONSHIPS],
-            len(package.relationships) if restored[Dimension.RELATIONSHIPS] == 0 else 0,
+            0,  # no independent check; the restoration floor reports this dimension
         ),
         _dimension_result(
             Dimension.ATTACHMENTS,
@@ -342,7 +349,7 @@ def run_drill(
             {item.key for item in baseline.permissions},
             {item.key for item in package.permissions},
             restored[Dimension.PERMISSIONS],
-            len(package.permissions) if restored[Dimension.PERMISSIONS] == 0 else 0,
+            0,  # no independent check; the restoration floor reports this dimension
         ),
         _dimension_result(
             Dimension.AUDIT_EVENTS,
@@ -350,7 +357,7 @@ def run_drill(
             {item.key for item in baseline.audit_events},
             {item.key for item in package.audit_events},
             restored[Dimension.AUDIT_EVENTS],
-            len(package.audit_events) if restored[Dimension.AUDIT_EVENTS] == 0 else 0,
+            0,  # no independent check; the restoration floor reports this dimension
         ),
     )
     return DrillResult(
