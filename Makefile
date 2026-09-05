@@ -58,7 +58,8 @@ demo-lossy:
 	@uv run exitdrill report examples/synthetic-crm-lossy/out/receipt.json --out examples/synthetic-crm-lossy/out/report.html >/dev/null
 
 demo-compare: demo demo-lossy
-	@uv run exitdrill compare examples/synthetic-crm/out/receipt.json examples/synthetic-crm-lossy/out/receipt.json > examples/synthetic-crm/out/comparison.json
+	@uv run exitdrill compare examples/synthetic-crm/out/receipt.json examples/synthetic-crm-lossy/out/receipt.json --out examples/synthetic-crm/out/comparison.json
+	@uv run exitdrill verify-comparison examples/synthetic-crm/out/comparison.json --reference examples/synthetic-crm/out/receipt.json --candidate examples/synthetic-crm-lossy/out/receipt.json
 	@uv run python scripts/summarize_synthetic_demo.py
 
 demo-compare-policy: demo-compare

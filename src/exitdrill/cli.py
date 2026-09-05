@@ -6,6 +6,7 @@ import argparse
 import json
 import sys
 from pathlib import Path
+from typing import cast
 
 from exitdrill import __version__
 from exitdrill.canonical import canonical_json_bytes
@@ -15,8 +16,11 @@ from exitdrill.civicrm_target_canary import (
     verify_civicrm_evidence_index,
 )
 from exitdrill.comparison import (
-    _comparison_has_observed_loss_signal_increase,
+    ComparisonError,
     compare_receipt_files,
+    comparison_has_observed_loss_signal_increase,
+    verify_comparison_files,
+    write_comparison,
 )
 from exitdrill.directus_canary import DirectusCanaryError, normalize_directus_canary
 from exitdrill.evaluator import DrillError, run_drill
@@ -74,6 +78,18 @@ def _parser() -> argparse.ArgumentParser:
         action="store_true",
         help="return 3 for a comparable observed aggregate missing/invalid increase",
     )
+    compare.add_argument(
+        "--out",
+        type=Path,
+        help="atomically write the comparison document here instead of stdout",
+    )
+    verify_comparison = commands.add_parser(
+        "verify-comparison",
+        help="recompute a comparison document from both source receipts",
+    )
+    verify_comparison.add_argument("comparison", type=Path)
+    verify_comparison.add_argument("--reference", type=Path, required=True)
+    verify_comparison.add_argument("--candidate", type=Path, required=True)
     report = commands.add_parser(
         "report",
         help="render an accessible offline report from a verified receipt",
@@ -205,13 +221,45 @@ def _compare(
     candidate_path: Path,
     *,
     fail_on_loss_signal_increase: bool,
+    out: Path | None,
 ) -> int:
     result = compare_receipt_files(reference_path, candidate_path)
-    _print_json(result)
+    if out is None:
+        _print_json(result)
+    else:
+        write_comparison(out, result)
+        _print_json(
+            {
+                "comparability": result["comparability"],
+                "comparison": str(out),
+                "decision_scope": "offline_aggregate_receipt_change_only",
+                "status": "comparison_written",
+            }
+        )
     if result["comparability"] != "comparable":
         return 2
-    if fail_on_loss_signal_increase and _comparison_has_observed_loss_signal_increase(result):
+    if fail_on_loss_signal_increase and comparison_has_observed_loss_signal_increase(result):
         return 3
+    return 0
+
+
+def _verify_comparison(
+    comparison_path: Path,
+    reference_path: Path,
+    candidate_path: Path,
+) -> int:
+    comparison = verify_comparison_files(comparison_path, reference_path, candidate_path)
+    reference = cast(dict[str, JsonValue], comparison["reference"])
+    candidate = cast(dict[str, JsonValue], comparison["candidate"])
+    _print_json(
+        {
+            "candidate_payload_sha256": candidate["payload_sha256"],
+            "comparability": comparison["comparability"],
+            "decision_scope": "offline_aggregate_receipt_change_only",
+            "reference_payload_sha256": reference["payload_sha256"],
+            "status": "recomputation_verified",
+        }
+    )
     return 0
 
 
@@ -269,12 +317,16 @@ def main(argv: list[str] | None = None) -> int:
                 args.reference,
                 args.candidate,
                 fail_on_loss_signal_increase=args.fail_on_loss_signal_increase,
+                out=args.out,
             )
+        if args.command == "verify-comparison":
+            return _verify_comparison(args.comparison, args.reference, args.candidate)
         if args.command == "report":
             return _report(args.receipt, args.out)
         return _run_canary_command(args)
     except (
         CiviCRMTargetCanaryError,
+        ComparisonError,
         DirectusCanaryError,
         DrillError,
         ExercisePlanError,

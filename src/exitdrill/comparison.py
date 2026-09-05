@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import os
+import tempfile
 from dataclasses import dataclass
 from functools import lru_cache
 from importlib.resources import files
@@ -14,8 +16,10 @@ from jsonschema import Draft202012Validator, SchemaError, ValidationError
 from exitdrill.canonical import canonical_json_bytes
 from exitdrill.models import Coverage, Dimension, DimensionStatus, JsonValue
 from exitdrill.receipt import ReceiptError, load_receipt, verify_receipt
+from exitdrill.strict_json import StrictJsonError, load_strict_json
 
 _COMPARISON_SCHEMA_RESOURCE = "receipt-comparison-v0.1.schema.json"
+_MAX_COMPARISON_BYTES = 2 * 1024 * 1024
 
 _COMPARISON_LIMITATIONS = (
     "inputs_are_unsigned_and_unauthenticated",
@@ -104,13 +108,17 @@ def snapshot_receipt(receipt: dict[str, JsonValue]) -> ReceiptSnapshot:
     )
 
 
-def load_receipt_snapshot(path: Path) -> ReceiptSnapshot:
-    """Strict-load and semantically validate one bounded receipt file."""
+def _load_comparison_receipt(path: Path) -> dict[str, JsonValue]:
+    """Strict-load one bounded receipt without echoing the operand path."""
     try:
-        receipt = load_receipt(path)
+        return load_receipt(path)
     except OSError as exc:
         raise ReceiptError("comparison input could not be read") from exc
-    return snapshot_receipt(receipt)
+
+
+def load_receipt_snapshot(path: Path) -> ReceiptSnapshot:
+    """Strict-load and semantically validate one bounded receipt file."""
+    return snapshot_receipt(_load_comparison_receipt(path))
 
 
 def _metadata(snapshot: ReceiptSnapshot) -> dict[str, JsonValue]:
@@ -376,9 +384,18 @@ def compare_snapshots(
     reference: ReceiptSnapshot,
     candidate: ReceiptSnapshot,
 ) -> dict[str, JsonValue]:
-    """Compare aggregate evidence without inferring chronology or a score."""
+    """Compare aggregate evidence without inferring chronology or a score.
+
+    Only the schema check runs here. `_build_comparison` is a pure function of
+    two frozen snapshots, so re-verifying the document it just returned against
+    a second call to itself compared a value with itself and could not fail
+    (issue #82). The schema check is not that: it holds the document against an
+    independently maintained JSON Schema, which can genuinely diverge from what
+    this module builds. Source-bound recomputation stays where a caller-supplied
+    document makes it real -- `verify_comparison_document`, and the
+    `exitdrill verify-comparison` route into it.
+    """
     result = _build_comparison(reference, candidate)
-    _verify_comparison_against_snapshots(result, reference, candidate)
     _validate_comparison_schema(result)
     return result
 
@@ -405,10 +422,19 @@ def verify_comparison_document(
     _validate_comparison_schema(comparison)
 
 
-def _comparison_has_observed_loss_signal_increase(
+def comparison_has_observed_loss_signal_increase(
     comparison: dict[str, JsonValue],
 ) -> bool:
-    """Return whether a comparable result directly observed a missing/invalid increase."""
+    """Return whether a comparable result directly observed a missing/invalid increase.
+
+    Module-public rather than underscore-prefixed because it decides the
+    documented `--fail-on-loss-signal-increase` exit 3 that
+    `docs/ARCHITECTURE.md` specifies and `make demo-compare-policy` asserts in
+    CI, so `cli.py` importing it is a contract, not a reach into internals
+    (issue #94). It stays out of the package `__all__`: exit-code policy is CLI
+    surface, and `tests/test_packaging.py` pins that library callers get the
+    comparison document itself and read it themselves.
+    """
     if comparison["comparability"] != "comparable":
         return False
     dimensions = cast(list[JsonValue], comparison["dimensions"])
@@ -432,3 +458,70 @@ def compare_receipt_files(
         load_receipt_snapshot(reference_path),
         load_receipt_snapshot(candidate_path),
     )
+
+
+def write_comparison(path: Path, comparison: dict[str, JsonValue]) -> None:
+    """Atomically write a bounded canonical comparison document.
+
+    This is a third copy of the bounded `mkstemp` + `fsync` + `os.replace`
+    sequence `write_receipt` and `write_report` already carry, deliberately
+    left as a copy: issue #93 extracts the one shared writer, and this is
+    written to be folded into it rather than to anticipate its signature.
+    """
+    document = canonical_json_bytes(comparison) + b"\n"
+    if len(document) > _MAX_COMPARISON_BYTES:
+        raise ComparisonError("comparison exceeds the 2 MiB limit")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    descriptor, temporary_name = tempfile.mkstemp(
+        dir=path.parent,
+        prefix=f".{path.name}.",
+        suffix=".tmp",
+    )
+    temporary = Path(temporary_name)
+    try:
+        with os.fdopen(descriptor, "wb") as handle:
+            handle.write(document)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary, path)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def load_comparison(path: Path) -> dict[str, JsonValue]:
+    """Strict-load one bounded comparison document without echoing its path."""
+    try:
+        raw, _source_sha256 = load_strict_json(
+            path,
+            max_bytes=_MAX_COMPARISON_BYTES,
+            size_label="2 MiB",
+        )
+    except StrictJsonError as exc:
+        message = str(exc).replace("document exceeds", "comparison exceeds", 1)
+        raise ComparisonError(message) from exc
+    except OSError as exc:
+        raise ComparisonError("comparison input could not be read") from exc
+    if not isinstance(raw, dict):
+        raise ComparisonError("comparison document must be a JSON object")
+    return cast(dict[str, JsonValue], raw)
+
+
+def verify_comparison_files(
+    comparison_path: Path,
+    reference_path: Path,
+    candidate_path: Path,
+) -> dict[str, JsonValue]:
+    """Strict-load a comparison document and recompute it from both receipt files.
+
+    The document is caller-supplied here, so the recomputation inside
+    `verify_comparison_document` is doing real work: a forged field, a document
+    paired with the wrong receipts, or a receipt edited after the fact all fail
+    canonical byte equality.
+    """
+    comparison = load_comparison(comparison_path)
+    verify_comparison_document(
+        comparison,
+        _load_comparison_receipt(reference_path),
+        _load_comparison_receipt(candidate_path),
+    )
+    return comparison

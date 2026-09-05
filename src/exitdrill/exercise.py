@@ -158,6 +158,7 @@ def load_exercise_plan(path: Path) -> ExercisePlan:
             path,
             max_bytes=_MAX_PLAN_BYTES,
             size_label="1 MiB",
+            document_label="exercise plan",
         )
     except StrictJsonError as exc:
         raise ExercisePlanError(str(exc)) from exc
