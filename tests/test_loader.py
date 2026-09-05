@@ -253,17 +253,24 @@ def test_rejects_a_document_that_is_not_valid_utf8(tmp_path: Path) -> None:
         load_export(path)
 
 
-def test_rejects_nesting_the_json_parser_itself_cannot_walk(tmp_path: Path) -> None:
+def test_rejects_nesting_the_json_parser_itself_cannot_walk(
+    tmp_path: Path, json_the_parser_cannot_walk: str
+) -> None:
     """Nesting deep enough to exhaust the parser before any bound is consulted.
 
     `validate_json_value` runs after `json.loads` returns, so a document nested
-    far past CPython's recursion limit never reaches the depth check at all. The
-    RecursionError arm is what stops that raw interpreter error from escaping
-    the trust boundary as itself. Found while closing issue #57; it was the last
-    uncovered branch left in the module.
+    far past what this interpreter will recurse never reaches the depth check at
+    all. The RecursionError arm is what stops that raw interpreter error from
+    escaping the trust boundary as itself. Found while closing issue #57; it was
+    the last uncovered branch left in the module.
+
+    The depth is measured rather than written down, because it is a property of
+    the interpreter and not a constant: a literal 20,000 levels stopped
+    defeating the 3.14 decoder while still defeating 3.12 and 3.13, so this
+    reached the depth check instead of the arm it names (issue #90).
     """
     path = tmp_path / "unparseable.json"
-    path.write_text("[" * 20000 + "]" * 20000, encoding="utf-8")
+    path.write_text(json_the_parser_cannot_walk, encoding="utf-8")
     with pytest.raises(PackageError, match="parser limit"):
         load_export(path)
 
