@@ -15,6 +15,13 @@ says which and why. Two branches in `evaluator.py` are unreachable even
 directly without simulating a failure the module is defended against rather
 than one it can produce; they are named at the end rather than left as
 unexplained red lines.
+
+The last section is the inverse case. Issue #96 removed two guards that were
+not unreachable but inert: a `try: ... except OSError: raise` in
+`strict_json.py` that changed nothing, and a `FileNotFoundError` entry in
+`evaluator.py` already covered by the `OSError` beside it. Each stated a real
+fact by construction rather than by assertion, and removing the construction
+removed the only record of the fact, so the facts are asserted here instead.
 """
 
 from __future__ import annotations
@@ -59,6 +66,7 @@ from exitdrill.paths import (
     sha256_bounded_file,
 )
 from exitdrill.receipt import build_receipt
+from exitdrill.strict_json import StrictJsonError, load_strict_json
 
 PROJECT = Path(__file__).parents[1]
 EXAMPLE = PROJECT / "examples" / "synthetic-crm"
@@ -453,3 +461,64 @@ def test_attachment_root_is_still_the_only_way_in(tmp_path: Path) -> None:
 
     assert os.path.isdir(root)
     assert outside.read_bytes() == b"not yours"
+
+
+# ---------------------------------------------------------------------------
+# The facts two removed inert guards used to state (issue #96).
+# ---------------------------------------------------------------------------
+
+
+def test_read_failure_escapes_load_strict_json_as_itself(tmp_path: Path) -> None:
+    """`load_strict_json` wraps decode failures and lets read failures through.
+
+    This is what the removed `try: ... except OSError: raise` stood for. The
+    split is load-bearing for three callers: `loader._load_object` catches
+    `StrictJsonError` only, `comparison._load_comparison_receipt` catches
+    `OSError` separately to give it a message that does not echo the path, and
+    `cli.main` catches `OSError` at the top level. If `StrictJsonError` ever
+    became an `OSError`, or a read failure were wrapped on its way out, all
+    three would change behaviour without any of them being edited -- and with
+    the no-op handler gone, nothing else records that they depend on it.
+    """
+    assert not issubclass(StrictJsonError, OSError)
+
+    with pytest.raises(OSError) as read_failure:
+        load_strict_json(tmp_path / "absent.json", max_bytes=1024, size_label="1 KiB")
+    assert not isinstance(read_failure.value, StrictJsonError)
+
+    document = tmp_path / "present.json"
+    document.write_text("{", encoding="utf-8")
+    with pytest.raises(StrictJsonError, match="not valid JSON"):
+        load_strict_json(document, max_bytes=1024, size_label="1 KiB")
+
+
+def test_unreadable_attachment_needs_exactly_two_error_families(tmp_path: Path) -> None:
+    """`evaluator`'s attachment handler catches two families, not one plus a synonym.
+
+    Issue #96 removed `FileNotFoundError` from
+    `_byte_invalid_attachment_keys`'s `except` clause because `OSError` beside
+    it already covered it. What that clause still needs is `BoundedPathError`,
+    which is a `ValueError` and reachable by no other entry in the tuple. The
+    two families are asserted here directly, against `sha256_bounded_file`'s
+    stated contract, because the handler is what turns either failure into an
+    invalid-attachment count rather than an escaping exception.
+
+    `test_attachment_bytes_fail_closed[escape]` in `test_evaluator.py` covers
+    the same fact end to end; this states it at the level the guard is written
+    at, so a future edit to that fixture cannot silently take it with it.
+    """
+    assert issubclass(BoundedPathError, ValueError)
+    assert not issubclass(BoundedPathError, OSError)
+
+    root = tmp_path / "root"
+    root.mkdir()
+    (tmp_path / "outside.txt").write_bytes(b"not yours")
+
+    with pytest.raises(OSError):
+        sha256_bounded_file(root, "absent.txt", max_bytes=1024)
+
+    with pytest.raises(BoundedPathError):
+        sha256_bounded_file(root, "../outside.txt", max_bytes=1024)
+
+    source = (PROJECT / "src" / "exitdrill" / "evaluator.py").read_text(encoding="utf-8")
+    assert "except (BoundedPathError, OSError):" in source

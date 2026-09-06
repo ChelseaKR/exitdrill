@@ -357,6 +357,27 @@ All notable changes will be documented here.
 
 ### Changed
 
+- `write_receipt`, `write_report` and `write_comparison` now share one
+  implementation, `atomic_write.write_bounded_file`, instead of carrying three
+  copies of the same bounded `mkstemp` + `fsync` + `os.replace` sequence
+  (issue #93). Each caller keeps its own size bound, error type and rejection
+  wording, which are parameters rather than duplicated code, so no message
+  changed. The bound is still checked before `mkdir` and before `mkstemp`, so
+  the write ordering `docs/THREAT-MODEL.md` states is unchanged and each
+  caller's "the parent directory still does not exist" assertion passes as
+  written.
+- All three writers now fsync the parent directory after `os.replace`, which
+  is the half of "atomically write" the docstrings claimed and the code did
+  not do. `os.replace` is atomic against a concurrent reader, but the
+  directory entry it creates is not durable until the directory is synced, so
+  a crash could come back with the payload on disk and nothing naming it. The
+  directory fsync is tolerated rather than required: a platform with no
+  directory descriptor still gets its artifact and loses only crash
+  durability, which it could not have offered anyway. The alternative the
+  issue offered -- weakening the docstrings to "atomically replace" and
+  disclaiming durability -- was not taken, because the file fsync was already
+  being paid for and the missing step is one syscall.
+
 - The receipt envelope's `claimed_generated_at` must now be an ISO 8601
   timestamp with an explicit UTC offset, the same contract
   `baseline.captured_at`, `export.exported_at` and every `occurred_at`

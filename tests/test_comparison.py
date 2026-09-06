@@ -859,7 +859,7 @@ def test_write_comparison_leaves_no_partial_file_after_a_replace_failure(
     def fail_replace(_source: object, _target: object) -> None:
         raise OSError("synthetic replace failure")
 
-    monkeypatch.setattr("exitdrill.comparison.os.replace", fail_replace)
+    monkeypatch.setattr("exitdrill.atomic_write.os.replace", fail_replace)
     with pytest.raises(OSError, match="synthetic"):
         write_comparison(tmp_path / "comparison.json", comparison)
     assert not (tmp_path / "comparison.json").exists()

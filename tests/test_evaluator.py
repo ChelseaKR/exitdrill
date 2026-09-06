@@ -167,6 +167,24 @@ def test_orphaned_scoped_records_fail_restore(copied_example: Path, dimension: s
 
 @pytest.mark.parametrize("mode", ["missing", "corrupt", "escape"])
 def test_attachment_bytes_fail_closed(copied_example: Path, mode: str) -> None:
+    """Each mode has to reach the byte check by a different route.
+
+    `_byte_invalid_attachment_keys` catches `(BoundedPathError, OSError)`, two
+    families rather than one: `BoundedPathError` is a `ValueError` and is not
+    reachable through the `OSError` beside it. `missing` proves the `OSError`
+    half. `escape` is the only case that can prove the other, and it does so
+    only if its target exists -- a path that both escapes the root *and*
+    resolves to nothing raises `FileNotFoundError` from `resolve(strict=True)`
+    before `is_relative_to` is ever consulted, so it re-proves the half
+    `missing` already covers.
+
+    Measured: with the escape target spelled `../../baseline.json`, which
+    resolves to nothing under `tmp_path`, deleting `BoundedPathError` from that
+    handler left all 892 tests green. With it spelled `../baseline.json`, which
+    the fixture really has one level above the attachment root, the same
+    deletion fails this case. The literal is therefore load-bearing, which is
+    why it is explained here rather than left to look arbitrary.
+    """
     export_path = copied_example / "export.json"
     attachment = copied_example / "export-files" / "attachments" / "intake.txt"
     if mode == "missing":
@@ -175,7 +193,7 @@ def test_attachment_bytes_fail_closed(copied_example: Path, mode: str) -> None:
         attachment.write_text("changed", encoding="utf-8")
     else:
         raw = _json(export_path)
-        raw["attachments"][0]["relative_path"] = "../../baseline.json"  # type: ignore[index]
+        raw["attachments"][0]["relative_path"] = "../baseline.json"  # type: ignore[index]
         _write(export_path, raw)
     result = _run(copied_example)
     attachments = result.dimensions[2]
