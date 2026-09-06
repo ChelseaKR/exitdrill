@@ -81,14 +81,22 @@ addopts = """
 --strict-config \
 --import-mode=importlib \
 --cov=exitdrill \
+--cov=scripts \
 --cov-branch \
 --cov-report=term-missing \
 --cov-fail-under=90
 """
 
 [tool.coverage.run]
-source = ["exitdrill"]
+source = ["exitdrill", "scripts"]
 branch = true
+# The gate tests run `python scripts/<gate>.py` as real subprocesses, because
+# what they assert is the exit code and the exact stdout of that invocation.
+# Coverage does not follow into a child process on its own; `parallel = true`
+# plus the `COVERAGE_PROCESS_START` set in tests/conftest.py is what makes it,
+# and it is what keeps each child's data file from colliding with the parent's
+# before pytest-cov combines them.
+parallel = true
 
 [tool.coverage.report]
 fail_under = 90

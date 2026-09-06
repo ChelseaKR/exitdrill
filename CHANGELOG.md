@@ -184,6 +184,26 @@ All notable changes will be documented here.
 
 ### Fixed
 
+- The 90% branch-coverage gate measured `src/exitdrill` only, so nothing
+  measured `scripts/` -- the directory holding `check_wheel.py`, both canary
+  demo gates and the two adversary builders (issue #86). Measured with the
+  scope added and nothing else changed: `scripts/` is at 33% and the project as
+  a whole at 82%, below the floor the gate has been reporting as met. Most of
+  that gap is not untested code: the gate tests run `python scripts/<gate>.py`
+  as real subprocesses, because what they assert is its exit code and its exact
+  stdout, and coverage does not follow into a child process on its own.
+  `tests/conftest.py` now sets `COVERAGE_PROCESS_START` and `COVERAGE_FILE` at
+  session start and `[tool.coverage.run]` sets `parallel = true`, which brings
+  the real figures to 99% for `src/exitdrill`, 82% for `scripts/` and 95%
+  together. `make test` now floors each scope separately as well as the run as
+  a whole, so a well-covered scope can no longer carry a poorly covered one.
+- CI never set `EXITDRILL_REQUIRE_GATE_TOOLS`, so the mechanism issue #89 added
+  was built and left switched off: the four gate tests that need `node` or `uv`
+  would still have skipped themselves in CI, green, if a workflow edit removed
+  the tool they depend on. The `Verify` step now sets it to `1`, which turns a
+  missing tool into a failure there while a local checkout without the tools
+  still skips. Proved by hiding `node` from `PATH`: the two node-dependent
+  gates fail with the flag set and skip without it.
 - `requires-python` admitted 3.12, 3.13 and 3.14 while CI ran only 3.12, so two
   of the three declared interpreters were never exercised (issue #90). Measured
   on the unrun ones: 3.13 is clean, and 3.14 failed three tests. All three
