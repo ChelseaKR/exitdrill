@@ -10,6 +10,20 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    # `github/codeql-action/init` and `github/codeql-action/analyze` are two
+    # `uses:` lines from one action distribution, and CodeQL refuses to run when
+    # they disagree: `init` writes a config file stamped with its own version and
+    # `analyze` rejects it with "Loaded a configuration file for version 'A', but
+    # running version 'B'". Ungrouped, Dependabot opens one pull request per
+    # `uses:` line, so *each* is red on its own and neither can be merged first.
+    # That is exactly what happened to #79 and #80 (4.37.8 -> 4.37.9): both green
+    # on every other check, both failing CodeQL with that message, and the pair
+    # only mergeable together. Grouping makes the next bump a single pull request
+    # that moves both lines at once.
+    groups:
+      codeql-action:
+        patterns:
+          - "github/codeql-action*"
     # `release.yml` pins a reusable workflow from ChelseaKR/portfolio-standards,
     # a *private* repository. Dependabot's repo-scoped credentials cannot read
     # it: the proxy logs `403 ... Either the repo doesn't exist, or Dependabot
