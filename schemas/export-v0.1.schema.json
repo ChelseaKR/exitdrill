@@ -1,0 +1,211 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://exitdrill.example/schemas/export-v0.1.schema.json",
+  "title": "ExitDrill normalized export package",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "drill_id",
+    "source_system",
+    "exported_at",
+    "entities",
+    "relationships",
+    "attachments",
+    "permissions",
+    "audit_events"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "exitdrill/export/v0.1"
+    },
+    "drill_id": {
+      "type": "string",
+      "pattern": "^\\s*[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}\\s*$"
+    },
+    "source_system": {
+      "type": "string",
+      "minLength": 1
+    },
+    "exported_at": {
+      "type": "string",
+      "minLength": 1
+    },
+    "entities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type",
+          "id",
+          "fields"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "pattern": "^\\s*[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}\\s*$"
+          },
+          "id": {
+            "type": "string",
+            "pattern": "^\\s*[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}\\s*$"
+          },
+          "fields": {
+            "type": "object",
+            "propertyNames": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$"
+            },
+            "additionalProperties": {
+              "type": [
+                "null",
+                "boolean",
+                "integer",
+                "number",
+                "string"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "relationships": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type",
+          "from_type",
+          "from_id",
+          "to_type",
+          "to_id"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "pattern": "^\\s*[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}\\s*$"
+          },
+          "from_type": {
+            "type": "string",
+            "pattern": "^\\s*[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}\\s*$"
+          },
+          "from_id": {
+            "type": "string",
+            "pattern": "^\\s*[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}\\s*$"
+          },
+          "to_type": {
+            "type": "string",
+            "pattern": "^\\s*[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}\\s*$"
+          },
+          "to_id": {
+            "type": "string",
+            "pattern": "^\\s*[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}\\s*$"
+          }
+        }
+      }
+    },
+    "attachments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "owner_type",
+          "owner_id",
+          "relative_path",
+          "content_sha256"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^\\s*[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}\\s*$"
+          },
+          "owner_type": {
+            "type": "string",
+            "pattern": "^\\s*[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}\\s*$"
+          },
+          "owner_id": {
+            "type": "string",
+            "pattern": "^\\s*[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}\\s*$"
+          },
+          "relative_path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "content_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      }
+    },
+    "permissions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "principal_id",
+          "scope_type",
+          "scope_id",
+          "role"
+        ],
+        "properties": {
+          "principal_id": {
+            "type": "string",
+            "pattern": "^\\s*[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}\\s*$"
+          },
+          "scope_type": {
+            "type": "string",
+            "pattern": "^\\s*[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}\\s*$"
+          },
+          "scope_id": {
+            "type": "string",
+            "pattern": "^\\s*[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}\\s*$"
+          },
+          "role": {
+            "type": "string",
+            "pattern": "^\\s*[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}\\s*$"
+          }
+        }
+      }
+    },
+    "audit_events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "event_id",
+          "object_type",
+          "object_id",
+          "action",
+          "occurred_at"
+        ],
+        "properties": {
+          "event_id": {
+            "type": "string",
+            "pattern": "^\\s*[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}\\s*$"
+          },
+          "object_type": {
+            "type": "string",
+            "pattern": "^\\s*[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}\\s*$"
+          },
+          "object_id": {
+            "type": "string",
+            "pattern": "^\\s*[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}\\s*$"
+          },
+          "action": {
+            "type": "string",
+            "pattern": "^\\s*[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}\\s*$"
+          },
+          "occurred_at": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  }
+}

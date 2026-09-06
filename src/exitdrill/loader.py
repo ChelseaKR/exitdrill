@@ -26,6 +26,7 @@ from exitdrill.models import (
     Relationship,
     matches_field_type,
 )
+from exitdrill.schemas import BASELINE_SCHEMA, EXPORT_SCHEMA, validate_against_schema
 from exitdrill.strict_json import StrictJsonError, load_strict_json
 from exitdrill.timestamps import TimestampError, parse_timestamp
 
@@ -291,6 +292,7 @@ def load_baseline(path: Path) -> Baseline:
         (audit_events, lambda item: item.event_id, "audit_events"),
     ):
         _require_unique(items, key, context)
+    validate_against_schema(BASELINE_SCHEMA, raw, PackageError, "baseline")
     return Baseline(
         drill_id=_identifier(raw, "drill_id", "baseline"),
         source_system=_string(raw, "source_system", "baseline"),
@@ -324,6 +326,7 @@ def load_export(path: Path) -> ExportPackage:
         (audit_events, lambda item: item.event_id, "audit_events"),
     ):
         _require_unique(items, key, context)
+    validate_against_schema(EXPORT_SCHEMA, raw, PackageError, "export")
     return ExportPackage(
         drill_id=_identifier(raw, "drill_id", "export"),
         source_system=_string(raw, "source_system", "export"),

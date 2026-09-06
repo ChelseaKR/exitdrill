@@ -1,0 +1,265 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://exitdrill.example/schemas/receipt-v0.3.schema.json",
+  "title": "ExitDrill structural receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "envelope",
+    "payload",
+    "payload_sha256"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "exitdrill/receipt/v0.3"
+    },
+    "payload_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "envelope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "claimed_generated_at",
+        "signature_status",
+        "trusted_time"
+      ],
+      "properties": {
+        "claimed_generated_at": {
+          "type": "string",
+          "minLength": 1
+        },
+        "signature_status": {
+          "const": "not_signed"
+        },
+        "trusted_time": {
+          "const": false
+        }
+      }
+    },
+    "payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "decision_scope",
+        "drill_id",
+        "source_system",
+        "baseline_sha256",
+        "export_sha256",
+        "dimensions",
+        "overall_status",
+        "observed_remediation_signals",
+        "trust_limitations"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "exitdrill/drill-result/v0.3"
+        },
+        "decision_scope": {
+          "const": "offline_structural_exit_drill_only"
+        },
+        "drill_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_system": {
+          "type": "string",
+          "minLength": 1
+        },
+        "baseline_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "export_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "overall_status": {
+          "enum": [
+            "structurally_restorable",
+            "structurally_restorable_with_findings",
+            "not_structurally_restorable",
+            "indeterminate"
+          ]
+        },
+        "observed_remediation_signals": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "dimensions": {
+          "type": "array",
+          "minItems": 5,
+          "maxItems": 5,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "coverage",
+              "status",
+              "expected_count",
+              "exported_count",
+              "restored_count",
+              "missing_count",
+              "extra_count",
+              "invalid_count"
+            ],
+            "properties": {
+              "name": {
+                "enum": [
+                  "entities",
+                  "relationships",
+                  "attachments",
+                  "permissions",
+                  "audit_events"
+                ]
+              },
+              "coverage": {
+                "enum": [
+                  "complete",
+                  "partial",
+                  "unavailable"
+                ]
+              },
+              "status": {
+                "enum": [
+                  "pass",
+                  "fail",
+                  "finding",
+                  "indeterminate"
+                ]
+              },
+              "expected_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "exported_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "restored_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "missing_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "extra_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "invalid_count": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          },
+          "allOf": [
+            {
+              "contains": {
+                "type": "object",
+                "required": [
+                  "name"
+                ],
+                "properties": {
+                  "name": {
+                    "const": "entities"
+                  }
+                }
+              },
+              "minContains": 1,
+              "maxContains": 1
+            },
+            {
+              "contains": {
+                "type": "object",
+                "required": [
+                  "name"
+                ],
+                "properties": {
+                  "name": {
+                    "const": "relationships"
+                  }
+                }
+              },
+              "minContains": 1,
+              "maxContains": 1
+            },
+            {
+              "contains": {
+                "type": "object",
+                "required": [
+                  "name"
+                ],
+                "properties": {
+                  "name": {
+                    "const": "attachments"
+                  }
+                }
+              },
+              "minContains": 1,
+              "maxContains": 1
+            },
+            {
+              "contains": {
+                "type": "object",
+                "required": [
+                  "name"
+                ],
+                "properties": {
+                  "name": {
+                    "const": "permissions"
+                  }
+                }
+              },
+              "minContains": 1,
+              "maxContains": 1
+            },
+            {
+              "contains": {
+                "type": "object",
+                "required": [
+                  "name"
+                ],
+                "properties": {
+                  "name": {
+                    "const": "audit_events"
+                  }
+                }
+              },
+              "minContains": 1,
+              "maxContains": 1
+            }
+          ]
+        },
+        "trust_limitations": {
+          "type": "array",
+          "minItems": 5,
+          "maxItems": 5,
+          "prefixItems": [
+            {
+              "const": "does_not_prove_operational_equivalence"
+            },
+            {
+              "const": "does_not_prove_vendor_deletion"
+            },
+            {
+              "const": "does_not_authenticate_export_or_baseline"
+            },
+            {
+              "const": "field_value_equivalence_limited_to_declared_required_fields"
+            },
+            {
+              "const": "does_not_verify_permission_principal_identity"
+            }
+          ],
+          "items": false
+        }
+      }
+    }
+  }
+}

@@ -9,6 +9,7 @@ from typing import cast
 
 from exitdrill.contracts import require_exact_keys
 from exitdrill.models import Coverage, Dimension
+from exitdrill.schemas import EXERCISE_PLAN_SCHEMA, validate_against_schema
 from exitdrill.strict_json import StrictJsonError, load_strict_json
 
 _MAX_PLAN_BYTES = 1024 * 1024
@@ -177,6 +178,7 @@ def load_exercise_plan(path: Path) -> ExercisePlan:
     target_system = _validate_target(value["target_sandbox"])
     _validate_probes(value["workflow_probes"])
     _validate_evidence(value["evidence_controls"])
+    validate_against_schema(EXERCISE_PLAN_SCHEMA, value, ExercisePlanError, "exercise plan")
     return ExercisePlan(
         exercise_id=_string(value, "exercise_id", "exercise plan"),
         source_system=source_system,
