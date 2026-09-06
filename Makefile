@@ -23,8 +23,18 @@ lint-lab:
 type:
 	uv run mypy
 
+# Three floors, not one. `--cov-fail-under=90` in pyproject.toml covers the run
+# as a whole; these two keep each scope honest on its own, because a project-wide
+# number lets a well-covered scope carry a poorly covered one. Measured today:
+# src/exitdrill 99%, scripts/ 82%, both together 95% (issue #86). `--fail-under`
+# is passed explicitly because `[tool.coverage.report] fail_under = 90` would
+# otherwise apply its project-wide number to a single-scope report.
 test:
 	uv run pytest
+	@printf 'branch coverage, src/exitdrill (floor 90): '
+	@uv run coverage report --include='src/exitdrill/*' --fail-under=90 --format=total
+	@printf 'branch coverage, scripts (floor 80): '
+	@uv run coverage report --include='scripts/*' --fail-under=80 --format=total
 
 verify: lint type test
 

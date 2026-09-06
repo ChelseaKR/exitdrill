@@ -1,11 +1,45 @@
 import json
+import os
 from pathlib import Path
 from shutil import copytree
 
+import coverage
 import pytest
+
+PROJECT = Path(__file__).parents[1]
 
 _FIRST_PROBED_DEPTH = 20_000
 _LAST_PROBED_DEPTH = 640_000
+
+
+def pytest_sessionstart() -> None:
+    """Let coverage follow the suite into the scripts it runs as subprocesses.
+
+    Several gate tests assert on the exit code and the exact stdout of a real
+    `python scripts/<gate>.py` invocation, so those call sites have to stay
+    subprocesses; importing the module instead would stop proving the thing
+    they exist to prove. Coverage does not follow into a child process on its
+    own. The `coverage` distribution installs a `.pth` hook that calls
+    `coverage.process_startup()` at interpreter start, but only when
+    `COVERAGE_PROCESS_START` names a configuration file, so this sets it and
+    every subprocess the suite launches inherits it through `os.environ`. The
+    child then arms itself from the same `[tool.coverage.run]` block, whose
+    `parallel = true` is what keeps its data file from colliding with the
+    parent's before pytest-cov combines them.
+
+    `COVERAGE_FILE` is pinned to the parent's own data file because a child's
+    default is `.coverage` relative to *its* working directory: without this a
+    subprocess launched with `cwd=tmp_path` would write somewhere nothing
+    combines, and its coverage would vanish silently rather than visibly.
+
+    Skipped when coverage is not running (`--no-cov`, or a plain `pytest`
+    invocation), so a child never writes data files nothing will combine.
+    """
+    current = coverage.Coverage.current()
+    if current is None:
+        return
+    os.environ["COVERAGE_PROCESS_START"] = str(PROJECT / "pyproject.toml")
+    os.environ["COVERAGE_FILE"] = str(Path(current.config.data_file).resolve())
 
 
 @pytest.fixture
