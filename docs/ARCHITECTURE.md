@@ -34,6 +34,12 @@ permission model.
   documents, and naming none of them for capture-derived canary input.
 - `strict_json.py` rejects duplicate keys, non-finite numbers, excessive
   nesting, invalid UTF-8, and documents beyond their byte budgets.
+- `atomic_write.py` holds the one bounded write behind every evidence
+  artifact: the size bound is checked before any filesystem mutation, the
+  payload is written to a same-directory `mkstemp` file, fsynced, and
+  `os.replace`d over the target, and the parent directory is then fsynced so
+  the rename itself survives a crash. Directory fsync is tolerated rather than
+  required, because some platforms have no directory descriptor to sync.
 - `loader.py` enforces strict versioned baseline and export contracts.
 - `exercise.py` backs the `validate-exercise` subcommand, which is the first
   step of `make demo`. It validates a synthetic-only safety/evidence plan for a
@@ -68,8 +74,8 @@ permission model.
   presence, counts, arithmetic, limitations, and shared result algebra.
 - `comparison.py` reduces two verified receipts to aggregate snapshots, gates
   exact input-scope comparability, emits deterministic per-dimension deltas, and
-  writes and re-verifies the resulting document through the same bounded atomic
-  path receipts and reports use.
+  writes and re-verifies the resulting document through `atomic_write.py`, the
+  same one writer receipts and reports use.
 - `report.py` renders one semantically verified aggregate receipt as a
   deterministic, accessible, script-free offline HTML report with the complete
   claims boundary intact.
@@ -467,8 +473,9 @@ export-generation method or evaluator version, so comparison cannot causally
 attribute a change.
 
 `exitdrill compare` writes the canonical document to stdout by default, or to
-`--out PATH` through the same bounded `mkstemp` + `fsync` + `os.replace`
-sequence receipts and reports use. The bytes are identical either way; `--out`
+`--out PATH` through `atomic_write.write_bounded_file`, the same bounded
+`mkstemp` + `fsync` + `os.replace` + parent-directory fsync receipts and reports
+use. The bytes are identical either way; `--out`
 adds the size bound, atomic replacement, and refusal to write through a
 symlink that a shell redirection cannot give. The document is written before
 the policy below decides an exit code, so a nonzero exit still leaves the

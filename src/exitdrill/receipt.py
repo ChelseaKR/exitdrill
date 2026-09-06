@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
-import os
-import tempfile
 from collections.abc import Mapping
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import cast
 
+from exitdrill.atomic_write import write_bounded_file
 from exitdrill.canonical import canonical_json_bytes, is_sha256_hex, sha256_bytes
 from exitdrill.contracts import require_exact_keys
 from exitdrill.models import DrillResult, JsonValue
@@ -46,26 +45,15 @@ def build_receipt(
 
 
 def write_receipt(path: Path, receipt: dict[str, JsonValue]) -> None:
-    """Atomically write a receipt."""
+    """Atomically write a receipt, after verifying it and before touching disk."""
     verify_receipt(receipt)
-    document = canonical_json_bytes(receipt) + b"\n"
-    if len(document) > _MAX_RECEIPT_BYTES:
-        raise ReceiptError("receipt exceeds the 2 MiB limit")
-    path.parent.mkdir(parents=True, exist_ok=True)
-    descriptor, temporary_name = tempfile.mkstemp(
-        dir=path.parent,
-        prefix=f".{path.name}.",
-        suffix=".tmp",
+    write_bounded_file(
+        path,
+        canonical_json_bytes(receipt) + b"\n",
+        max_bytes=_MAX_RECEIPT_BYTES,
+        size_message="receipt exceeds the 2 MiB limit",
+        error=ReceiptError,
     )
-    temporary = Path(temporary_name)
-    try:
-        with os.fdopen(descriptor, "wb") as handle:
-            handle.write(document)
-            handle.flush()
-            os.fsync(handle.fileno())
-        os.replace(temporary, path)
-    finally:
-        temporary.unlink(missing_ok=True)
 
 
 def load_receipt(path: Path) -> dict[str, JsonValue]:
