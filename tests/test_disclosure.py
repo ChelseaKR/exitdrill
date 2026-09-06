@@ -56,7 +56,7 @@ from exitdrill.comparison import compare_snapshots, snapshot_receipt
 from exitdrill.evaluator import run_drill
 from exitdrill.loader import load_baseline, load_export
 from exitdrill.models import JsonValue
-from exitdrill.report import render_receipt_report
+from exitdrill.report import render_comparison_report, render_receipt_report
 
 # Callback that records one record value and where it came from.
 Note = Callable[[str, str], None]
@@ -71,7 +71,14 @@ BASELINE = CLEAN / "baseline.json"
 
 _CLAIMED_TIMES = {"clean": "2026-07-22T20:00:00Z", "lossy": "2026-07-22T20:05:00Z"}
 _OUTPUT_NAMES = frozenset(
-    {"clean-receipt", "lossy-receipt", "clean-report", "lossy-report", "comparison"}
+    {
+        "clean-receipt",
+        "lossy-receipt",
+        "clean-report",
+        "lossy-report",
+        "comparison",
+        "comparison-report",
+    }
 )
 
 # The two free-text payload fields a receipt carries. Replacing both with
@@ -237,9 +244,10 @@ def _receipts() -> dict[str, dict[str, JsonValue]]:
 def aggregate_outputs(receipts: dict[str, dict[str, JsonValue]]) -> dict[str, str]:
     """Render the aggregate artifacts the synthetic demo puts in front of a reader.
 
-    Given both fixtures these are the five documents `make demo-compare`
-    produces: two receipts, two HTML reports, and the comparison document.
-    Given one fixture the comparison, which needs two operands, is omitted.
+    Given both fixtures these are the six documents `make demo-compare`
+    produces: two receipts, two HTML reports, the comparison document, and the
+    comparison's own HTML report. Given one fixture the two comparison
+    artifacts, which need two operands, are omitted.
     """
     outputs = {
         f"{name}-receipt": canonical_json_bytes(receipt).decode("utf-8")
@@ -257,11 +265,16 @@ def aggregate_outputs(receipts: dict[str, dict[str, JsonValue]]) -> dict[str, st
             snapshot_receipt(receipts["lossy"]),
         )
         outputs["comparison"] = canonical_json_bytes(comparison).decode("utf-8")
+        outputs["comparison-report"] = render_comparison_report(
+            deepcopy(comparison),
+            deepcopy(receipts["clean"]),
+            deepcopy(receipts["lossy"]),
+        )
     return outputs
 
 
 def control_outputs() -> dict[str, str]:
-    """Render the same five artifacts from receipts that carry no record data.
+    """Render the same six artifacts from receipts that carry no record data.
 
     Every count, status, digest, JSON key, HTML element, stylesheet rule, and
     fixed caption is still present; only the two free-text payload fields are
@@ -443,6 +456,8 @@ def test_the_control_is_not_degenerate() -> None:
         assert "Observed loss signals" in control[name]
         assert "<!doctype html>" in control[name]
     assert "comparability" in control["comparison"]
+    assert "<!doctype html>" in control["comparison-report"]
+    assert "Signed count deltas" in control["comparison-report"]
 
 
 # ---------------------------------------------------------------------------
@@ -501,7 +516,7 @@ def test_gate_reports_a_record_value_leaked_into_the_receipt_and_report(
 
 
 def test_gate_reports_a_record_value_leaked_into_the_comparison_document() -> None:
-    """The comparison document is gated too, not only the receipts it summarizes."""
+    """The comparison document and its report are gated too, not only the receipts."""
     receipts = _receipts()
     for receipt in receipts.values():
         payload = cast(dict[str, JsonValue], receipt["payload"])
@@ -512,10 +527,18 @@ def test_gate_reports_a_record_value_leaked_into_the_comparison_document() -> No
         snapshot_receipt(receipts["clean"]),
         snapshot_receipt(receipts["lossy"]),
     )
-    outputs = {"comparison": canonical_json_bytes(comparison).decode("utf-8")}
+    outputs = {
+        "comparison": canonical_json_bytes(comparison).decode("utf-8"),
+        "comparison-report": render_comparison_report(
+            deepcopy(comparison),
+            deepcopy(receipts["clean"]),
+            deepcopy(receipts["lossy"]),
+        ),
+    }
 
     assert disclosures({"person-001": "export.entities[].id"}, outputs, frozenset()) == [
-        "comparison discloses 'person-001' (from export.entities[].id)"
+        "comparison discloses 'person-001' (from export.entities[].id)",
+        "comparison-report discloses 'person-001' (from export.entities[].id)",
     ]
 
 

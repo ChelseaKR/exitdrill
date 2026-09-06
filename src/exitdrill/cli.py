@@ -34,7 +34,13 @@ from exitdrill.receipt import (
     verify_receipt,
     write_receipt,
 )
-from exitdrill.report import ReportError, render_receipt_file, write_report
+from exitdrill.report import (
+    ReportError,
+    document_kind,
+    render_comparison_file,
+    render_receipt_file,
+    write_report,
+)
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -92,10 +98,20 @@ def _parser() -> argparse.ArgumentParser:
     verify_comparison.add_argument("--candidate", type=Path, required=True)
     report = commands.add_parser(
         "report",
-        help="render an accessible offline report from a verified receipt",
+        help="render an accessible offline report from a verified receipt or comparison",
     )
-    report.add_argument("receipt", type=Path)
+    report.add_argument("document", type=Path)
     report.add_argument("--out", type=Path, required=True)
+    report.add_argument(
+        "--reference",
+        type=Path,
+        help="reference receipt, required when the document is a comparison",
+    )
+    report.add_argument(
+        "--candidate",
+        type=Path,
+        help="candidate receipt, required when the document is a comparison",
+    )
     normalize_directus = commands.add_parser(
         "normalize-directus-canary",
         help="verify and normalize the bounded Directus 11.17.4 canary bundle",
@@ -263,12 +279,34 @@ def _verify_comparison(
     return 0
 
 
-def _report(receipt_path: Path, out: Path) -> int:
-    document = render_receipt_file(receipt_path)
-    write_report(out, document)
+def _report(
+    document_path: Path,
+    out: Path,
+    reference_path: Path | None,
+    candidate_path: Path | None,
+) -> int:
+    """Render whichever document kind the file declares itself to be.
+
+    The operand flags are checked against that kind rather than ignored when
+    they do not apply: supplying receipts for a receipt report, or omitting
+    them for a comparison report, is a usage error and never a silent skip of
+    the recomputation a comparison report is required to run first.
+    """
+    kind = document_kind(document_path)
+    if kind == "receipt":
+        if reference_path is not None or candidate_path is not None:
+            raise ReportError("--reference and --candidate apply only to a comparison document")
+        rendered = render_receipt_file(document_path)
+        decision_scope = "verified_aggregate_receipt_report_only"
+    else:
+        if reference_path is None or candidate_path is None:
+            raise ReportError("a comparison report requires --reference and --candidate receipts")
+        rendered = render_comparison_file(document_path, reference_path, candidate_path)
+        decision_scope = "verified_aggregate_comparison_report_only"
+    write_report(out, rendered)
     _print_json(
         {
-            "decision_scope": "verified_aggregate_receipt_report_only",
+            "decision_scope": decision_scope,
             "report": str(out),
             "status": "report_written",
         }
@@ -322,7 +360,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "verify-comparison":
             return _verify_comparison(args.comparison, args.reference, args.candidate)
         if args.command == "report":
-            return _report(args.receipt, args.out)
+            return _report(args.document, args.out, args.reference, args.candidate)
         return _run_canary_command(args)
     except (
         CiviCRMTargetCanaryError,

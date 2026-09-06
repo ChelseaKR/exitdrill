@@ -29,6 +29,40 @@ All notable changes will be documented here.
 
 ### Added
 
+- `exitdrill report` renders a comparison document as an offline, script-free
+  HTML page, the way it already rendered a receipt. The comparison round trip
+  closed in #102, but its only output was JSON, so a reader who was not the
+  operator was handed `count_deltas` and left to read them by eye. `report` now
+  routes on the `schema_version` the file declares about itself: a receipt with
+  operand receipts, or a comparison without them, is a usage error rather than
+  one document rendered as the other. A comparison requires `--reference` and
+  `--candidate` and goes through the same `verify_comparison_files`
+  recomputation `verify-comparison` uses, so a forged delta exits 2 with no page
+  written and the output directory not created.
+
+  The page carries the comparability checks and any reason codes, the signed
+  count deltas per dimension, both receipts' statuses with their transitions,
+  the observed loss-signal changes, and the six comparison limitations. It adds
+  no aggregate score and no ranking: transitions and assessments come from the
+  document's own closed vocabularies, and their pill carries no colour, because
+  a difference here is a fact and not a verdict. An `incomparable` document
+  renders its reason codes and says in terms that no dimension table follows,
+  instead of a table of zeros -- absence rendered as absence rather than as a
+  measurement. The word `uncertain` reaches the page only when a dimension's
+  assessment is `uncertain`, which is why empty summary buckets are not printed.
+
+  Both reports now render through one page shell, so the content-security
+  policy, stylesheet, escaping, and footer claim cannot drift apart between
+  them; the receipt report's bytes are unchanged. The two gates that guard the
+  report surface were extended to the new artifact rather than left pointed at
+  the old one: `tests/test_report_offline_safety.py` runs its element,
+  attribute, link, stylesheet, and CSP allowlists over both renderers with
+  synthetic and with hostile payload text, and `tests/test_disclosure.py` adds
+  the comparison report to the corpus it scans and to the control it computes
+  its exclusions from, with a negative control proving it reports a record value
+  injected into the new page. `make demo-compare` writes
+  `examples/synthetic-crm/out/comparison.html`.
+
 - `tests/test_release_versions.py` holds the declared version to the releases
   that exist. `pyproject.toml` declares `0.1.0` and `git tag -l` prints nothing:
   nothing has been tagged, `release.yml` has never been dispatched, and there is
