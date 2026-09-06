@@ -40,10 +40,15 @@ import pytest
 from exitdrill.canonical import canonical_json_bytes, sha256_bytes
 from exitdrill.comparison import compare_snapshots, snapshot_receipt
 from exitdrill.evaluator import run_drill
+from exitdrill.history import build_history_from_snapshots
 from exitdrill.loader import load_baseline, load_export
 from exitdrill.models import JsonValue
 from exitdrill.receipt import build_receipt
-from exitdrill.report import render_comparison_report, render_receipt_report
+from exitdrill.report import (
+    render_comparison_report,
+    render_history_report,
+    render_receipt_report,
+)
 
 PROJECT = Path(__file__).parents[1]
 README = PROJECT / "README.md"
@@ -221,9 +226,30 @@ def _comparison_report(hostile: bool) -> str:
     return render_comparison_report(comparison, deepcopy(reference), deepcopy(candidate))
 
 
+def _history_report(hostile: bool) -> str:
+    """Render the timeline through its own verifying entry point.
+
+    Both receipts carry the same free text, so the second stays inside the
+    series scope and the timeline renders its tables rather than a page of
+    gaps -- which is where most of this page's markup is.
+    """
+    reference = _hostile_receipt() if hostile else _receipt()
+    payload = cast(dict[str, JsonValue], reference["payload"])
+    candidate = _lossy_receipt(
+        cast(str, payload["source_system"]),
+        cast(str, payload["drill_id"]),
+    )
+    document = build_history_from_snapshots(
+        (snapshot_receipt(deepcopy(reference)), snapshot_receipt(deepcopy(candidate)))
+    )
+    return render_history_report(document, (deepcopy(reference), deepcopy(candidate)))
+
+
 def rendered(hostile: bool, kind: str = "receipt") -> str:
     if kind == "comparison":
         return _comparison_report(hostile)
+    if kind == "history":
+        return _history_report(hostile)
     return render_receipt_report(deepcopy(_hostile_receipt() if hostile else _receipt()))
 
 
@@ -237,8 +263,17 @@ BOTH = pytest.mark.parametrize(
         ("receipt", True),
         ("comparison", False),
         ("comparison", True),
+        ("history", False),
+        ("history", True),
     ],
-    ids=["receipt-synthetic", "receipt-hostile", "comparison-synthetic", "comparison-hostile"],
+    ids=[
+        "receipt-synthetic",
+        "receipt-hostile",
+        "comparison-synthetic",
+        "comparison-hostile",
+        "history-synthetic",
+        "history-hostile",
+    ],
 )
 
 
@@ -330,7 +365,7 @@ def test_the_content_security_policy_is_exact(kind: str, hostile: bool) -> None:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.parametrize("kind", ["receipt", "comparison"])
+@pytest.mark.parametrize("kind", ["receipt", "comparison", "history"])
 def test_the_reports_own_footer_claim_is_present_and_true(kind: str) -> None:
     """The claim every reader of a report sees, checked against the report.
 
@@ -380,7 +415,7 @@ def test_the_hostile_payload_would_be_dangerous_unescaped() -> None:
     assert "@import" in "".join(parsed.style_text)
 
 
-@pytest.mark.parametrize("kind", ["receipt", "comparison"])
+@pytest.mark.parametrize("kind", ["receipt", "comparison", "history"])
 def test_the_hostile_payload_reaches_the_document_only_escaped(kind: str) -> None:
     """The text must be present as text, or the hostile cases prove nothing.
 

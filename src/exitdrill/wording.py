@@ -80,8 +80,18 @@ LIMITATION_SENTENCES = {
     "field_value_equivalence_limited_to_declared_required_fields": (
         "Field-value equivalence is limited to baseline-declared required fields."
     ),
+    "adjacent_directions_are_observations_not_a_trend": (
+        "Each direction compares one adjacent pair. Read together they are observations, "
+        "not a trend."
+    ),
+    "history_output_is_unsigned_and_unauthenticated": (
+        "This timeline document is itself unsigned and unauthenticated."
+    ),
     "inputs_are_unsigned_and_unauthenticated": (
         "Both input receipts are unsigned and unauthenticated."
+    ),
+    "series_order_is_caller_supplied_unverified": (
+        "The order of the series is caller-supplied and unverified. It is not chronology."
     ),
     "operand_order_is_caller_supplied_unverified": (
         "Operand order is caller-supplied and unverified. It is not chronology."

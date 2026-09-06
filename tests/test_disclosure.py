@@ -55,9 +55,14 @@ from exitdrill.canonical import canonical_json_bytes, sha256_bytes
 from exitdrill.comparison import compare_snapshots, snapshot_receipt
 from exitdrill.evaluator import run_drill
 from exitdrill.explain import narrate_receipt, render_narration_text
+from exitdrill.history import build_history_from_snapshots
 from exitdrill.loader import load_baseline, load_export
 from exitdrill.models import JsonValue
-from exitdrill.report import render_comparison_report, render_receipt_report
+from exitdrill.report import (
+    render_comparison_report,
+    render_history_report,
+    render_receipt_report,
+)
 
 # Callback that records one record value and where it came from.
 Note = Callable[[str, str], None]
@@ -81,6 +86,8 @@ _OUTPUT_NAMES = frozenset(
         "lossy-narration",
         "comparison",
         "comparison-report",
+        "history",
+        "history-report",
     }
 )
 
@@ -247,11 +254,11 @@ def _receipts() -> dict[str, dict[str, JsonValue]]:
 def aggregate_outputs(receipts: dict[str, dict[str, JsonValue]]) -> dict[str, str]:
     """Render the aggregate artifacts the synthetic demo puts in front of a reader.
 
-    Given both fixtures these are the eight aggregate artifacts the demo path
-    can put in front of a reader: two receipts, two HTML reports, two plain-text
-    narrations, the comparison document, and the comparison's own HTML report.
-    Given one fixture the two comparison artifacts, which need two operands, are
-    omitted.
+    Given both fixtures these are the ten aggregate artifacts the demo path can
+    put in front of a reader: two receipts, two HTML reports, two plain-text
+    narrations, the comparison document and its HTML report, and the timeline
+    document and its HTML report. Given one fixture the four two-operand
+    artifacts are omitted.
     """
     outputs = {
         f"{name}-receipt": canonical_json_bytes(receipt).decode("utf-8")
@@ -280,11 +287,19 @@ def aggregate_outputs(receipts: dict[str, dict[str, JsonValue]]) -> dict[str, st
             deepcopy(receipts["clean"]),
             deepcopy(receipts["lossy"]),
         )
+        series = (deepcopy(receipts["clean"]), deepcopy(receipts["lossy"]))
+        history = build_history_from_snapshots(
+            tuple(snapshot_receipt(deepcopy(receipt)) for receipt in series)
+        )
+        outputs["history"] = canonical_json_bytes(history).decode("utf-8")
+        outputs["history-report"] = render_history_report(
+            deepcopy(history), tuple(deepcopy(receipt) for receipt in series)
+        )
     return outputs
 
 
 def control_outputs() -> dict[str, str]:
-    """Render the same eight artifacts from receipts that carry no record data.
+    """Render the same ten artifacts from receipts that carry no record data.
 
     Every count, status, digest, JSON key, HTML element, stylesheet rule, and
     fixed caption is still present; only the two free-text payload fields are
@@ -468,6 +483,9 @@ def test_the_control_is_not_degenerate() -> None:
     for name in ("clean-narration", "lossy-narration"):
         assert "What it does not mean" in control[name]
         assert "Does not prove vendor deletion." in control[name]
+    assert "series_order_is_caller_supplied_unverified" in control["history"]
+    assert "<!doctype html>" in control["history-report"]
+    assert "The series, receipt by receipt" in control["history-report"]
     assert "comparability" in control["comparison"]
     assert "<!doctype html>" in control["comparison-report"]
     assert "Signed count deltas" in control["comparison-report"]

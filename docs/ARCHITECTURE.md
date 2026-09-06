@@ -552,6 +552,42 @@ no colour, because a difference is a fact here and not a verdict. An
 dimension table follows, rather than showing a table of zeros -- absence
 rendered as absence.
 
+## Receipt series
+
+`exitdrill history R1 R2 R3 ...` (or `--dir DIR`, which reads every `*.json` in
+filename order) reduces two or more verified receipts to a closed timeline
+document, `exitdrill/history/v0.1`, with a committed public JSON Schema. It is a
+pure reduction. Nothing is averaged, trended, forecast, scored, or attributed to
+a cause, and no envelope timestamp is read: the ordering basis the document
+declares is `caller_supplied_unverified`, exactly as a comparison's is.
+
+The first receipt sets the series scope, using the same predicates and the same
+reason codes `comparison._scope` enforces, so "in this series" and "comparable
+with the first receipt" cannot drift into two different questions. Every later
+receipt either shares that scope or is recorded as outside it with its reason
+codes.
+
+Two refusals follow from that, and both are the same refusal:
+
+- A receipt outside the scope has **no reading** in the timeline. Its cell
+  carries `observed: false` and no counts. Emitting zeros would publish "this
+  could not be measured" in the column a reader reads as measurements.
+- An adjacent pair touching such a receipt carries **no direction**. A
+  direction computed from one side is not an observation about the pair.
+
+`--fail-on-loss-signal-increase` reads only the last adjacent pair, with the
+same "directly observed missing/invalid increase" test `compare` applies, and
+exits 3 on an increase. When that pair is not comparable it exits 2 rather than
+0: `compare` already exits 2 before its policy runs on an incomparable pair, and
+returning 0 here would report "the policy could not look" as "the policy found
+nothing". A single-receipt series is a usage error, not an empty timeline.
+
+`exitdrill verify-history HISTORY --receipt R1 --receipt R2 ...` recomputes the
+whole document from the receipts and requires canonical byte equality, the same
+design as `verify-comparison`, and then re-checks the public schema. `exitdrill
+report HISTORY --receipt ... --receipt ...` renders it through the shared page
+shell as a table-first page whose gap cells say "No measurement".
+
 ## Narrating a receipt
 
 `exitdrill explain RECEIPT` verifies a receipt and then states, in sentences,

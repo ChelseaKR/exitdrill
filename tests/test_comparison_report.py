@@ -480,7 +480,7 @@ def test_cli_rejects_receipt_operands_on_a_receipt_report(
         == 2
     )
 
-    assert "apply only to a comparison document" in capsys.readouterr().err
+    assert "apply only to a comparison or history" in capsys.readouterr().err
     assert not out.parent.exists()
 
 
