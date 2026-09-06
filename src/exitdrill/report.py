@@ -11,6 +11,7 @@ from exitdrill.comparison import verify_comparison_document, verify_comparison_f
 from exitdrill.models import JsonValue
 from exitdrill.receipt import load_receipt, verify_receipt
 from exitdrill.strict_json import StrictJsonError, load_strict_json
+from exitdrill.wording import DIMENSION_LABELS, LIMITATION_SENTENCES, STATUS_LABELS, label
 
 _MAX_REPORT_BYTES = 2 * 1024 * 1024
 _MAX_DOCUMENT_BYTES = 2 * 1024 * 1024
@@ -26,48 +27,6 @@ _DOCUMENT_KINDS = {
     COMPARISON_SCHEMA_VERSION: "comparison",
 }
 
-_STATUS_LABELS = {
-    "fail": "Fail",
-    "finding": "Finding",
-    "indeterminate": "Indeterminate",
-    "not_structurally_restorable": "Not structurally restorable",
-    "pass": "Pass",
-    "structurally_restorable": "Structurally restorable",
-    "structurally_restorable_with_findings": "Structurally restorable with findings",
-}
-_DIMENSION_LABELS = {
-    "attachments": "Attachments",
-    "audit_events": "Audit events",
-    "entities": "Entities",
-    "permissions": "Permissions",
-    "relationships": "Relationships",
-}
-_LIMITATION_LABELS = {
-    "does_not_authenticate_export_or_baseline": "Does not authenticate the export or baseline.",
-    "does_not_prove_operational_equivalence": "Does not prove operational equivalence.",
-    "does_not_prove_vendor_deletion": "Does not prove vendor deletion.",
-    "field_value_equivalence_limited_to_declared_required_fields": (
-        "Field-value equivalence is limited to baseline-declared required fields."
-    ),
-    "does_not_verify_permission_principal_identity": (
-        "Does not verify permission-principal identity."
-    ),
-    "inputs_are_unsigned_and_unauthenticated": (
-        "Both input receipts are unsigned and unauthenticated."
-    ),
-    "comparison_output_is_unsigned_and_unauthenticated": (
-        "This comparison document is itself unsigned and unauthenticated."
-    ),
-    "aggregate_only_cannot_observe_record_identity_churn": (
-        "Aggregate counts cannot observe record-identity churn."
-    ),
-    "operand_order_is_caller_supplied_unverified": (
-        "Operand order is caller-supplied and unverified. It is not chronology."
-    ),
-    "does_not_bind_export_generation_or_evaluator_version": (
-        "Does not bind the export generation or the evaluator version."
-    ),
-}
 
 # One sentence per comparability reason code. The code itself is rendered
 # beside its sentence, so a reader can match the page against the JSON.
@@ -180,18 +139,12 @@ def _escape(value: object) -> str:
     return html.escape(str(value), quote=True)
 
 
-def _status_label(value: object) -> str:
-    text = str(value)
-    return _STATUS_LABELS.get(text, text.replace("_", " ").capitalize())
-
-
-def _label(table: dict[str, str], value: object) -> str:
-    text = str(value)
-    return table.get(text, text.replace("_", " ").capitalize())
+def _statuslabel(value: object) -> str:
+    return label(STATUS_LABELS, str(value))
 
 
 def _status_pill(status: object) -> str:
-    return f'<span class="status status-{_escape(status)}">{_escape(_status_label(status))}</span>'
+    return f'<span class="status status-{_escape(status)}">{_escape(_statuslabel(status))}</span>'
 
 
 def _plain_pill(text: str) -> str:
@@ -230,7 +183,7 @@ def _dimension_rows(dimensions: list[JsonValue]) -> str:
         name = cast(str, raw["name"])
         status = cast(str, raw["status"])
         cells = (
-            _DIMENSION_LABELS.get(name, name.replace("_", " ").title()),
+            label(DIMENSION_LABELS, name),
             cast(str, raw["coverage"]).capitalize(),
             raw["expected_count"],
             raw["exported_count"],
@@ -249,8 +202,7 @@ def _dimension_rows(dimensions: list[JsonValue]) -> str:
 
 def _limitation_items(limitations: list[JsonValue]) -> str:
     return "".join(
-        f"<li>{_escape(_LIMITATION_LABELS.get(cast(str, item), cast(str, item)))}</li>"
-        for item in limitations
+        f"<li>{_escape(label(LIMITATION_SENTENCES, cast(str, item)))}</li>" for item in limitations
     )
 
 
@@ -295,7 +247,7 @@ def render_receipt_report(receipt: dict[str, JsonValue]) -> str:
     dimensions = cast(list[JsonValue], payload["dimensions"])
     limitations = cast(list[JsonValue], payload["trust_limitations"])
     overall_status = cast(str, payload["overall_status"])
-    status_label = _status_label(overall_status)
+    status_label = _statuslabel(overall_status)
     source_system = cast(str, payload["source_system"])
     drill_id = cast(str, payload["drill_id"])
     remediation_signals = cast(int, payload["observed_remediation_signals"])
@@ -360,7 +312,7 @@ def _delta_rows(dimensions: list[dict[str, JsonValue]]) -> str:
     for raw in dimensions:
         name = cast(str, raw["name"])
         deltas = cast(dict[str, JsonValue], raw["count_deltas"])
-        heading = _escape(_DIMENSION_LABELS.get(name, name.replace("_", " ").title()))
+        heading = _escape(label(DIMENSION_LABELS, name))
         cells = "".join(f"<td>{_escape(_signed(deltas[column]))}</td>" for column in _DELTA_COLUMNS)
         coverage = _escape(cast(str, raw["coverage"]).capitalize())
         rows.append(f'<tr><th scope="row">{heading}</th><td>{coverage}</td>{cells}</tr>')
@@ -371,13 +323,16 @@ def _observation_rows(dimensions: list[dict[str, JsonValue]]) -> str:
     rows: list[str] = []
     for raw in dimensions:
         name = cast(str, raw["name"])
-        heading = _escape(_DIMENSION_LABELS.get(name, name.replace("_", " ").title()))
+        heading = _escape(label(DIMENSION_LABELS, name))
         signals = [
             *cast(list[JsonValue], raw["observed_loss_signal_increases"]),
             *cast(list[JsonValue], raw["observed_loss_signal_decreases"]),
         ]
         observed = (
-            "".join(f"<li>{_escape(_label(_LOSS_SIGNAL_LABELS, item))}</li>" for item in signals)
+            "".join(
+                f"<li>{_escape(label(_LOSS_SIGNAL_LABELS, cast(str, item)))}</li>"
+                for item in signals
+            )
             if signals
             else "<li>None observed</li>"
         )
@@ -385,10 +340,10 @@ def _observation_rows(dimensions: list[dict[str, JsonValue]]) -> str:
             f'<tr><th scope="row">{heading}</th>'
             f"<td>{_status_pill(raw['reference_status'])}</td>"
             f"<td>{_status_pill(raw['candidate_status'])}</td>"
-            f"<td>{_plain_pill(_label(_TRANSITION_LABELS, raw['status_transition']))}</td>"
-            f"<td>{_plain_pill(_label(_TRANSITION_LABELS, raw['extra_count_transition']))}</td>"
+            f"<td>{_plain_pill(label(_TRANSITION_LABELS, cast(str, raw['status_transition'])))}</td>"
+            f"<td>{_plain_pill(label(_TRANSITION_LABELS, cast(str, raw['extra_count_transition'])))}</td>"
             f"<td><ul>{observed}</ul></td>"
-            f"<td>{_plain_pill(_label(_ASSESSMENT_LABELS, raw['assessment']))}</td></tr>"
+            f"<td>{_plain_pill(label(_ASSESSMENT_LABELS, cast(str, raw['assessment'])))}</td></tr>"
         )
     return "".join(rows)
 
@@ -403,8 +358,7 @@ def _scope_check_rows(checks: dict[str, JsonValue]) -> str:
 
 def _reason_items(reasons: list[JsonValue]) -> str:
     return "".join(
-        f"<li><code>{_escape(cast(str, item))}</code> — "
-        f"{_escape(_label(_REASON_LABELS, item))}</li>"
+        f"<li><code>{_escape(cast(str, item))}</code> — {_escape(label(_REASON_LABELS, cast(str, item)))}</li>"
         for item in reasons
     )
 
@@ -423,10 +377,8 @@ def _summary_items(summary: dict[str, JsonValue]) -> str:
             continue
         # Document order, not alphabetical: the page must read back against the
         # JSON it was rendered from.
-        rendered = ", ".join(
-            _escape(_DIMENSION_LABELS.get(cast(str, item), cast(str, item))) for item in names
-        )
-        items.append(f"<dt>{_escape(_label(_SUMMARY_LABELS, key))}</dt><dd>{rendered}</dd>")
+        rendered = ", ".join(_escape(label(DIMENSION_LABELS, cast(str, item))) for item in names)
+        items.append(f"<dt>{_escape(label(_SUMMARY_LABELS, key))}</dt><dd>{rendered}</dd>")
     return "".join(items)
 
 
@@ -511,14 +463,14 @@ def _comparison_html(comparison: dict[str, JsonValue]) -> str:
     summary_section = _comparison_summary_section(cast(dict[str, JsonValue], comparison["summary"]))
     main = f"""    <div class="result">
       <span>Comparability</span>
-      <strong>{_escape(_label(_COMPARABILITY_LABELS, comparability))}</strong>
+      <strong>{_escape(label(_COMPARABILITY_LABELS, comparability))}</strong>
       <span>A comparison reports differences between two aggregate measurements. It does not rank the two exports, infer chronology, or attribute a cause.</span>
     </div>
     <div class="grid" aria-label="Comparison operands">
       {_operand_card("Reference receipt", reference)}
       {_operand_card("Candidate receipt", candidate)}
-      <div class="card"><span>Ordering basis</span><strong>{_escape(_label(_ORDERING_LABELS, comparison["ordering_basis"]))}</strong></div>
-      <div class="card"><span>Measurement relationship</span><strong>{_escape(_label(_RELATIONSHIP_LABELS, comparison["measurement_relationship"]))}</strong></div>
+      <div class="card"><span>Ordering basis</span><strong>{_escape(label(_ORDERING_LABELS, cast(str, comparison["ordering_basis"])))}</strong></div>
+      <div class="card"><span>Measurement relationship</span><strong>{_escape(label(_RELATIONSHIP_LABELS, cast(str, comparison["measurement_relationship"])))}</strong></div>
     </div>
     <section aria-labelledby="comparability-heading">
       <h2 id="comparability-heading">Comparability checks</h2>

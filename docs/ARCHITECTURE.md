@@ -552,6 +552,40 @@ no colour, because a difference is a fact here and not a verdict. An
 dimension table follows, rather than showing a table of zeros -- absence
 rendered as absence.
 
+## Narrating a receipt
+
+`exitdrill explain RECEIPT` verifies a receipt and then states, in sentences,
+exactly what that receipt already says. It exists for issue #51's usability
+gate: the next milestone is an outside person reading a receipt and saying
+whether it answers their exit question, and a dense JSON document whose
+limitations are snake_case codes makes that harder than it needs to be.
+
+Verification runs before any sentence is built, so an invalid receipt produces
+the validation error and exit 2 rather than a partial narration a reader could
+mistake for a result. Nothing in the narration reads the envelope's claimed
+time, attributes a cause, recommends a remedy, or reduces the dimensions to a
+score. Per dimension it states the question that dimension asks, the
+denominator the baseline declared and its coverage, what the export carried and
+what became of it, and one conclusion sentence chosen in the order
+`models.classify_dimension_status` decides -- so a dimension that failed is
+never narrated as a coverage problem. An `indeterminate` dimension is narrated
+as one the drill cannot rule on, and the narration never uses the word
+"passed", which is the word a reader would carry away.
+
+`--json` emits the same narration as a canonical document
+(`exitdrill/receipt-narration/v0.1`), so the sentences can be reused without
+re-deriving them.
+
+`src/exitdrill/wording.py` holds every reader-facing string that is not a count,
+a digest, or free payload text: the dimension labels, nouns and questions, the
+result-state names and meanings, the coverage clauses, and the limitation
+sentences. The HTML report and `explain` both read it, so the two surfaces
+cannot disagree about what a receipt says. Before it, each held its own copy --
+the same shape as a document restating a bound the code no longer enforces.
+`tests/test_explain.py` requires an entry for every member of every enum the
+narration reads, and binds each dimension question to the wording `README.md`
+publishes.
+
 ## Trust claims
 
 The current evaluator records:

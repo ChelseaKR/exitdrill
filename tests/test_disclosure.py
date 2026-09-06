@@ -54,6 +54,7 @@ import pytest
 from exitdrill.canonical import canonical_json_bytes, sha256_bytes
 from exitdrill.comparison import compare_snapshots, snapshot_receipt
 from exitdrill.evaluator import run_drill
+from exitdrill.explain import narrate_receipt, render_narration_text
 from exitdrill.loader import load_baseline, load_export
 from exitdrill.models import JsonValue
 from exitdrill.report import render_comparison_report, render_receipt_report
@@ -76,6 +77,8 @@ _OUTPUT_NAMES = frozenset(
         "lossy-receipt",
         "clean-report",
         "lossy-report",
+        "clean-narration",
+        "lossy-narration",
         "comparison",
         "comparison-report",
     }
@@ -244,10 +247,11 @@ def _receipts() -> dict[str, dict[str, JsonValue]]:
 def aggregate_outputs(receipts: dict[str, dict[str, JsonValue]]) -> dict[str, str]:
     """Render the aggregate artifacts the synthetic demo puts in front of a reader.
 
-    Given both fixtures these are the six documents `make demo-compare`
-    produces: two receipts, two HTML reports, the comparison document, and the
-    comparison's own HTML report. Given one fixture the two comparison
-    artifacts, which need two operands, are omitted.
+    Given both fixtures these are the eight aggregate artifacts the demo path
+    can put in front of a reader: two receipts, two HTML reports, two plain-text
+    narrations, the comparison document, and the comparison's own HTML report.
+    Given one fixture the two comparison artifacts, which need two operands, are
+    omitted.
     """
     outputs = {
         f"{name}-receipt": canonical_json_bytes(receipt).decode("utf-8")
@@ -256,6 +260,12 @@ def aggregate_outputs(receipts: dict[str, dict[str, JsonValue]]) -> dict[str, st
     outputs.update(
         {
             f"{name}-report": render_receipt_report(deepcopy(receipt))
+            for name, receipt in receipts.items()
+        }
+    )
+    outputs.update(
+        {
+            f"{name}-narration": render_narration_text(narrate_receipt(deepcopy(receipt)))
             for name, receipt in receipts.items()
         }
     )
@@ -274,7 +284,7 @@ def aggregate_outputs(receipts: dict[str, dict[str, JsonValue]]) -> dict[str, st
 
 
 def control_outputs() -> dict[str, str]:
-    """Render the same six artifacts from receipts that carry no record data.
+    """Render the same eight artifacts from receipts that carry no record data.
 
     Every count, status, digest, JSON key, HTML element, stylesheet rule, and
     fixed caption is still present; only the two free-text payload fields are
@@ -455,6 +465,9 @@ def test_the_control_is_not_degenerate() -> None:
     for name in ("clean-report", "lossy-report"):
         assert "Observed loss signals" in control[name]
         assert "<!doctype html>" in control[name]
+    for name in ("clean-narration", "lossy-narration"):
+        assert "What it does not mean" in control[name]
+        assert "Does not prove vendor deletion." in control[name]
     assert "comparability" in control["comparison"]
     assert "<!doctype html>" in control["comparison-report"]
     assert "Signed count deltas" in control["comparison-report"]
@@ -494,13 +507,14 @@ def test_aggregate_outputs_disclose_no_record_value() -> None:
         ),
     ],
 )
-def test_gate_reports_a_record_value_leaked_into_the_receipt_and_report(
+def test_gate_reports_a_record_value_leaked_into_the_receipt_report_and_narration(
     value: str, provenance: str
 ) -> None:
-    """Injecting a real record value into the payload must be reported, twice.
+    """Injecting a real record value into the payload must be reported, three times.
 
-    `source_system` is free payload text carried into both the receipt JSON and
-    the rendered report, so one injection exercises both output kinds.
+    `source_system` is free payload text carried into the receipt JSON, the
+    rendered report, and the plain-text narration, so one injection exercises
+    every single-receipt output kind.
     """
     receipts = _receipts()
     payload = cast(dict[str, JsonValue], receipts["clean"]["payload"])
@@ -510,6 +524,7 @@ def test_gate_reports_a_record_value_leaked_into_the_receipt_and_report(
     outputs = aggregate_outputs({"clean": receipts["clean"]})
 
     assert disclosures({value: provenance}, outputs, frozenset()) == [
+        f"clean-narration discloses {value!r} (from {provenance})",
         f"clean-receipt discloses {value!r} (from {provenance})",
         f"clean-report discloses {value!r} (from {provenance})",
     ]
@@ -561,6 +576,7 @@ def test_gate_reports_an_html_escaped_record_value() -> None:
     assert value not in outputs["clean-report"]
     assert "Synthetic &amp; Partners &lt;person-001&gt;" in outputs["clean-report"]
     assert disclosures({value: "test"}, outputs, frozenset()) == [
+        f"clean-narration discloses {value!r} (from test)",
         f"clean-receipt discloses {value!r} (from test)",
         f"clean-report discloses {value!r} (from test)",
     ]
