@@ -1,7 +1,20 @@
-.PHONY: install format lint lint-lab type test verify package demo demo-lossy demo-compare demo-compare-policy demo-directus-canary demo-civicrm-target-canary
+.PHONY: install format lint lint-lab type test verify package demo demo-lossy demo-compare demo-compare-policy demo-directus-canary demo-civicrm-target-canary hooks
 
 install:
 	uv sync --locked
+
+# Install the git hooks .pre-commit-config.yaml declares. Two commands, not
+# one: `pre-commit install` writes only the `pre-commit` hook, so the
+# `stages: [pre-push]` mypy hook never ran for anyone who followed the usual
+# advice. The README's Code Quality row claims pre-commit hooks apply, and
+# until this target existed nothing installed them and CONTRIBUTING.md never
+# mentioned them, so the claim rested on each contributor happening to know.
+#
+# `tests/test_hooks_are_declared_and_installed.py` fails if a hook is ever
+# declared for a stage this target does not install.
+hooks:
+	uvx pre-commit install
+	uvx pre-commit install --hook-type pre-push
 
 format:
 	uv run ruff format .
