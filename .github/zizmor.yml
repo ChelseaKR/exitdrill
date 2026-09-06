@@ -1,32 +1,53 @@
 # zizmor configuration. See https://docs.zizmor.sh/configuration/
 #
-# `impostor-commit` is disabled repo-wide because it cannot run at all: it
-# needs the GitHub API to confirm that a pinned commit SHA belongs to the
-# referenced repo, and release.yml's `authorize` job pins
-# ChelseaKR/portfolio-standards/.github/workflows/release-authorize.yml --
-# a *different*, private repo that this workflow's repo-scoped
-# GITHUB_TOKEN cannot read. zizmor does not fail closed on that access
-# error; it aborts the whole audit for the file before it reaches any
-# other `uses:` line, so per-line `ignore` cannot scope around it
-# (BaseRuleConfig.ignore filters findings after a successful run; it
-# cannot suppress an audit-level error). Same failure mode and fix as
-# obligation-receipts' .github/zizmor.yml.
+# Two audits are disabled repo-wide, for one reason: both are *online* audits
+# that need the GitHub API, and release.yml's `authorize` job pins
+# ChelseaKR/portfolio-standards/.github/workflows/release-authorize.yml -- a
+# *different*, private repo that this workflow's repo-scoped GITHUB_TOKEN
+# cannot read. zizmor does not fail closed on that access error; it aborts the
+# whole audit for the file before it reaches any other `uses:` line, so
+# per-line `ignore` cannot scope around it (BaseRuleConfig.ignore filters
+# findings after a successful run; it cannot suppress an audit-level error).
+# Same failure mode and fix as obligation-receipts' .github/zizmor.yml.
+#
+# `impostor-commit` confirms that a pinned commit SHA belongs to the repo it is
+# pinned from. It has been disabled here since the pin landed.
+#
+# `stale-action-refs` checks that a pinned SHA still corresponds to a tag on
+# its origin repo. It was added to this list when zizmor v1.30.0 arrived with
+# zizmor-action v0.6.3 (#78). Measured on this repository: v1.29.0, shipped by
+# zizmor-action v0.6.2, completes `./.github/workflows/release.yml`; v1.30.0
+# aborts it with
+#
+#     fatal: no audit was performed
+#     'stale-action-refs' audit failed on file://./.github/workflows/release.yml
+#     Caused by:
+#         0: error in 'stale-action-refs' audit
+#         1: couldn't list tags for ChelseaKR/portfolio-standards
+#         2: can't access ChelseaKR/portfolio-standards: missing or you have no access
+#
+# so the previous version of this file listing `stale-action-refs` among the
+# audits that "stay active" stopped being true, and the whole zizmor job went
+# red on the version bump rather than on any change to this repository.
 #
 # What this trades away: automated confirmation that a pinned SHA in this
-# repo's own workflows resolves to a real tag on its origin repo.
-# Everything else zizmor checks (unpinned-uses, stale-action-refs,
-# known-vulnerable-actions, ref-confusion, ref-version-mismatch, and the
-# offline audits) stays active for every `uses:` line, including the
-# public actions in these workflows.
+# repo's own workflows belongs to its origin repo and still resolves to a tag
+# there. Everything else zizmor checks (unpinned-uses, known-vulnerable-actions,
+# ref-confusion, ref-version-mismatch, and the offline audits) stays active for
+# every `uses:` line, including the public actions in these workflows -- and
+# `unpinned-uses` is the one that would catch an unpinned or tag-pinned
+# reference, which is the failure mode that matters most here.
 #
-# The one pin this leaves unchecked -- release.yml's release-authorize
+# The one pin these two leave unchecked -- release.yml's release-authorize
 # reference -- is still verified by hand before every bump: the SHA must
 # resolve to a signed, tagged commit on portfolio-standards.
 #
-# Re-enable once the zizmor job is given a credential that can read
+# Re-enable both once the zizmor job is given a credential that can read
 # portfolio-standards (e.g. a fine-grained PAT with contents:read on that
 # repo specifically, passed as the zizmor-action `token:` input) rather
 # than relying on this repo's own GITHUB_TOKEN.
 rules:
   impostor-commit:
+    disable: true
+  stale-action-refs:
     disable: true
