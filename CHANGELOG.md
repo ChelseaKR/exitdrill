@@ -4,6 +4,29 @@ All notable changes will be documented here.
 
 ## [Unreleased]
 
+### Fixed
+
+- The improvement plan published two limits the tree had already closed.
+  `docs/plans/improvement-plan.md` still listed "Coverage does not measure
+  `scripts/`" after #125 put `scripts` in `[tool.coverage.run] source` with
+  `COVERAGE_PROCESS_START` following the gate scripts into their subprocesses,
+  and still listed the `pageErrors` stub as unpinned after
+  `scripts/check_browser_capture_bindings.mjs` gained the guard that fails when
+  another script's declared literal reads `pageErrors`, when the owning
+  script's literal stops reading it, or when that script stops proving
+  `pageErrors.length === 2` first. Nothing noticed, because nothing read the
+  plan against the code. That is this plan's own subject matter pointed at the
+  plan: a statement about what is enforced, outliving the enforcement. It
+  understated the project rather than overstating it, which is the safer
+  direction and still not a true one.
+
+  Both entries now record what closed them, and
+  `test_the_plan_publishes_no_limit_the_code_has_closed` binds the section to
+  the two facts in the tree that decide it, in both directions: a closure that
+  is reverted must be republished as a limit, and a limit that is republished
+  must have its closure gone. The section itself is asserted present, so the
+  check cannot pass by finding nothing to read.
+
 ### Added
 
 - `tests/test_release_versions.py` holds the declared version to the releases

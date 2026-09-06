@@ -73,3 +73,73 @@ def test_adr_compatibility_index_covers_every_accepted_decision() -> None:
     assert decisions
     for decision in decisions:
         assert f"../decisions/{decision.name}" in index
+
+
+# Two limits `docs/plans/improvement-plan.md` published as open, and the fact in
+# the tree that closes each. The pair is the whole point: a claim and the code
+# that decides whether it is still true, checked against each other in both
+# directions rather than either one alone.
+_CLOSED_LIMITS = (
+    (
+        "Coverage does not measure `scripts/`.",
+        "pyproject.toml",
+        'source = ["exitdrill", "scripts"]',
+    ),
+    (
+        "Nothing pins that this stays true.",
+        "scripts/check_browser_capture_bindings.mjs",
+        "PAGE_ERRORS_STUB_GUARD",
+    ),
+)
+
+
+def test_the_plan_publishes_no_limit_the_code_has_closed() -> None:
+    """The improvement plan may not go on naming a limit the tree has closed.
+
+    Both entries under "Known limits this plan does not close" were true when
+    they were written and are not true now: `[tool.coverage.run] source` gained
+    `scripts` in #125, and the binding gate gained the guard that pins the
+    `pageErrors` stub's precondition. Nothing noticed, because nothing read the
+    plan against the code.
+
+    That is the defect the plan itself is about, pointed at the plan: a
+    statement about what is enforced outliving the enforcement. Here it
+    understated the project rather than overstating it, which is the safer
+    direction and still not a true one.
+
+    Checked in both directions. If a closure is reverted, the plan has to say so
+    again; if the plan reinstates a limit, the closure has to be gone.
+    """
+    project = Path(__file__).parents[1]
+    plan = (project / "docs" / "plans" / "improvement-plan.md").read_text(encoding="utf-8")
+    assert "Known limits this plan does not close" in plan, (
+        "the section this test reads is gone; either restore it or delete this test, "
+        "but do not leave a check that passes because it found nothing to read"
+    )
+
+    for sentence, source, evidence in _CLOSED_LIMITS:
+        closed = evidence in (project / source).read_text(encoding="utf-8")
+        published_as_open = sentence in plan and "~~" not in _entry_for(plan, sentence)
+        if closed:
+            assert not published_as_open, (
+                f"{source} shows this limit is closed ({evidence!r} is present), but the "
+                f"improvement plan still publishes {sentence!r} as open"
+            )
+        else:
+            assert published_as_open, (
+                f"{source} no longer carries {evidence!r}, so the limit is open again and "
+                f"the improvement plan must say so: it does not carry {sentence!r}"
+            )
+
+
+def _entry_for(plan: str, sentence: str) -> str:
+    """The bullet the sentence sits in, so a struck-through entry reads as closed.
+
+    Without this the check could only ask whether the sentence appears at all,
+    and the plan could not keep the history of what was once open, which is
+    exactly what this repository's documents are for.
+    """
+    index = plan.index(sentence)
+    start = plan.rfind("\n- ", 0, index)
+    end = plan.find("\n- ", index)
+    return plan[start if start >= 0 else 0 : end if end >= 0 else len(plan)]
