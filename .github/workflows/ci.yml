@@ -9,7 +9,18 @@ permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.ref }}
+  # A push to a branch is not a superseded pull-request commit. Keying the group
+  # on the ref alone gave every commit on `main` ONE shared slot: GitHub allows
+  # one running plus one pending run per group, so a second push cancels the run
+  # the first commit was still executing (`cancel-in-progress: true`), and a
+  # third push evicts the second from the pending slot (`false`). Either way the
+  # commit lands with no verdict at all, and it is reported as `cancelled` or is
+  # simply absent -- never as red -- so nothing surfaces it.
+  #
+  # The discriminator below gives each pushed commit its own slot while leaving
+  # pull-request runs grouped per PR, so a superseded PR commit is still
+  # cancelled. `cancel-in-progress` is deliberately unchanged.
+  group: ci-${{ github.ref }}-${{ github.event_name == 'pull_request' && 'pr' || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
