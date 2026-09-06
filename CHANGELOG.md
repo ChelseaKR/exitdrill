@@ -6,6 +6,36 @@ All notable changes will be documented here.
 
 ### Added
 
+- `tests/test_release_versions.py` holds the declared version to the releases
+  that exist. `pyproject.toml` declares `0.1.0` and `git tag -l` prints nothing:
+  nothing has been tagged, `release.yml` has never been dispatched, and there is
+  no GitHub Release. That is the intended state, and nothing here demands a tag.
+  What it demands is that the repository keep saying so and that the copies of
+  the number keep agreeing. No tag passes, but `README.md` must carry "No tag or
+  release exists yet" and `docs/RELEASE.md` its "unreleased technical alpha"
+  line; a tag that appears must carry the declared version, must retire both
+  sentences, and must have a `CHANGELOG.md` section behind it, which
+  `release.yml` refuses to build without; `CITATION.cff` must state the declared
+  version and must carry no `date-released` while no tag exists — the field
+  GitHub's citation panel and Zenodo read, and the one that elsewhere in this
+  portfolio was moved by a version bump with a date invented to sit beside it.
+
+  The README's Status line now reads `technical alpha (0.1.0, untagged)`. The
+  version appeared in `pyproject.toml`, `exitdrill.__version__` and
+  `CITATION.cff` and nowhere a reader of the README would find it, so a bump
+  could move all three and leave the page describing something else.
+
+  Because a missing tag and an unfetched tag are indistinguishable from inside a
+  checkout, the tag checks skip with the reason on a shallow or tagless clone
+  rather than reading absence as evidence, and `verify-python` now checks out
+  with `fetch-depth: 0` and `fetch-tags: true`. A further check asserts that it
+  does — without it these would be gates that always skip, the shape #89 already
+  had to close once. Each check was proved by breaking it and confirming the
+  mutation landed first; removing one of the three copies of the README sentence
+  left the suite green, so the control was redone against all three.
+
+### Added
+
 - `tests/test_gates.py` now binds the offline binding gate's blind spot to the
   README. Three new checks: every field in `DYNAMIC_FIELD_PATHS` must have a
   disclosure phrase in a pinned table, every one of those phrases must appear
