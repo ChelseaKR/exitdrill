@@ -522,3 +522,49 @@ def test_unreadable_attachment_needs_exactly_two_error_families(tmp_path: Path) 
 
     source = (PROJECT / "src" / "exitdrill" / "evaluator.py").read_text(encoding="utf-8")
     assert "except (BoundedPathError, OSError):" in source
+
+
+# ---------------------------------------------------------------------------
+# Three `except RecursionError` arms that stopped being reachable by a literal.
+# ---------------------------------------------------------------------------
+
+
+def test_the_json_recursion_arms_are_still_present_and_still_reachable(
+    tmp_path: Path,
+    json_the_parser_cannot_walk: str,
+) -> None:
+    """The arms exist, a depth still reaches them, and the old literal still fails closed.
+
+    `strict_json.py`, `directus_canary.py` and `civicrm_target_canary.py` each
+    turn a decoder recursion failure into their own boundary error rather than
+    letting a raw interpreter error escape as itself. Issue #57 reached all
+    three with a literal 20,000 levels of nesting. CPython 3.14 bounds decoder
+    recursion by remaining C stack rather than by a fixed count, so it parses
+    that document and the module's own depth bound catches it instead: the arms
+    went uncovered on 3.14 without anything going red (issue #90).
+
+    #118 fixed the reachability by replacing the literal with the probed
+    `json_the_parser_cannot_walk` fixture, which fails the run when no depth in
+    its range defeats the decoder. What no test then still stated is the set of
+    facts that fix rests on, so a later edit could satisfy the fixture and still
+    lose the guards:
+
+    - a depth that defeats this decoder exists and is at least the one #57 used,
+      so the fixture is probing past the historical case rather than under it;
+    - all three arms are still present, so none was quietly deleted on an
+      interpreter where the old literal no longer reached it;
+    - the 20,000-level document is still rejected by the boundary, whichever
+      floor catches it. That last one is why the 3.14 red was an expectation
+      failure and not a security regression, and dropping the literal from the
+      three bounds tests left it asserted nowhere.
+    """
+    assert json_the_parser_cannot_walk.count("[") >= 20_000
+
+    for module in ("strict_json.py", "directus_canary.py", "civicrm_target_canary.py"):
+        source = (PROJECT / "src" / "exitdrill" / module).read_text(encoding="utf-8")
+        assert "except RecursionError as exc:" in source, f"{module} lost its RecursionError arm"
+
+    document = tmp_path / "deeply-nested.json"
+    document.write_text("[" * 20_000 + "]" * 20_000, encoding="utf-8")
+    with pytest.raises(StrictJsonError, match="JSON nesting exceeds"):
+        load_strict_json(document, max_bytes=1 << 20, size_label="1 MiB")
