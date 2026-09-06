@@ -88,7 +88,21 @@ exitdrill verify receipt.json \
 exitdrill report receipt.json --out report.html
 
 exitdrill explain receipt.json
+
+# The public contracts, to validate a normalizer's output without running this.
+exitdrill schema list
+exitdrill schema show baseline
 ```
+
+Every document ExitDrill reads or writes on the synthetic path has a committed
+JSON Schema, and `schema show` prints one schema's exact committed bytes.
+[docs/DATA-CONTRACTS.md](docs/DATA-CONTRACTS.md) maps each subcommand to the
+schemas of its inputs and outputs, and states plainly which invariants a passing
+schema check does *not* establish: the count arithmetic, the status algebra, the
+payload checksum and the offset-aware timestamp rule are relations between two
+values, which no Draft 2020-12 schema can express, so the semantic validators
+alone enforce them. Both halves of that statement are held against the code by
+`tests/test_schemas.py`.
 
 `explain` narrates one verified receipt in plain language for a reader who has
 never seen the tool: what a baseline and an export are here, what each dimension

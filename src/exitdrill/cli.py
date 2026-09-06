@@ -52,6 +52,11 @@ from exitdrill.report import (
     render_receipt_file,
     write_report,
 )
+from exitdrill.schemas import (
+    PUBLIC_SCHEMA_NAMES,
+    SchemaResourceError,
+    read_schema_bytes,
+)
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -173,6 +178,16 @@ def _parser() -> argparse.ArgumentParser:
         type=Path,
         action="append",
         help="one source receipt, repeated in series order when the document is a history",
+    )
+    schema = commands.add_parser(
+        "schema",
+        help="list or print the public JSON Schemas this package publishes",
+    )
+    schema.add_argument("action", choices=("list", "show"))
+    schema.add_argument(
+        "name",
+        nargs="?",
+        help="schema to print, with or without the '.schema.json' suffix",
     )
     normalize_directus = commands.add_parser(
         "normalize-directus-canary",
@@ -489,6 +504,54 @@ def _report(
     return 0
 
 
+def _resolve_schema_name(name: str) -> str:
+    """Accept `receipt-v0.3`, `receipt-v0.3.schema.json`, or a plain `receipt`.
+
+    An integrator reading `docs/DATA-CONTRACTS.md` types the contract's name,
+    not its filename, and a command that refuses that is a command they stop
+    using. Ambiguity is refused rather than resolved to the first match.
+    """
+    if name in PUBLIC_SCHEMA_NAMES:
+        return name
+    suffixed = f"{name}.schema.json"
+    if suffixed in PUBLIC_SCHEMA_NAMES:
+        return suffixed
+    matches = [item for item in PUBLIC_SCHEMA_NAMES if item.startswith(f"{name}-v")]
+    if len(matches) == 1:
+        return matches[0]
+    if matches:
+        raise SchemaResourceError(f"{name} names more than one schema: {', '.join(matches)}")
+    raise SchemaResourceError(f"{name} is not a published schema")
+
+
+def _schema(action: str, name: str | None) -> int:
+    """List the published schemas, or print one schema's exact committed bytes."""
+    if action == "list":
+        if name is not None:
+            raise SchemaResourceError("schema list takes no name")
+        sys.stdout.write("".join(f"{item}\n" for item in PUBLIC_SCHEMA_NAMES))
+        return 0
+    if name is None:
+        raise SchemaResourceError("schema show needs the name of a published schema")
+    sys.stdout.buffer.write(read_schema_bytes(_resolve_schema_name(name)))
+    return 0
+
+
+def _run_printing_command(args: argparse.Namespace) -> int | None:
+    """Route the two commands that print to stdout and write no file.
+
+    Grouped for the same reason the verification and canary commands are:
+    `main`'s dispatch is a flat list, and one branch per verb stops being
+    readable long before it stops working. `None` means this was not one of
+    them.
+    """
+    if args.command == "explain":
+        return _explain(args.receipt, args.as_json)
+    if args.command == "schema":
+        return _schema(args.action, args.name)
+    return None
+
+
 def _run_verification_command(args: argparse.Namespace) -> int | None:
     """Route the three commands that recompute an existing artifact from its sources.
 
@@ -545,8 +608,9 @@ def main(argv: list[str] | None = None) -> int:
                 fail_on_loss_signal_increase=args.fail_on_loss_signal_increase,
                 out=args.out,
             )
-        if args.command == "explain":
-            return _explain(args.receipt, args.as_json)
+        printed = _run_printing_command(args)
+        if printed is not None:
+            return printed
         if args.command == "history":
             return _history(
                 args.receipts,
@@ -565,6 +629,7 @@ def main(argv: list[str] | None = None) -> int:
         ExercisePlanError,
         HistoryError,
         PackageError,
+        SchemaResourceError,
         ReceiptError,
         ReportError,
         OSError,

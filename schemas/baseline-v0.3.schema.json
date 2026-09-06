@@ -1,0 +1,334 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://exitdrill.example/schemas/baseline-v0.3.schema.json",
+  "title": "ExitDrill exit baseline",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "drill_id",
+    "source_system",
+    "captured_at",
+    "coverage",
+    "entities",
+    "relationships",
+    "attachments",
+    "permissions",
+    "audit_events"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "exitdrill/baseline/v0.3"
+    },
+    "drill_id": {
+      "type": "string",
+      "pattern": "^\\s*[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}\\s*$"
+    },
+    "source_system": {
+      "type": "string",
+      "minLength": 1
+    },
+    "captured_at": {
+      "type": "string",
+      "minLength": 1
+    },
+    "coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "entities",
+        "relationships",
+        "attachments",
+        "permissions",
+        "audit_events"
+      ],
+      "properties": {
+        "entities": {
+          "enum": [
+            "complete",
+            "partial",
+            "unavailable"
+          ]
+        },
+        "relationships": {
+          "enum": [
+            "complete",
+            "partial",
+            "unavailable"
+          ]
+        },
+        "attachments": {
+          "enum": [
+            "complete",
+            "partial",
+            "unavailable"
+          ]
+        },
+        "permissions": {
+          "enum": [
+            "complete",
+            "partial",
+            "unavailable"
+          ]
+        },
+        "audit_events": {
+          "enum": [
+            "complete",
+            "partial",
+            "unavailable"
+          ]
+        }
+      }
+    },
+    "entities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type",
+          "id",
+          "required_fields"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "pattern": "^\\s*[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}\\s*$"
+          },
+          "id": {
+            "type": "string",
+            "pattern": "^\\s*[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}\\s*$"
+          },
+          "required_fields": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "name",
+                "type",
+                "expected_value"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "pattern": "^\\s*[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}\\s*$"
+                },
+                "type": {
+                  "enum": [
+                    "string",
+                    "number",
+                    "boolean"
+                  ]
+                },
+                "expected_value": {
+                  "type": [
+                    "null",
+                    "boolean",
+                    "integer",
+                    "number",
+                    "string"
+                  ]
+                }
+              },
+              "allOf": [
+                {
+                  "if": {
+                    "properties": {
+                      "type": {
+                        "const": "string"
+                      }
+                    },
+                    "required": [
+                      "type"
+                    ]
+                  },
+                  "then": {
+                    "properties": {
+                      "expected_value": {
+                        "type": "string",
+                        "minLength": 1
+                      }
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "type": {
+                        "const": "number"
+                      }
+                    },
+                    "required": [
+                      "type"
+                    ]
+                  },
+                  "then": {
+                    "properties": {
+                      "expected_value": {
+                        "type": "number"
+                      }
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "type": {
+                        "const": "boolean"
+                      }
+                    },
+                    "required": [
+                      "type"
+                    ]
+                  },
+                  "then": {
+                    "properties": {
+                      "expected_value": {
+                        "type": "boolean"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "relationships": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "type",
+          "from_type",
+          "from_id",
+          "to_type",
+          "to_id"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "pattern": "^\\s*[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}\\s*$"
+          },
+          "from_type": {
+            "type": "string",
+            "pattern": "^\\s*[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}\\s*$"
+          },
+          "from_id": {
+            "type": "string",
+            "pattern": "^\\s*[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}\\s*$"
+          },
+          "to_type": {
+            "type": "string",
+            "pattern": "^\\s*[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}\\s*$"
+          },
+          "to_id": {
+            "type": "string",
+            "pattern": "^\\s*[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}\\s*$"
+          }
+        }
+      }
+    },
+    "attachments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "owner_type",
+          "owner_id",
+          "content_sha256"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^\\s*[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}\\s*$"
+          },
+          "owner_type": {
+            "type": "string",
+            "pattern": "^\\s*[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}\\s*$"
+          },
+          "owner_id": {
+            "type": "string",
+            "pattern": "^\\s*[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}\\s*$"
+          },
+          "content_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      }
+    },
+    "permissions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "principal_id",
+          "scope_type",
+          "scope_id",
+          "role"
+        ],
+        "properties": {
+          "principal_id": {
+            "type": "string",
+            "pattern": "^\\s*[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}\\s*$"
+          },
+          "scope_type": {
+            "type": "string",
+            "pattern": "^\\s*[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}\\s*$"
+          },
+          "scope_id": {
+            "type": "string",
+            "pattern": "^\\s*[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}\\s*$"
+          },
+          "role": {
+            "type": "string",
+            "pattern": "^\\s*[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}\\s*$"
+          }
+        }
+      }
+    },
+    "audit_events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "event_id",
+          "object_type",
+          "object_id",
+          "action",
+          "occurred_at"
+        ],
+        "properties": {
+          "event_id": {
+            "type": "string",
+            "pattern": "^\\s*[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}\\s*$"
+          },
+          "object_type": {
+            "type": "string",
+            "pattern": "^\\s*[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}\\s*$"
+          },
+          "object_id": {
+            "type": "string",
+            "pattern": "^\\s*[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}\\s*$"
+          },
+          "action": {
+            "type": "string",
+            "pattern": "^\\s*[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}\\s*$"
+          },
+          "occurred_at": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  }
+}

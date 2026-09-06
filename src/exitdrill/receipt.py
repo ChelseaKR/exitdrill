@@ -12,6 +12,7 @@ from exitdrill.canonical import canonical_json_bytes, is_sha256_hex, sha256_byte
 from exitdrill.contracts import require_exact_keys
 from exitdrill.models import DrillResult, JsonValue
 from exitdrill.receipt_validation import PayloadError, validate_payload
+from exitdrill.schemas import RECEIPT_SCHEMA, validate_against_schema
 from exitdrill.strict_json import StrictJsonError, load_strict_json, validate_json_value
 from exitdrill.timestamps import TimestampError, parse_timestamp
 
@@ -141,4 +142,13 @@ def verify_receipt(receipt: dict[str, JsonValue]) -> str:
     actual_hash = sha256_bytes(canonical_json_bytes(payload))
     if actual_hash != claimed_hash:
         raise ReceiptError("receipt payload checksum mismatch")
+    # The public schema runs last, as a structural net over a receipt that has
+    # already satisfied every semantic rule. Running it first would replace the
+    # precise messages above -- which name the field and the relation that
+    # failed -- with one generic conformance error, and the precise message is
+    # the more useful of the two for the reader who has to fix the document.
+    # It is not redundant: the schema is maintained separately from these
+    # validators and can genuinely diverge from them, which is exactly what
+    # `verify_comparison_document` says about its own pairing.
+    validate_against_schema(RECEIPT_SCHEMA, receipt, ReceiptError, "receipt")
     return actual_hash

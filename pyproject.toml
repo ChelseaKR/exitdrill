@@ -40,6 +40,10 @@ packages = ["src/exitdrill"]
 [tool.hatch.build.targets.wheel.force-include]
 "schemas/receipt-comparison-v0.1.schema.json" = "exitdrill/schemas/receipt-comparison-v0.1.schema.json"
 "schemas/receipt-history-v0.1.schema.json" = "exitdrill/schemas/receipt-history-v0.1.schema.json"
+"schemas/receipt-v0.3.schema.json" = "exitdrill/schemas/receipt-v0.3.schema.json"
+"schemas/baseline-v0.3.schema.json" = "exitdrill/schemas/baseline-v0.3.schema.json"
+"schemas/export-v0.1.schema.json" = "exitdrill/schemas/export-v0.1.schema.json"
+"schemas/exercise-plan-v0.1.schema.json" = "exitdrill/schemas/exercise-plan-v0.1.schema.json"
 "schemas/civicrm-target-roundtrip-result-v0.1.schema.json" = "exitdrill/schemas/civicrm-target-roundtrip-result-v0.1.schema.json"
 "schemas/civicrm-ui-surface-result-v0.1.schema.json" = "exitdrill/schemas/civicrm-ui-surface-result-v0.1.schema.json"
 "schemas/civicrm-browser-workflow-result-v0.1.schema.json" = "exitdrill/schemas/civicrm-browser-workflow-result-v0.1.schema.json"

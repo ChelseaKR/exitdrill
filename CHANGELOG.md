@@ -153,6 +153,36 @@ All notable changes will be documented here.
   `make demo-compare` writes `examples/synthetic-crm/out/history.json` and
   `history.html`, and both are inside the record-value disclosure gate.
 
+- Committed public JSON Schemas for the receipt and both input contracts, and
+  `exitdrill schema list` / `exitdrill schema show NAME` to read them. Only the
+  comparison document had one; the receipt, the baseline and the normalized
+  export were defined by Python validators, which an outside implementer can
+  read but cannot execute in their own language, and a reviewer handed a receipt
+  could check its shape only by trusting the producer's code. ADR 0001 bets that
+  other people write the source-specific normalizer, so the contract has to be a
+  machine-checkable artifact. `schemas/receipt-v0.3`, `baseline-v0.3`,
+  `export-v0.1` and `exercise-plan-v0.1` are now packaged in the wheel beside the
+  comparison and history schemas, and validated at every load and every verify.
+
+  The check runs after the semantic validators, not before, which is the one
+  place this departs from the proposal in #134. Schema-first would replace every
+  precise message -- the field and the relation that failed -- with a single
+  conformance error, and the precise message is the more useful of the two for
+  whoever has to fix the document. It is the pairing
+  `verify_comparison_document` already describes and gives its reasons for.
+
+  `docs/DATA-CONTRACTS.md` maps each subcommand to the schemas of its inputs and
+  outputs, and states the boundary plainly: the count arithmetic, the status
+  algebra, the payload checksum, the offset-aware timestamp rule and the
+  uniqueness rules are relations between two values, which no Draft 2020-12
+  schema can express. A schema believed to check more than it does is worse than
+  no schema, so each of those is listed by name and `tests/test_schemas.py` holds
+  the list against the code in both directions: an invariant the document forgets
+  and one the validators stop enforcing both fail the suite. The suite also
+  mutates a receipt, a baseline, an export and a plan once per locally
+  expressible invariant and requires the schema to reject each, and validates
+  every committed example so a schema stricter than its validator cannot ship.
+
 ### Added
 
 - `tests/test_gates.py` now binds the offline binding gate's blind spot to the
