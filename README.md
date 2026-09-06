@@ -36,7 +36,8 @@ The command runs the same baseline against two invented CRM exports:
 
 The command ends with a four-line human summary. The clean and lossy aggregate
 reports are written to `examples/synthetic-crm/out/report.html` and
-`examples/synthetic-crm-lossy/out/report.html`. Receipts, comparisons, and
+`examples/synthetic-crm-lossy/out/report.html`, and the comparison's own report
+to `examples/synthetic-crm/out/comparison.html`. Receipts, comparisons, and
 generated reports are ignored by version control.
 
 ## What it checks
@@ -97,6 +98,11 @@ exitdrill compare reference-receipt.json candidate-receipt.json \
 exitdrill verify-comparison comparison.json \
   --reference reference-receipt.json \
   --candidate candidate-receipt.json
+
+exitdrill report comparison.json \
+  --reference reference-receipt.json \
+  --candidate candidate-receipt.json \
+  --out comparison.html
 ```
 
 The caller supplies the order. ExitDrill rejects comparisons whose drill,
@@ -107,7 +113,10 @@ are written through the bounded atomic path receipts and reports use, and
 stdout carries a short summary instead. `verify-comparison` recomputes the
 whole document from the two receipts and requires canonical byte equality, so a
 reader who did not run the comparison can check it rather than trust it. It
-exits 2 on any mismatch. The receipts it recomputes from are still unsigned:
+exits 2 on any mismatch. `report` renders either document kind, deciding from
+the `schema_version` the file declares; a comparison needs both receipts,
+because rendering runs the same recomputation `verify-comparison` runs and
+refuses to write a page for a document that does not match them. The receipts it recomputes from are still unsigned:
 this proves a comparison describes those two files, not that those files are
 authentic.
 

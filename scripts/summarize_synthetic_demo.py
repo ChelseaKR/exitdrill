@@ -32,6 +32,7 @@ def main() -> None:
         "reports: examples/synthetic-crm/out/report.html and "
         "examples/synthetic-crm-lossy/out/report.html"
     )
+    print("comparison report: examples/synthetic-crm/out/comparison.html")
 
 
 if __name__ == "__main__":

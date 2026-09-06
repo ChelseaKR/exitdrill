@@ -527,6 +527,31 @@ only self-consistency against caller-supplied receipts: the receipts remain
 unsigned, so this proves the comparison describes those two files, not that
 those two files are authentic.
 
+### Rendering a comparison
+
+`exitdrill report DOCUMENT --out PATH` renders either document kind. It routes
+on the `schema_version` the file declares about itself rather than on the flags
+the caller passed, so a receipt handed operand receipts and a comparison handed
+none are both usage errors instead of one document being rendered as the other.
+A comparison additionally requires `--reference` and `--candidate`, and
+rendering goes through the same `verify_comparison_files` recomputation
+`verify-comparison` uses: a forged delta exits 2 with the page unwritten and the
+output directory not created.
+
+Both reports share one page shell -- the same content-security policy,
+stylesheet, escaping, and footer claim -- so the offline and script-free
+properties are bound once, for both, in
+`tests/test_report_offline_safety.py`. The comparison page carries the
+comparability checks and any reason codes, the signed count deltas per
+dimension, the reference and candidate statuses with their transitions, the
+observed loss-signal changes, and the six comparison limitations. It renders no
+aggregate score and no ranking: transitions and assessments are drawn from the
+document's own closed vocabularies, and the neutral pill they render in carries
+no colour, because a difference is a fact here and not a verdict. An
+`incomparable` document renders its reason codes and says in terms that no
+dimension table follows, rather than showing a table of zeros -- absence
+rendered as absence.
+
 ## Trust claims
 
 The current evaluator records:

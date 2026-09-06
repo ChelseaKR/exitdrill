@@ -88,6 +88,7 @@ this document is updated with it.
 | Receipt document | 2 MiB | `receipt.py` `_MAX_RECEIPT_BYTES` | a receipt on both the read and the pre-write encoded path |
 | Comparison document | 2 MiB | `comparison.py` `_MAX_COMPARISON_BYTES` | a comparison document on both the read and the pre-write encoded path |
 | Exercise plan document | 1 MiB | `exercise.py` `_MAX_PLAN_BYTES` | a plan read by `load_exercise_plan` |
+| Report input document | 2 MiB | `report.py` `_MAX_DOCUMENT_BYTES` | the routing read `report` does to learn which document kind it was handed |
 | Rendered report | 2 MiB | `report.py` `_MAX_REPORT_BYTES` | the UTF-8 encoded report, checked before any file is created |
 | Per-attachment bytes | 16 MiB | `evaluator.py` `_MAX_ATTACHMENT_BYTES` | one attachment's on-disk size, taken from the same descriptor used to hash it |
 | Cumulative attachment bytes | 128 MiB | `evaluator.py` `_MAX_TOTAL_ATTACHMENT_BYTES` | the sum across one drill's attachments, consumed before each bounded read |

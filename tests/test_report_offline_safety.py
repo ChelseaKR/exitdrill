@@ -38,15 +38,17 @@ from typing import cast
 import pytest
 
 from exitdrill.canonical import canonical_json_bytes, sha256_bytes
+from exitdrill.comparison import compare_snapshots, snapshot_receipt
 from exitdrill.evaluator import run_drill
 from exitdrill.loader import load_baseline, load_export
 from exitdrill.models import JsonValue
 from exitdrill.receipt import build_receipt
-from exitdrill.report import render_receipt_report
+from exitdrill.report import render_comparison_report, render_receipt_report
 
 PROJECT = Path(__file__).parents[1]
 README = PROJECT / "README.md"
 EXAMPLE = PROJECT / "examples" / "synthetic-crm"
+LOSSY = PROJECT / "examples" / "synthetic-crm-lossy"
 
 # Every element the report is allowed to emit. Pinned rather than merely
 # screened against a danger list, so an element added later is a review point
@@ -187,11 +189,57 @@ def _hostile_receipt() -> dict[str, JsonValue]:
     return receipt
 
 
-def rendered(hostile: bool) -> str:
+def _lossy_receipt(source_system: str, drill_id: str) -> dict[str, JsonValue]:
+    """A second receipt against the same baseline, so the pair stays comparable."""
+    result = run_drill(
+        load_baseline(EXAMPLE / "baseline.json"),
+        load_export(LOSSY / "export.json"),
+        LOSSY / "export-files",
+    )
+    receipt = build_receipt(result, claimed_generated_at="2026-07-22T20:05:00Z")
+    payload = cast(dict[str, JsonValue], receipt["payload"])
+    payload["source_system"] = source_system
+    payload["drill_id"] = drill_id
+    receipt["payload_sha256"] = sha256_bytes(canonical_json_bytes(payload))
+    return receipt
+
+
+def _comparison_report(hostile: bool) -> str:
+    """Render the comparison report through its own verifying entry point.
+
+    Both operands carry the same free text, because two receipts that disagree
+    about their source system are incomparable and would render no dimension
+    table -- and the tables are where most of this page's markup lives.
+    """
+    reference = _hostile_receipt() if hostile else _receipt()
+    payload = cast(dict[str, JsonValue], reference["payload"])
+    candidate = _lossy_receipt(
+        cast(str, payload["source_system"]),
+        cast(str, payload["drill_id"]),
+    )
+    comparison = compare_snapshots(snapshot_receipt(reference), snapshot_receipt(candidate))
+    return render_comparison_report(comparison, deepcopy(reference), deepcopy(candidate))
+
+
+def rendered(hostile: bool, kind: str = "receipt") -> str:
+    if kind == "comparison":
+        return _comparison_report(hostile)
     return render_receipt_report(deepcopy(_hostile_receipt() if hostile else _receipt()))
 
 
-BOTH = pytest.mark.parametrize("hostile", [False, True], ids=["synthetic", "hostile"])
+# Every report the tool can write, with well-behaved and with hostile payload
+# text. A safety property that holds for one renderer and one input is not a
+# safety property of the report surface.
+BOTH = pytest.mark.parametrize(
+    ("kind", "hostile"),
+    [
+        ("receipt", False),
+        ("receipt", True),
+        ("comparison", False),
+        ("comparison", True),
+    ],
+    ids=["receipt-synthetic", "receipt-hostile", "comparison-synthetic", "comparison-hostile"],
+)
 
 
 # ---------------------------------------------------------------------------
@@ -230,16 +278,16 @@ def test_the_parser_finds_what_it_is_looking_for_when_it_is_present() -> None:
 
 
 @BOTH
-def test_report_emits_only_allowlisted_elements(hostile: bool) -> None:
-    parsed = parse(rendered(hostile))
+def test_report_emits_only_allowlisted_elements(kind: str, hostile: bool) -> None:
+    parsed = parse(rendered(hostile, kind))
 
     assert parsed.elements <= ALLOWED_ELEMENTS, sorted(parsed.elements - ALLOWED_ELEMENTS)
     assert "html" in parsed.elements
 
 
 @BOTH
-def test_report_emits_only_allowlisted_attributes(hostile: bool) -> None:
-    parsed = parse(rendered(hostile))
+def test_report_emits_only_allowlisted_attributes(kind: str, hostile: bool) -> None:
+    parsed = parse(rendered(hostile, kind))
 
     assert parsed.attributes <= ALLOWED_ATTRIBUTES, sorted(parsed.attributes - ALLOWED_ATTRIBUTES)
     assert not [name for name in parsed.attributes if name.startswith("on")]
@@ -247,13 +295,13 @@ def test_report_emits_only_allowlisted_attributes(hostile: bool) -> None:
 
 
 @BOTH
-def test_every_link_stays_inside_the_document(hostile: bool) -> None:
+def test_every_link_stays_inside_the_document(kind: str, hostile: bool) -> None:
     """No absolute URL, no scheme, no protocol-relative reference.
 
     The only link the report emits is the skip link, so this is not a filter to
     be tuned; anything else is a finding.
     """
-    parsed = parse(rendered(hostile))
+    parsed = parse(rendered(hostile, kind))
 
     assert parsed.hrefs
     for href in parsed.hrefs:
@@ -261,8 +309,8 @@ def test_every_link_stays_inside_the_document(hostile: bool) -> None:
 
 
 @BOTH
-def test_the_stylesheet_fetches_nothing(hostile: bool) -> None:
-    style = "".join(parse(rendered(hostile)).style_text)
+def test_the_stylesheet_fetches_nothing(kind: str, hostile: bool) -> None:
+    style = "".join(parse(rendered(hostile, kind)).style_text)
 
     assert style.strip()
     assert "@import" not in style
@@ -270,9 +318,9 @@ def test_the_stylesheet_fetches_nothing(hostile: bool) -> None:
 
 
 @BOTH
-def test_the_content_security_policy_is_exact(hostile: bool) -> None:
+def test_the_content_security_policy_is_exact(kind: str, hostile: bool) -> None:
     """`default-src 'none'` is the backstop if any assertion above ever slips."""
-    document = rendered(hostile)
+    document = rendered(hostile, kind)
 
     assert f'<meta http-equiv="Content-Security-Policy" content="{CSP}">' in document
 
@@ -282,13 +330,14 @@ def test_the_content_security_policy_is_exact(hostile: bool) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_the_reports_own_footer_claim_is_present_and_true() -> None:
+@pytest.mark.parametrize("kind", ["receipt", "comparison"])
+def test_the_reports_own_footer_claim_is_present_and_true(kind: str) -> None:
     """The claim every reader of a report sees, checked against the report.
 
     Presence is asserted so a reworded footer has to re-point this binding
     instead of quietly leaving the properties unclaimed or the claim unchecked.
     """
-    document = rendered(hostile=True)
+    document = rendered(hostile=True, kind=kind)
     parsed = parse(document)
 
     assert FOOTER_CLAIM in document
@@ -331,13 +380,14 @@ def test_the_hostile_payload_would_be_dangerous_unescaped() -> None:
     assert "@import" in "".join(parsed.style_text)
 
 
-def test_the_hostile_payload_reaches_the_document_only_escaped() -> None:
+@pytest.mark.parametrize("kind", ["receipt", "comparison"])
+def test_the_hostile_payload_reaches_the_document_only_escaped(kind: str) -> None:
     """The text must be present as text, or the hostile cases prove nothing.
 
     A renderer that dropped the field entirely would satisfy every allowlist
     above while telling us nothing about escaping.
     """
-    document = rendered(hostile=True)
+    document = rendered(hostile=True, kind=kind)
 
     assert HOSTILE_TEXT not in document
     assert "&lt;script src=&quot;https://evil.example/x.js&quot;&gt;" in document
