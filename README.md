@@ -34,10 +34,11 @@ The command runs the same baseline against two invented CRM exports:
 - the final comparison reports the observed increase in missing or invalid
   evidence without inventing an overall score.
 
-The command ends with a four-line human summary. The clean and lossy aggregate
+The command ends with a short human summary. The clean and lossy aggregate
 reports are written to `examples/synthetic-crm/out/report.html` and
-`examples/synthetic-crm-lossy/out/report.html`, and the comparison's own report
-to `examples/synthetic-crm/out/comparison.html`. Receipts, comparisons, and
+`examples/synthetic-crm-lossy/out/report.html`, the comparison's own report
+to `examples/synthetic-crm/out/comparison.html`, and a two-receipt timeline to
+`examples/synthetic-crm/out/history.html`. Receipts, comparisons, and
 generated reports are ignored by version control.
 
 ## What it checks
@@ -115,6 +116,31 @@ exitdrill report comparison.json \
   --candidate candidate-receipt.json \
   --out comparison.html
 ```
+
+To read a series of same-scope receipts as one timeline:
+
+```sh
+exitdrill history first.json second.json third.json --out history.json
+exitdrill history --dir receipts/ --out history.json
+
+exitdrill verify-history history.json \
+  --receipt first.json --receipt second.json --receipt third.json
+
+exitdrill report history.json \
+  --receipt first.json --receipt second.json --receipt third.json \
+  --out history.html
+```
+
+`history` is a pure reduction over verified receipts. Nothing is averaged,
+trended, forecast, or scored, and no envelope timestamp is read: the order is
+the order you gave, or filename order under `--dir`, and the document says
+which. The first receipt sets the series scope, under exactly the comparability
+rules `compare` enforces. A receipt outside that scope is a gap carrying its
+reason codes, never zero counts, and an adjacent pair touching a gap carries no
+direction rather than one computed from a single side.
+`--fail-on-loss-signal-increase` reads the last adjacent pair only, and exits 2
+rather than 0 when that pair cannot be compared: a policy that could not look is
+not a policy that found nothing.
 
 The caller supplies the order. ExitDrill rejects comparisons whose drill,
 baseline, contract, coverage, or expected counts differ.

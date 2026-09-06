@@ -26,6 +26,15 @@ from exitdrill.directus_canary import DirectusCanaryError, normalize_directus_ca
 from exitdrill.evaluator import DrillError, run_drill
 from exitdrill.exercise import ExercisePlanError, load_exercise_plan
 from exitdrill.explain import narrate_receipt_file, render_narration_text
+from exitdrill.history import (
+    HistoryError,
+    history_from_files,
+    history_last_pair_has_observed_loss_signal_increase,
+    last_transition,
+    receipt_paths_in_directory,
+    verify_history_files,
+    write_history,
+)
 from exitdrill.loader import PackageError, load_baseline, load_export
 from exitdrill.models import JsonValue, OverallStatus
 from exitdrill.receipt import (
@@ -39,6 +48,7 @@ from exitdrill.report import (
     ReportError,
     document_kind,
     render_comparison_file,
+    render_history_file,
     render_receipt_file,
     write_report,
 )
@@ -108,6 +118,39 @@ def _parser() -> argparse.ArgumentParser:
         dest="as_json",
         help="emit the same narration as a canonical JSON document",
     )
+    history = commands.add_parser(
+        "history",
+        help="line up a series of same-scope receipts as a timeline",
+    )
+    history.add_argument("receipts", type=Path, nargs="*")
+    history.add_argument(
+        "--dir",
+        dest="directory",
+        type=Path,
+        help="read every *.json receipt in this directory, in filename order",
+    )
+    history.add_argument(
+        "--fail-on-loss-signal-increase",
+        action="store_true",
+        help="return 3 for an observed aggregate missing/invalid increase in the last pair",
+    )
+    history.add_argument(
+        "--out",
+        type=Path,
+        help="atomically write the history document here instead of stdout",
+    )
+    verify_history = commands.add_parser(
+        "verify-history",
+        help="recompute a history document from its source receipts",
+    )
+    verify_history.add_argument("history", type=Path)
+    verify_history.add_argument(
+        "--receipt",
+        dest="receipts",
+        type=Path,
+        action="append",
+        help="one source receipt, repeated in the order the history was built from",
+    )
     report = commands.add_parser(
         "report",
         help="render an accessible offline report from a verified receipt or comparison",
@@ -123,6 +166,13 @@ def _parser() -> argparse.ArgumentParser:
         "--candidate",
         type=Path,
         help="candidate receipt, required when the document is a comparison",
+    )
+    report.add_argument(
+        "--receipt",
+        dest="receipts",
+        type=Path,
+        action="append",
+        help="one source receipt, repeated in series order when the document is a history",
     )
     normalize_directus = commands.add_parser(
         "normalize-directus-canary",
@@ -306,11 +356,107 @@ def _explain(receipt_path: Path, as_json: bool) -> int:
     return 0
 
 
+def _history_paths(receipts: list[Path], directory: Path | None) -> tuple[Path, ...]:
+    """Resolve the series, refusing the two ways an order could be invented.
+
+    Naming files and naming a directory together would leave the order half
+    caller-supplied and half filename-derived, which is neither of the two
+    things the document says its ordering basis is.
+    """
+    if directory is not None and receipts:
+        raise HistoryError("give receipt paths or --dir, not both")
+    if directory is not None:
+        return receipt_paths_in_directory(directory)
+    return tuple(receipts)
+
+
+def _history(
+    receipts: list[Path],
+    directory: Path | None,
+    *,
+    fail_on_loss_signal_increase: bool,
+    out: Path | None,
+) -> int:
+    document = history_from_files(_history_paths(receipts, directory))
+    summary = cast(dict[str, JsonValue], document["summary"])
+    if out is None:
+        _print_json(document)
+    else:
+        write_history(out, document)
+        _print_json(
+            {
+                "decision_scope": "offline_aggregate_receipt_series_only",
+                "gap_positions": summary["gap_positions"],
+                "history": str(out),
+                "receipt_count": summary["receipt_count"],
+                "status": "history_written",
+            }
+        )
+    if not fail_on_loss_signal_increase:
+        return 0
+    final = last_transition(document)
+    if final["comparable"] is not True:
+        # The policy has nothing to read. Returning 0 here would publish "the
+        # last pair could not be compared" as "nothing increased", which is
+        # the one thing this document exists to avoid.
+        raise HistoryError(
+            "the last adjacent pair is not comparable, so --fail-on-loss-signal-increase "
+            "has nothing to decide"
+        )
+    return 3 if history_last_pair_has_observed_loss_signal_increase(document) else 0
+
+
+def _verify_history(history_path: Path, receipts: list[Path] | None) -> int:
+    document = verify_history_files(history_path, tuple(receipts or ()))
+    summary = cast(dict[str, JsonValue], document["summary"])
+    _print_json(
+        {
+            "decision_scope": "offline_aggregate_receipt_series_only",
+            "gap_positions": summary["gap_positions"],
+            "in_scope_count": summary["in_scope_count"],
+            "receipt_count": summary["receipt_count"],
+            "status": "recomputation_verified",
+        }
+    )
+    return 0
+
+
+def _report_operands(
+    kind: str,
+    reference_path: Path | None,
+    candidate_path: Path | None,
+    receipt_paths: list[Path] | None,
+) -> None:
+    """Refuse operands that do not belong to the kind the document declares.
+
+    Checked rather than ignored: supplying a comparison's operands for a
+    receipt, or omitting a history's, is a usage error and never a silent skip
+    of the recomputation each report is required to run first.
+    """
+    pair = reference_path is not None or candidate_path is not None
+    series = bool(receipt_paths)
+    if kind == "receipt" and (pair or series):
+        raise ReportError(
+            "--reference, --candidate and --receipt apply only to a comparison or history"
+        )
+    if kind == "comparison":
+        if series:
+            raise ReportError("--receipt applies only to a history document")
+        if reference_path is None or candidate_path is None:
+            raise ReportError("a comparison report requires --reference and --candidate receipts")
+    if kind == "history":
+        if pair:
+            raise ReportError("--reference and --candidate apply only to a comparison document")
+        if len(receipt_paths or ()) < 2:
+            raise ReportError("a history report requires --receipt for every receipt in the series")
+
+
 def _report(
     document_path: Path,
     out: Path,
     reference_path: Path | None,
     candidate_path: Path | None,
+    receipt_paths: list[Path] | None,
 ) -> int:
     """Render whichever document kind the file declares itself to be.
 
@@ -320,15 +466,17 @@ def _report(
     the recomputation a comparison report is required to run first.
     """
     kind = document_kind(document_path)
+    _report_operands(kind, reference_path, candidate_path, receipt_paths)
     if kind == "receipt":
-        if reference_path is not None or candidate_path is not None:
-            raise ReportError("--reference and --candidate apply only to a comparison document")
         rendered = render_receipt_file(document_path)
         decision_scope = "verified_aggregate_receipt_report_only"
+    elif kind == "history":
+        rendered = render_history_file(document_path, tuple(receipt_paths or ()))
+        decision_scope = "verified_aggregate_history_report_only"
     else:
-        if reference_path is None or candidate_path is None:
-            raise ReportError("a comparison report requires --reference and --candidate receipts")
-        rendered = render_comparison_file(document_path, reference_path, candidate_path)
+        rendered = render_comparison_file(
+            document_path, cast(Path, reference_path), cast(Path, candidate_path)
+        )
         decision_scope = "verified_aggregate_comparison_report_only"
     write_report(out, rendered)
     _print_json(
@@ -339,6 +487,23 @@ def _report(
         }
     )
     return 0
+
+
+def _run_verification_command(args: argparse.Namespace) -> int | None:
+    """Route the three commands that recompute an existing artifact from its sources.
+
+    Grouped for the same reason the canary commands are: `main`'s dispatch is a
+    flat list of subcommands, and a router that keeps growing one branch per
+    verb stops being readable long before it stops working. `None` means this
+    was not one of them.
+    """
+    if args.command == "verify":
+        return _verify(args.receipt, args.baseline, args.export, args.attachment_root)
+    if args.command == "verify-comparison":
+        return _verify_comparison(args.comparison, args.reference, args.candidate)
+    if args.command == "verify-history":
+        return _verify_history(args.history, args.receipts)
+    return None
 
 
 def _run_canary_command(args: argparse.Namespace) -> int:
@@ -370,13 +535,9 @@ def main(argv: list[str] | None = None) -> int:
             )
         if args.command == "validate-exercise":
             return _validate_exercise(args.plan)
-        if args.command == "verify":
-            return _verify(
-                args.receipt,
-                args.baseline,
-                args.export,
-                args.attachment_root,
-            )
+        verified = _run_verification_command(args)
+        if verified is not None:
+            return verified
         if args.command == "compare":
             return _compare(
                 args.reference,
@@ -384,12 +545,17 @@ def main(argv: list[str] | None = None) -> int:
                 fail_on_loss_signal_increase=args.fail_on_loss_signal_increase,
                 out=args.out,
             )
-        if args.command == "verify-comparison":
-            return _verify_comparison(args.comparison, args.reference, args.candidate)
         if args.command == "explain":
             return _explain(args.receipt, args.as_json)
+        if args.command == "history":
+            return _history(
+                args.receipts,
+                args.directory,
+                fail_on_loss_signal_increase=args.fail_on_loss_signal_increase,
+                out=args.out,
+            )
         if args.command == "report":
-            return _report(args.document, args.out, args.reference, args.candidate)
+            return _report(args.document, args.out, args.reference, args.candidate, args.receipts)
         return _run_canary_command(args)
     except (
         CiviCRMTargetCanaryError,
@@ -397,6 +563,7 @@ def main(argv: list[str] | None = None) -> int:
         DirectusCanaryError,
         DrillError,
         ExercisePlanError,
+        HistoryError,
         PackageError,
         ReceiptError,
         ReportError,

@@ -87,6 +87,7 @@ this document is updated with it.
 | Baseline / export document | 4 MiB | `loader.py` `_MAX_DOCUMENT_BYTES` | each `baseline.json` and `export.json` read by `load_baseline` / `load_export` |
 | Receipt document | 2 MiB | `receipt.py` `_MAX_RECEIPT_BYTES` | a receipt on both the read and the pre-write encoded path |
 | Comparison document | 2 MiB | `comparison.py` `_MAX_COMPARISON_BYTES` | a comparison document on both the read and the pre-write encoded path |
+| History document | 2 MiB | `history.py` `_MAX_HISTORY_BYTES` | a timeline document on both the read and the pre-write encoded path |
 | Exercise plan document | 1 MiB | `exercise.py` `_MAX_PLAN_BYTES` | a plan read by `load_exercise_plan` |
 | Report input document | 2 MiB | `report.py` `_MAX_DOCUMENT_BYTES` | the routing read `report` does to learn which document kind it was handed |
 | Rendered report | 2 MiB | `report.py` `_MAX_REPORT_BYTES` | the UTF-8 encoded report, checked before any file is created |

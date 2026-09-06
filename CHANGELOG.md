@@ -124,6 +124,35 @@ All notable changes will be documented here.
   mutation landed first; removing one of the three copies of the README sentence
   left the suite green, so the control was redone against all three.
 
+- `exitdrill history` lines up a series of same-scope receipts as a timeline,
+  and `verify-history` recomputes one from its source receipts. `compare`
+  answers "did this export lose more than that one?" for exactly two receipts;
+  an organisation rehearsing an exit repeats the drill after each vendor fix,
+  each schema change, each quarter, and reading that as N-1 hand-chained
+  comparisons is work nobody does. The verb is a pure reduction: nothing is
+  averaged, trended, forecast, scored, or attributed to a cause, and no envelope
+  timestamp is read. The order is the caller's argument order, or filename order
+  under `--dir`, and the document says which.
+
+  The first receipt sets the series scope under exactly the comparability
+  predicates and reason codes `compare` enforces, so "in this series" and
+  "comparable with the first receipt" cannot become two different questions. A
+  receipt outside that scope is a gap carrying its reason codes: it never
+  appears as zero counts, which would publish "this could not be measured" as
+  "nothing was missing". For the same reason an adjacent pair touching a gap
+  carries no direction at all rather than one computed from a single side, and
+  `--fail-on-loss-signal-increase` exits 2 when the last adjacent pair is not
+  comparable, because returning 0 there would read as "nothing increased".
+
+  `exitdrill report history.json --receipt ... --receipt ...` renders it as a
+  table-first offline page through the same shell the receipt and comparison
+  reports use, and the timeline's gap cells say "No measurement" where a reading
+  would otherwise go. The document is `exitdrill/history/v0.1` with a committed
+  public JSON Schema, validated on every build and every verify beside the
+  source-bound recomputation, the same pairing the comparison document uses.
+  `make demo-compare` writes `examples/synthetic-crm/out/history.json` and
+  `history.html`, and both are inside the record-value disclosure gate.
+
 ### Added
 
 - `tests/test_gates.py` now binds the offline binding gate's blind spot to the

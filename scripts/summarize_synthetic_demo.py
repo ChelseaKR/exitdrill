@@ -33,6 +33,7 @@ def main() -> None:
         "examples/synthetic-crm-lossy/out/report.html"
     )
     print("comparison report: examples/synthetic-crm/out/comparison.html")
+    print("timeline report: examples/synthetic-crm/out/history.html")
 
 
 if __name__ == "__main__":

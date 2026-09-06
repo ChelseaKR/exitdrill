@@ -64,6 +64,9 @@ demo-compare: demo demo-lossy
 	@uv run exitdrill compare examples/synthetic-crm/out/receipt.json examples/synthetic-crm-lossy/out/receipt.json --out examples/synthetic-crm/out/comparison.json
 	@uv run exitdrill verify-comparison examples/synthetic-crm/out/comparison.json --reference examples/synthetic-crm/out/receipt.json --candidate examples/synthetic-crm-lossy/out/receipt.json
 	@uv run exitdrill report examples/synthetic-crm/out/comparison.json --reference examples/synthetic-crm/out/receipt.json --candidate examples/synthetic-crm-lossy/out/receipt.json --out examples/synthetic-crm/out/comparison.html >/dev/null
+	@uv run exitdrill history examples/synthetic-crm/out/receipt.json examples/synthetic-crm-lossy/out/receipt.json --out examples/synthetic-crm/out/history.json >/dev/null
+	@uv run exitdrill verify-history examples/synthetic-crm/out/history.json --receipt examples/synthetic-crm/out/receipt.json --receipt examples/synthetic-crm-lossy/out/receipt.json >/dev/null
+	@uv run exitdrill report examples/synthetic-crm/out/history.json --receipt examples/synthetic-crm/out/receipt.json --receipt examples/synthetic-crm-lossy/out/receipt.json --out examples/synthetic-crm/out/history.html >/dev/null
 	@uv run python scripts/summarize_synthetic_demo.py
 
 demo-compare-policy: demo-compare

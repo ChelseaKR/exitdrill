@@ -8,6 +8,7 @@ from typing import cast
 
 from exitdrill.atomic_write import write_bounded_file
 from exitdrill.comparison import verify_comparison_document, verify_comparison_files
+from exitdrill.history import HISTORY_SCHEMA_VERSION, verify_history_document, verify_history_files
 from exitdrill.models import JsonValue
 from exitdrill.receipt import load_receipt, verify_receipt
 from exitdrill.strict_json import StrictJsonError, load_strict_json
@@ -25,6 +26,7 @@ COMPARISON_SCHEMA_VERSION = "exitdrill/receipt-comparison/v0.1"
 _DOCUMENT_KINDS = {
     RECEIPT_SCHEMA_VERSION: "receipt",
     COMPARISON_SCHEMA_VERSION: "comparison",
+    HISTORY_SCHEMA_VERSION: "history",
 }
 
 
@@ -509,6 +511,213 @@ def _comparison_html(comparison: dict[str, JsonValue]) -> str:
     )
 
 
+_DIRECTION_LABELS = {
+    "mixed_loss_signal_change": "Mixed loss-signal change",
+    "no_observed_loss_signal_change": "No observed loss-signal change",
+    "observed_loss_signals_decreased": "Observed loss signals decreased",
+    "observed_loss_signals_increased": "Observed loss signals increased",
+    "uncertain": "Uncertain: baseline coverage is not complete",
+}
+
+_GAP_CELL = "No measurement"
+
+
+def _series_rows(entries: list[dict[str, JsonValue]]) -> str:
+    rows: list[str] = []
+    for member in entries:
+        reasons = cast(list[JsonValue], member["out_of_scope_reasons"])
+        codes = (
+            ", ".join(f"<code>{_escape(cast(str, item))}</code>" for item in reasons)
+            if reasons
+            else "None"
+        )
+        rows.append(
+            f'<tr><th scope="row">{_escape(member["position"])}</th>'
+            f"<td>{_plain_pill('In series' if member['in_scope'] else 'Gap')}</td>"
+            f"<td><code>{_escape(member['payload_sha256'])}</code></td>"
+            f"<td><code>{_escape(member['export_sha256'])}</code></td>"
+            f"<td>{codes}</td></tr>"
+        )
+    return "".join(rows)
+
+
+def _timeline_cell(observation: dict[str, JsonValue]) -> str:
+    """One receipt's reading for one dimension, or the fact that there is none.
+
+    A gap prints words, never numbers. Rendering it as `0 / 0 / 0` would put a
+    measurement nobody took in the column a reader reads as measurements.
+    """
+    if observation["observed"] is not True:
+        return f"<td>{_plain_pill(_GAP_CELL)}</td>"
+    counts = (
+        f"{observation['missing_count']} missing, "
+        f"{observation['invalid_count']} invalid, "
+        f"{observation['extra_count']} extra"
+    )
+    return f"<td>{_escape(counts)} {_status_pill(observation['status'])}</td>"
+
+
+def _timeline_rows(dimensions: list[dict[str, JsonValue]]) -> str:
+    rows: list[str] = []
+    for dimension in dimensions:
+        name = cast(str, dimension["name"])
+        series = _objects(
+            cast(list[JsonValue], dimension["series"]),
+            "verified history contains a malformed observation",
+        )
+        cells = "".join(_timeline_cell(item) for item in series)
+        rows.append(
+            f'<tr><th scope="row">{_escape(label(DIMENSION_LABELS, name))}</th>'
+            f"<td>{_escape(cast(str, dimension['coverage']).capitalize())}</td>"
+            f"<td>{_escape(dimension['expected_count'])}</td>{cells}</tr>"
+        )
+    return "".join(rows)
+
+
+def _transition_rows(transitions: list[dict[str, JsonValue]]) -> str:
+    rows: list[str] = []
+    for transition in transitions:
+        heading = f"{_escape(transition['from_position'])} to {_escape(transition['to_position'])}"
+        if transition["comparable"] is not True:
+            reasons = ", ".join(
+                f"<code>{_escape(cast(str, item))}</code>"
+                for item in cast(list[JsonValue], transition["not_comparable_reasons"])
+            )
+            rows.append(
+                f'<tr><th scope="row">{heading}</th>'
+                f"<td>{_plain_pill('Not comparable')}</td>"
+                f"<td>{reasons}</td><td>{_escape(_GAP_CELL)}</td>"
+                f"<td>{_escape(_GAP_CELL)}</td></tr>"
+            )
+            continue
+        increases = _dimension_names(
+            cast(list[JsonValue], transition["observed_loss_signal_increases"])
+        )
+        decreases = _dimension_names(
+            cast(list[JsonValue], transition["observed_loss_signal_decreases"])
+        )
+        rows.append(
+            f'<tr><th scope="row">{heading}</th>'
+            f"<td>{_plain_pill(label(_DIRECTION_LABELS, cast(str, transition['direction'])))}</td>"
+            f"<td>Comparable</td><td>{increases}</td><td>{decreases}</td></tr>"
+        )
+    return "".join(rows)
+
+
+def _dimension_names(names: list[JsonValue]) -> str:
+    if not names:
+        return "None"
+    return ", ".join(_escape(label(DIMENSION_LABELS, cast(str, item))) for item in names)
+
+
+def render_history_report(
+    document: dict[str, JsonValue],
+    receipts: tuple[dict[str, JsonValue], ...],
+) -> str:
+    """Recompute a timeline from its source receipts, then render it."""
+    verify_history_document(document, receipts)
+    return _history_html(document)
+
+
+def _history_html(document: dict[str, JsonValue]) -> str:
+    """Render one already-verified timeline document."""
+    scope = cast(dict[str, JsonValue], document["scope"])
+    summary = cast(dict[str, JsonValue], document["summary"])
+    entries = _objects(
+        cast(list[JsonValue], document["receipts"]),
+        "verified history contains a malformed series entry",
+    )
+    dimensions = _objects(
+        cast(list[JsonValue], document["dimensions"]),
+        "verified history contains a malformed dimension",
+    )
+    transitions = _objects(
+        cast(list[JsonValue], document["transitions"]),
+        "verified history contains a malformed transition",
+    )
+    positions = "".join(
+        f'<th scope="col">Receipt {_escape(item["position"])}</th>' for item in entries
+    )
+    gap_positions = cast(list[JsonValue], summary["gap_positions"])
+    if not gap_positions:
+        gap_line = "Every receipt in this series shares one scope."
+    elif len(gap_positions) == 1:
+        gap_line = (
+            "One receipt does not share the series scope and is shown as a gap, "
+            "never as zero counts."
+        )
+    else:
+        gap_line = (
+            f"{len(gap_positions)} receipts do not share the series scope and are shown "
+            "as gaps, never as zero counts."
+        )
+    main = f"""    <div class="result">
+      <span>Receipt series</span>
+      <strong>{_escape(summary["in_scope_count"])} of {_escape(summary["receipt_count"])} receipts in scope</strong>
+      <span>A timeline lines up separate measurements in the order the caller gave. It is not chronology, not a trend, and carries no aggregate score.</span>
+    </div>
+    <div class="grid" aria-label="Series scope">
+      <div class="card"><span>Source system</span><strong>{_escape(scope["source_system"])}</strong></div>
+      <div class="card"><span>Drill ID</span><strong>{_escape(scope["drill_id"])}</strong></div>
+      <div class="card"><span>Receipts</span><strong>{_escape(summary["receipt_count"])}</strong></div>
+      <div class="card"><span>Ordering basis</span><strong>{_escape(label(_ORDERING_LABELS, cast(str, document["ordering_basis"])))}</strong></div>
+    </div>
+    <section aria-labelledby="scope-heading">
+      <h2 id="scope-heading">The series, receipt by receipt</h2>
+      <p>{gap_line}</p>
+      <table>
+        <caption>The first receipt sets the scope. A later receipt either shares it or is named here with the reason codes that put it outside.</caption>
+        <thead><tr><th scope="col">Position</th><th scope="col">In series</th><th scope="col">Payload SHA-256</th><th scope="col">Export SHA-256</th><th scope="col">Reason codes</th></tr></thead>
+        <tbody>{_series_rows(entries)}</tbody>
+      </table>
+    </section>
+    <section aria-labelledby="timeline-heading">
+      <h2 id="timeline-heading">Timeline</h2>
+      <table>
+        <caption>Expected counts are the denominator the scope fixes. A receipt outside the scope has no reading here and says so.</caption>
+        <thead><tr><th scope="col">Dimension</th><th scope="col">Coverage</th><th scope="col">Expected</th>{positions}</tr></thead>
+        <tbody>{_timeline_rows(dimensions)}</tbody>
+      </table>
+    </section>
+    <section aria-labelledby="transitions-heading">
+      <h2 id="transitions-heading">Adjacent pairs</h2>
+      <table>
+        <caption>Each row compares one adjacent pair and nothing else. A pair touching a gap has no direction, rather than a direction computed from one side.</caption>
+        <thead><tr><th scope="col">Pair</th><th scope="col">Direction</th><th scope="col">Comparability</th><th scope="col">Dimensions increased</th><th scope="col">Dimensions decreased</th></tr></thead>
+        <tbody>{_transition_rows(transitions)}</tbody>
+      </table>
+    </section>
+    <section aria-labelledby="integrity-heading">
+      <h2 id="integrity-heading">Integrity and provenance</h2>
+      <p>This page was rendered only after the timeline was recomputed field by field from every source receipt and re-checked against the public history schema. The digests above are the operands that recomputation used. They are checksums, not signatures.</p>
+      <dl>
+        <dt>Series baseline SHA-256</dt><dd><code>{_escape(scope["baseline_sha256"])}</code></dd>
+      </dl>
+    </section>
+    <section aria-labelledby="limitations-heading">
+      <h2 id="limitations-heading">Required limitations</h2>
+      <ul>{_limitation_items(cast(list[JsonValue], document["limitations"]))}</ul>
+    </section>
+"""
+    return _page(
+        title="ExitDrill receipt timeline",
+        headline="A series of drills, lined up without a trend.",
+        scope=(
+            "This report summarizes a verified, aggregate-only timeline over several offline "
+            "structural receipts. It states what each drill observed and how each adjacent pair "
+            "differs. It does not rank the receipts, infer chronology, forecast, or explain why "
+            "anything changed."
+        ),
+        main=main,
+        provenance="a verified timeline document and every source receipt",
+    )
+
+
+def render_history_file(document_path: Path, receipt_paths: tuple[Path, ...]) -> str:
+    """Recompute a timeline from its receipt files, then render it."""
+    return _history_html(verify_history_files(document_path, receipt_paths))
+
+
 def render_receipt_file(path: Path) -> str:
     """Strict-load a bounded receipt and render its offline report."""
     return render_receipt_report(load_receipt(path))
@@ -553,7 +762,7 @@ def document_kind(path: Path) -> str:
     if not isinstance(version, str) or version not in _DOCUMENT_KINDS:
         raise ReportError(
             "report input must declare a supported schema version: "
-            f"{RECEIPT_SCHEMA_VERSION} or {COMPARISON_SCHEMA_VERSION}"
+            + ", ".join(sorted(_DOCUMENT_KINDS))
         )
     return _DOCUMENT_KINDS[version]
 

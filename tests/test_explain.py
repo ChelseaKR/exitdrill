@@ -64,10 +64,20 @@ CLEAN = PROJECT / "examples" / "synthetic-crm"
 LOSSY = PROJECT / "examples" / "synthetic-crm-lossy"
 README = PROJECT / "README.md"
 
-# The six comparison limitation codes, so the shared table is required to carry
-# every code either surface can be handed. Kept as a literal rather than
-# imported from `comparison._COMPARISON_LIMITATIONS`, so a code silently
-# dropped there is a failure here rather than a matched pair of deletions.
+# Every limitation code the three document kinds can be handed, so the shared
+# table is required to carry all of them. Kept as literals rather than imported
+# from the modules that emit them, so a code silently dropped there is a failure
+# here rather than a matched pair of deletions.
+HISTORY_LIMITATIONS = (
+    "adjacent_directions_are_observations_not_a_trend",
+    "aggregate_only_cannot_observe_record_identity_churn",
+    "does_not_bind_export_generation_or_evaluator_version",
+    "does_not_prove_operational_equivalence",
+    "history_output_is_unsigned_and_unauthenticated",
+    "inputs_are_unsigned_and_unauthenticated",
+    "series_order_is_caller_supplied_unverified",
+)
+
 COMPARISON_LIMITATIONS = (
     "aggregate_only_cannot_observe_record_identity_churn",
     "comparison_output_is_unsigned_and_unauthenticated",
@@ -421,9 +431,13 @@ def test_every_coverage_declaration_has_a_sentence() -> None:
 
 
 def test_every_limitation_code_either_surface_can_render_has_a_sentence() -> None:
-    for code in (*TRUST_LIMITATIONS, *COMPARISON_LIMITATIONS):
+    for code in (*TRUST_LIMITATIONS, *COMPARISON_LIMITATIONS, *HISTORY_LIMITATIONS):
         assert code in LIMITATION_SENTENCES, code
-    assert set(LIMITATION_SENTENCES) == {*TRUST_LIMITATIONS, *COMPARISON_LIMITATIONS}
+    assert set(LIMITATION_SENTENCES) == {
+        *TRUST_LIMITATIONS,
+        *COMPARISON_LIMITATIONS,
+        *HISTORY_LIMITATIONS,
+    }
 
 
 def test_each_dimension_question_is_the_one_the_readme_publishes() -> None:

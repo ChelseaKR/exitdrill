@@ -1,0 +1,538 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://exitdrill.example/schemas/receipt-history-v0.1.schema.json",
+  "title": "ExitDrill aggregate receipt history",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "decision_scope",
+    "ordering_basis",
+    "scope",
+    "receipts",
+    "dimensions",
+    "transitions",
+    "limitations",
+    "summary"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "exitdrill/history/v0.1"
+    },
+    "decision_scope": {
+      "const": "offline_aggregate_receipt_series_only"
+    },
+    "ordering_basis": {
+      "const": "caller_supplied_unverified"
+    },
+    "scope": {
+      "$ref": "#/$defs/scope"
+    },
+    "dimensions": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "items": {
+        "$ref": "#/$defs/dimension"
+      },
+      "allOf": [
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "entities"
+              }
+            }
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "relationships"
+              }
+            }
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "attachments"
+              }
+            }
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "permissions"
+              }
+            }
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "audit_events"
+              }
+            }
+          },
+          "minContains": 1,
+          "maxContains": 1
+        }
+      ]
+    },
+    "transitions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "required": [
+              "comparable",
+              "from_position",
+              "not_comparable_reasons",
+              "to_position"
+            ],
+            "properties": {
+              "comparable": {
+                "const": false
+              },
+              "from_position": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "not_comparable_reasons": {
+                "type": "array",
+                "minItems": 1,
+                "uniqueItems": true,
+                "items": {
+                  "enum": [
+                    "baseline_sha256_changed",
+                    "drill_id_changed",
+                    "source_system_changed",
+                    "receipt_schema_version_changed",
+                    "result_schema_version_changed",
+                    "decision_scope_changed",
+                    "dimension_coverage_changed",
+                    "dimension_expected_counts_changed",
+                    "trust_limitations_changed"
+                  ]
+                }
+              },
+              "to_position": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          },
+          {
+            "additionalProperties": false,
+            "required": [
+              "comparable",
+              "direction",
+              "from_position",
+              "observed_loss_signal_decreases",
+              "observed_loss_signal_increases",
+              "to_position"
+            ],
+            "properties": {
+              "comparable": {
+                "const": true
+              },
+              "direction": {
+                "enum": [
+                  "observed_loss_signals_increased",
+                  "observed_loss_signals_decreased",
+                  "mixed_loss_signal_change",
+                  "no_observed_loss_signal_change",
+                  "uncertain"
+                ]
+              },
+              "from_position": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "observed_loss_signal_decreases": {
+                "type": "array",
+                "uniqueItems": true,
+                "items": {
+                  "enum": [
+                    "entities",
+                    "relationships",
+                    "attachments",
+                    "permissions",
+                    "audit_events"
+                  ]
+                }
+              },
+              "observed_loss_signal_increases": {
+                "type": "array",
+                "uniqueItems": true,
+                "items": {
+                  "enum": [
+                    "entities",
+                    "relationships",
+                    "attachments",
+                    "permissions",
+                    "audit_events"
+                  ]
+                }
+              },
+              "to_position": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        ]
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "minItems": 7,
+      "maxItems": 7,
+      "prefixItems": [
+        {
+          "const": "inputs_are_unsigned_and_unauthenticated"
+        },
+        {
+          "const": "history_output_is_unsigned_and_unauthenticated"
+        },
+        {
+          "const": "aggregate_only_cannot_observe_record_identity_churn"
+        },
+        {
+          "const": "series_order_is_caller_supplied_unverified"
+        },
+        {
+          "const": "does_not_bind_export_generation_or_evaluator_version"
+        },
+        {
+          "const": "does_not_prove_operational_equivalence"
+        },
+        {
+          "const": "adjacent_directions_are_observations_not_a_trend"
+        }
+      ],
+      "items": false
+    },
+    "summary": {
+      "$ref": "#/$defs/summary"
+    },
+    "receipts": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "$ref": "#/$defs/series_receipt"
+      }
+    }
+  },
+  "$defs": {
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "baseline_sha256",
+        "decision_scope",
+        "drill_id",
+        "receipt_schema_version",
+        "result_schema_version",
+        "source_system",
+        "trust_limitations"
+      ],
+      "properties": {
+        "baseline_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "decision_scope": {
+          "type": "string",
+          "minLength": 1
+        },
+        "drill_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "receipt_schema_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "result_schema_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_system": {
+          "type": "string",
+          "minLength": 1
+        },
+        "trust_limitations": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "dimension": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "coverage",
+        "expected_count",
+        "name",
+        "series"
+      ],
+      "properties": {
+        "coverage": {
+          "enum": [
+            "complete",
+            "partial",
+            "unavailable"
+          ]
+        },
+        "expected_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "name": {
+          "enum": [
+            "entities",
+            "relationships",
+            "attachments",
+            "permissions",
+            "audit_events"
+          ]
+        },
+        "series": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "type": "object",
+            "oneOf": [
+              {
+                "additionalProperties": false,
+                "required": [
+                  "observed",
+                  "position"
+                ],
+                "properties": {
+                  "observed": {
+                    "const": false
+                  },
+                  "position": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              },
+              {
+                "additionalProperties": false,
+                "required": [
+                  "exported_count",
+                  "extra_count",
+                  "invalid_count",
+                  "missing_count",
+                  "observed",
+                  "position",
+                  "restored_count",
+                  "status"
+                ],
+                "properties": {
+                  "exported_count": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "extra_count": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "invalid_count": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "missing_count": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "observed": {
+                    "const": true
+                  },
+                  "position": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "restored_count": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "status": {
+                    "enum": [
+                      "pass",
+                      "fail",
+                      "finding",
+                      "indeterminate"
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "gap_positions",
+        "gap_reasons",
+        "in_scope_count",
+        "receipt_count"
+      ],
+      "properties": {
+        "gap_positions": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "gap_reasons": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "baseline_sha256_changed",
+              "drill_id_changed",
+              "source_system_changed",
+              "receipt_schema_version_changed",
+              "result_schema_version_changed",
+              "decision_scope_changed",
+              "dimension_coverage_changed",
+              "dimension_expected_counts_changed",
+              "trust_limitations_changed"
+            ]
+          }
+        },
+        "in_scope_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "receipt_count": {
+          "type": "integer",
+          "minimum": 2
+        }
+      }
+    },
+    "series_receipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "export_sha256",
+        "in_scope",
+        "out_of_scope_reasons",
+        "payload_sha256",
+        "position"
+      ],
+      "properties": {
+        "export_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "in_scope": {
+          "type": "boolean"
+        },
+        "out_of_scope_reasons": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "baseline_sha256_changed",
+              "drill_id_changed",
+              "source_system_changed",
+              "receipt_schema_version_changed",
+              "result_schema_version_changed",
+              "decision_scope_changed",
+              "dimension_coverage_changed",
+              "dimension_expected_counts_changed",
+              "trust_limitations_changed"
+            ]
+          }
+        },
+        "payload_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "position": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "in_scope": {
+                "const": true
+              }
+            },
+            "required": [
+              "in_scope"
+            ]
+          },
+          "then": {
+            "properties": {
+              "out_of_scope_reasons": {
+                "maxItems": 0
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "out_of_scope_reasons": {
+                "minItems": 1
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
