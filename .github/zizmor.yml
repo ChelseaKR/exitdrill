@@ -1,32 +1,59 @@
 # zizmor configuration. See https://docs.zizmor.sh/configuration/
 #
-# `impostor-commit` is disabled repo-wide because it cannot run at all: it
-# needs the GitHub API to confirm that a pinned commit SHA belongs to the
-# referenced repo, and release.yml's `authorize` job pins
-# ChelseaKR/portfolio-standards/.github/workflows/release-authorize.yml --
-# a *different*, private repo that this workflow's repo-scoped
-# GITHUB_TOKEN cannot read. zizmor does not fail closed on that access
-# error; it aborts the whole audit for the file before it reaches any
-# other `uses:` line, so per-line `ignore` cannot scope around it
-# (BaseRuleConfig.ignore filters findings after a successful run; it
-# cannot suppress an audit-level error). Same failure mode and fix as
-# obligation-receipts' .github/zizmor.yml.
+# Three audits are disabled repo-wide, for one reason. Each is an *online*
+# audit that resolves the origin repo of every pinned `uses:`, and release.yml's
+# `authorize` job pins
+# ChelseaKR/portfolio-standards/.github/workflows/release-authorize.yml -- a
+# *different*, private repo that this workflow's repo-scoped GITHUB_TOKEN
+# cannot read. zizmor does not fail closed on that access error; it aborts the
+# whole audit for the file before it reaches any other `uses:` line, so
+# per-line `ignore` cannot scope around it (BaseRuleConfig.ignore filters
+# findings after a successful run; it cannot suppress an audit-level error).
+# Same failure mode and fix as obligation-receipts' .github/zizmor.yml.
+#
+#   fatal: no audit was performed
+#   '<audit>' audit failed on file://./.github/workflows/release.yml
+#   Caused by:
+#       0: error in '<audit>' audit
+#       1: couldn't list tags for ChelseaKR/portfolio-standards
+#       2: can't access ChelseaKR/portfolio-standards: missing or you have no access
+#
+# `impostor-commit` confirms that a pinned commit SHA belongs to the repo it is
+# pinned from. It has been disabled here since the pin landed.
+#
+# `stale-action-refs` and `ref-version-mismatch` joined it when zizmor v1.30.0
+# arrived with zizmor-action v0.6.3 (#78). Both audits already existed in
+# v1.29.0 and both already ran against release.yml there without aborting;
+# v1.30.0 surfaces the access error as an audit-level failure instead of
+# tolerating it. Nothing in this repository changed.
+#
+# The list is exactly three, measured rather than guessed: with the private pin
+# replaced by an unreachable slug, v1.30.0 was run repeatedly, disabling only
+# the audit it named each time, until the file completed. `ref-confusion` and
+# `known-vulnerable-actions` resolve the same unreachable pin and do *not*
+# abort, so neither is disabled. Re-run that probe before adding a fourth: an
+# audit that still completes must stay on.
 #
 # What this trades away: automated confirmation that a pinned SHA in this
-# repo's own workflows resolves to a real tag on its origin repo.
-# Everything else zizmor checks (unpinned-uses, stale-action-refs,
-# known-vulnerable-actions, ref-confusion, ref-version-mismatch, and the
-# offline audits) stays active for every `uses:` line, including the
-# public actions in these workflows.
+# repo's own workflows belongs to its origin repo, still resolves to a tag
+# there, and carries a comment matching that tag. Everything else zizmor checks
+# stays active for every `uses:` line -- including `unpinned-uses`, which is
+# what catches a reference that is not SHA-pinned at all, and
+# `known-vulnerable-actions`, which is what catches a pin with a published
+# advisory against it.
 #
-# The one pin this leaves unchecked -- release.yml's release-authorize
+# The one pin these three leave unchecked -- release.yml's release-authorize
 # reference -- is still verified by hand before every bump: the SHA must
 # resolve to a signed, tagged commit on portfolio-standards.
 #
-# Re-enable once the zizmor job is given a credential that can read
+# Re-enable all three once the zizmor job is given a credential that can read
 # portfolio-standards (e.g. a fine-grained PAT with contents:read on that
 # repo specifically, passed as the zizmor-action `token:` input) rather
 # than relying on this repo's own GITHUB_TOKEN.
 rules:
   impostor-commit:
+    disable: true
+  stale-action-refs:
+    disable: true
+  ref-version-mismatch:
     disable: true
