@@ -238,6 +238,16 @@ def _jobs(workflow: str) -> dict[str, str]:
     return {name: "\n".join(lines[bounds[n] : bounds[n + 1]]) for n, (_, name) in enumerate(starts)}
 
 
+def _runs(body: str, command: str) -> bool:
+    """Does this job actually run the command, rather than mention it?
+
+    Comments are prose. A job that only named the gate in a comment explaining
+    itself was pulled into this check's scope by a raw text match.
+    """
+    lines = body.splitlines()
+    return any(command in line for line in lines if not line.lstrip().startswith("#"))
+
+
 def test_ci_fetches_the_tags_these_checks_read() -> None:
     """Otherwise the tag checks skip in CI and gate nothing.
 
@@ -246,7 +256,7 @@ def test_ci_fetches_the_tags_these_checks_read() -> None:
     that runs `make verify` has to ask for the tags.
     """
     jobs = _jobs(CI_WORKFLOW.read_text(encoding="utf-8"))
-    running = {name: body for name, body in jobs.items() if "make verify" in body}
+    running = {name: body for name, body in jobs.items() if _runs(body, "make verify")}
     assert running, ".github/workflows/ci.yml has no job that runs `make verify`"
     for name, body in running.items():
         assert "actions/checkout" in body, f"job {name!r} runs make verify without a checkout"
