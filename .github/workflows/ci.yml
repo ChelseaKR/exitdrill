@@ -44,6 +44,12 @@ jobs:
       - name: Check every committed browser-lab script
         run: make lint-lab
       - name: Verify
+        env:
+          # Issue #89 built the mechanism and left the switch off. Without this,
+          # the four tool-dependent gate tests skip themselves when node or uv is
+          # absent and the suite still reports green -- which is the state the
+          # issue existed to end. Setting it makes a missing tool fail here.
+          EXITDRILL_REQUIRE_GATE_TOOLS: "1"
         run: make verify
       - name: Exercise both declared outcomes and comparison policy
         run: make demo-compare-policy
