@@ -80,17 +80,33 @@ weakened the gate while its success line still read "verified 9".
 
 ## Known limits this plan does not close
 
-- **Coverage does not measure `scripts/`.** The two acceptance scripts are
-  roughly 52KB of Python that decide whether the canaries pass. They are
-  executed by the suite through subprocesses and by direct import, and their
-  privacy assertions are proved to fire by `tests/test_canary_gate_assertions.py`,
-  but no coverage floor applies to their rejection branches. Closing this means
-  either adding `scripts` to `[tool.coverage.run] source` and accepting a lower
-  floor until the branches are covered, or a second coverage target. Left open
-  deliberately rather than half-done.
-- **The binding gate stubs `pageErrors` as `{ length: 2 }` for every script.**
-  Verified correct today: only `civicrm_browser_case_search_workflow.mjs`
-  references `pageErrors` inside its declared output literal, and that script
-  aborts unless `pageErrors.length === 2`. Nothing pins that this stays true. A
-  future script whose literal reads `pageErrors` without that assertion would
-  be compared against a fabricated 2.
+> **Both are closed as of 2026-09-06, and this section is now bound to the code
+> by `tests/test_documentation.py::test_the_plan_publishes_no_limit_the_code_has_closed`.**
+> A plan that goes on publishing a limit the tree has since closed is the same
+> defect this plan was written about, pointed at the plan: a statement about
+> what is enforced, outliving the enforcement. It failed in the direction that
+> understates the project rather than overstates it, which is the safer
+> direction and still not a true one. The test fails if either entry is
+> reinstated while its closure stands, and it fails if a closure is reverted
+> while the entry stays deleted.
+
+- ~~**Coverage does not measure `scripts/`.**~~ **Closed (#125.)** The two
+  acceptance scripts are roughly 52KB of Python that decide whether the canaries
+  pass, and for a while no coverage floor applied to their rejection branches.
+  `[tool.coverage.run] source` is now `["exitdrill", "scripts"]` with
+  `parallel = true`, and `tests/conftest.py` sets `COVERAGE_PROCESS_START` so
+  coverage follows the gate scripts into the subprocesses the suite runs them
+  as. `docs/ROADMAP.md` carries the three resulting floors: 90% for
+  `src/exitdrill`, 80% for `scripts/`, and 90% for both together.
+- ~~**The binding gate stubs `pageErrors` as `{ length: 2 }` for every
+  script.**~~ **Closed.** The stub is still a fabricated value, and it is still
+  safe for the same reason: exactly one capture script reads `pageErrors` inside
+  its declared literal, and that script cannot reach its literal unless
+  `pageErrors.length === 2`. What has changed is that both halves of that
+  reasoning are now enforced rather than asserted in a comment.
+  `scripts/check_browser_capture_bindings.mjs` fails if another script's
+  declared literal starts reading `pageErrors`, if the owning script's literal
+  stops reading it, or if the owning script stops proving
+  `pageErrors.length === 2` first. A future script whose literal read
+  `pageErrors` without that assertion would now fail the gate rather than be
+  compared against a fabricated 2.
