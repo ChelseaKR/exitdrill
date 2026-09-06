@@ -85,7 +85,18 @@ exitdrill verify receipt.json \
   --attachment-root examples/synthetic-crm/export-files
 
 exitdrill report receipt.json --out report.html
+
+exitdrill explain receipt.json
 ```
+
+`explain` narrates one verified receipt in plain language for a reader who has
+never seen the tool: what a baseline and an export are here, what each dimension
+asked and what it found, what the overall state means, the full list of things
+it does not mean, and what the reader can do next. Every sentence is derived
+from a receipt field or from the one wording table the HTML report draws its
+prose from, so narration cannot say more than the receipt does and the two
+surfaces cannot disagree. `--json` emits the same narration as a structured
+document.
 
 To compare two same-scope receipts:
 

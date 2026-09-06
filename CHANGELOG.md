@@ -29,6 +29,39 @@ All notable changes will be documented here.
 
 ### Added
 
+- `exitdrill explain RECEIPT` narrates one verified receipt in plain language,
+  for the reader issue #51's usability gate is about: someone who has never seen
+  the tool, deciding whether a receipt answers their exit question. It states
+  what a baseline and an export are here; per dimension the question asked, the
+  denominator the baseline declared with its coverage, what the export carried
+  and what became of it, and one conclusion sentence; what the overall state
+  means; the full list of things it does not mean, quoted verbatim from the
+  contract; and what the reader can do next. `--json` emits the same narration
+  as a canonical `exitdrill/receipt-narration/v0.1` document.
+
+  It cannot say more than the receipt does. Verification runs before any
+  sentence is built, so an invalid receipt exits 2 with the validation error and
+  no partial narration. Nothing reads the envelope's claimed time, attributes a
+  cause, recommends a remedy, or reduces the dimensions to a score. The
+  conclusion sentence is chosen in the order `classify_dimension_status`
+  decides, so a dimension that failed is never narrated as a coverage problem,
+  and an `indeterminate` dimension is narrated as one the drill cannot rule on
+  -- the narration never uses the word "passed", which is the word a reader
+  would carry away.
+
+- `src/exitdrill/wording.py` is now the one table every reader-facing string
+  that is not a count, a digest, or free payload text comes from: dimension
+  labels, nouns and questions, result-state names and meanings, coverage
+  clauses, and the limitation sentences. The HTML report and `explain` both read
+  it, so the two surfaces cannot disagree about what a receipt says; before it,
+  each held its own copy, which is the same shape as a document restating a
+  bound the code no longer enforces. The report's rendered bytes are unchanged.
+  `tests/test_explain.py` requires an entry for every member of every enum the
+  narration reads, requires each limitation sentence to appear exactly once, and
+  binds each dimension question to the wording `README.md` publishes. The
+  disclosure gate scans both narrations and proves it reports a record value
+  injected into them.
+
 - `exitdrill report` renders a comparison document as an offline, script-free
   HTML page, the way it already rendered a receipt. The comparison round trip
   closed in #102, but its only output was JSON, so a reader who was not the

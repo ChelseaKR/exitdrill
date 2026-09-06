@@ -25,6 +25,7 @@ from exitdrill.comparison import (
 from exitdrill.directus_canary import DirectusCanaryError, normalize_directus_canary
 from exitdrill.evaluator import DrillError, run_drill
 from exitdrill.exercise import ExercisePlanError, load_exercise_plan
+from exitdrill.explain import narrate_receipt_file, render_narration_text
 from exitdrill.loader import PackageError, load_baseline, load_export
 from exitdrill.models import JsonValue, OverallStatus
 from exitdrill.receipt import (
@@ -96,6 +97,17 @@ def _parser() -> argparse.ArgumentParser:
     verify_comparison.add_argument("comparison", type=Path)
     verify_comparison.add_argument("--reference", type=Path, required=True)
     verify_comparison.add_argument("--candidate", type=Path, required=True)
+    explain = commands.add_parser(
+        "explain",
+        help="narrate a verified receipt in plain language for an outside reader",
+    )
+    explain.add_argument("receipt", type=Path)
+    explain.add_argument(
+        "--json",
+        action="store_true",
+        dest="as_json",
+        help="emit the same narration as a canonical JSON document",
+    )
     report = commands.add_parser(
         "report",
         help="render an accessible offline report from a verified receipt or comparison",
@@ -279,6 +291,21 @@ def _verify_comparison(
     return 0
 
 
+def _explain(receipt_path: Path, as_json: bool) -> int:
+    """Narrate a verified receipt, or fail without narrating part of one.
+
+    Verification happens inside `narrate_receipt_file` before any sentence is
+    built, so an invalid receipt produces the validation error and exit 2
+    rather than a partial narration a reader could mistake for a result.
+    """
+    narration = narrate_receipt_file(receipt_path)
+    if as_json:
+        _print_json(narration)
+    else:
+        sys.stdout.write(render_narration_text(narration))
+    return 0
+
+
 def _report(
     document_path: Path,
     out: Path,
@@ -359,6 +386,8 @@ def main(argv: list[str] | None = None) -> int:
             )
         if args.command == "verify-comparison":
             return _verify_comparison(args.comparison, args.reference, args.candidate)
+        if args.command == "explain":
+            return _explain(args.receipt, args.as_json)
         if args.command == "report":
             return _report(args.document, args.out, args.reference, args.candidate)
         return _run_canary_command(args)
