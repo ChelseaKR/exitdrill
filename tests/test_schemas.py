@@ -320,7 +320,7 @@ def test_the_receipt_schema_rejects_one_locally_expressible_violation(
 
     mutate(document)
 
-    assert validator(RECEIPT_SCHEMA).iter_errors(document), label
+    assert list(validator(RECEIPT_SCHEMA).iter_errors(document)), label
 
 
 def _payload(document: dict[str, JsonValue]) -> dict[str, JsonValue]:
@@ -375,7 +375,7 @@ def test_the_baseline_schema_rejects_one_locally_expressible_violation(
 
     mutate(document)
 
-    assert validator(BASELINE_SCHEMA).iter_errors(document), label
+    assert list(validator(BASELINE_SCHEMA).iter_errors(document)), label
 
 
 def _first_entity_id(document: dict[str, object], value: str) -> None:
@@ -413,7 +413,7 @@ def test_the_export_schema_rejects_one_locally_expressible_violation(
 
     mutate(document)
 
-    assert validator(EXPORT_SCHEMA).iter_errors(document), label
+    assert list(validator(EXPORT_SCHEMA).iter_errors(document)), label
 
 
 @pytest.mark.parametrize(
@@ -453,7 +453,7 @@ def test_the_exercise_plan_schema_rejects_one_locally_expressible_violation(
 
     mutate(document)
 
-    assert validator(EXERCISE_PLAN_SCHEMA).iter_errors(document), label
+    assert list(validator(EXERCISE_PLAN_SCHEMA).iter_errors(document)), label
 
 
 # ---------------------------------------------------------------------------
@@ -493,6 +493,39 @@ def test_the_exercise_loader_still_rejects_what_only_it_can_see(tmp_path: Path) 
 
     with pytest.raises(ExercisePlanError, match="source_descriptions"):
         load_exercise_plan(path)
+
+
+def test_the_schema_check_is_on_every_load_path(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The wiring, not the schemas.
+
+    For a receipt, a baseline, a plan or an export, the semantic validators are
+    already at least as strict as the schema, so no document exists that passes
+    one and fails the other. That is what makes the schema a net rather than a
+    duplicate -- and it also means nothing would notice if the call were
+    deleted. Standing in for the validator proves each call site is reached.
+    """
+    calls: list[str] = []
+    # Built before the stand-in is installed: `receipt()` loads a baseline and an
+    # export, and those go through the same call sites.
+    document = receipt()
+
+    def refuse(name: str, document: object, error: type[Exception], label: str) -> None:
+        calls.append(label)
+        raise error(f"{label} was checked against {name}")
+
+    for module in ("receipt", "loader", "exercise"):
+        monkeypatch.setattr(f"exitdrill.{module}.validate_against_schema", refuse)
+
+    with pytest.raises(ReceiptError, match="was checked against"):
+        verify_receipt(document)
+    with pytest.raises(PackageError, match="was checked against"):
+        load_baseline(CLEAN / "baseline.json")
+    with pytest.raises(PackageError, match="was checked against"):
+        load_export(CLEAN / "export.json")
+    with pytest.raises(ExercisePlanError, match="was checked against"):
+        load_exercise_plan(PROJECT / "examples" / "synthetic-exercise" / "plan.json")
+
+    assert calls == ["receipt", "baseline", "export", "exercise plan"]
 
 
 # ---------------------------------------------------------------------------
