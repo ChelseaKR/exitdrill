@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 import json
-import os
-import tempfile
 from dataclasses import dataclass
 from functools import lru_cache
 from importlib.resources import files
@@ -13,6 +11,7 @@ from typing import cast
 
 from jsonschema import Draft202012Validator, SchemaError, ValidationError
 
+from exitdrill.atomic_write import write_bounded_file
 from exitdrill.canonical import canonical_json_bytes
 from exitdrill.models import Coverage, Dimension, DimensionStatus, JsonValue
 from exitdrill.receipt import ReceiptError, load_receipt, verify_receipt
@@ -461,31 +460,14 @@ def compare_receipt_files(
 
 
 def write_comparison(path: Path, comparison: dict[str, JsonValue]) -> None:
-    """Atomically write a bounded canonical comparison document.
-
-    This is a third copy of the bounded `mkstemp` + `fsync` + `os.replace`
-    sequence `write_receipt` and `write_report` already carry, deliberately
-    left as a copy: issue #93 extracts the one shared writer, and this is
-    written to be folded into it rather than to anticipate its signature.
-    """
-    document = canonical_json_bytes(comparison) + b"\n"
-    if len(document) > _MAX_COMPARISON_BYTES:
-        raise ComparisonError("comparison exceeds the 2 MiB limit")
-    path.parent.mkdir(parents=True, exist_ok=True)
-    descriptor, temporary_name = tempfile.mkstemp(
-        dir=path.parent,
-        prefix=f".{path.name}.",
-        suffix=".tmp",
+    """Atomically write a bounded canonical comparison document."""
+    write_bounded_file(
+        path,
+        canonical_json_bytes(comparison) + b"\n",
+        max_bytes=_MAX_COMPARISON_BYTES,
+        size_message="comparison exceeds the 2 MiB limit",
+        error=ComparisonError,
     )
-    temporary = Path(temporary_name)
-    try:
-        with os.fdopen(descriptor, "wb") as handle:
-            handle.write(document)
-            handle.flush()
-            os.fsync(handle.fileno())
-        os.replace(temporary, path)
-    finally:
-        temporary.unlink(missing_ok=True)
 
 
 def load_comparison(path: Path) -> dict[str, JsonValue]:

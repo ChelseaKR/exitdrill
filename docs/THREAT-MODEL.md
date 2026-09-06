@@ -18,6 +18,7 @@
 | PII leaks in receipt | aggregate-only payload | low counts and input hashes may remain sensitive |
 | Rehashed fabricated receipt | closed receipt, envelope, payload, dimension, arithmetic, limitation, and result-algebra validation | an attacker can still fabricate an internally valid receipt; no authentication |
 | Predictable receipt temporary path | exclusive random same-directory temporary file and atomic replacement | selected output directory remains operator-controlled |
+| Crash between the rename and the directory's writeback leaves no artifact | the parent directory is fsynced after `os.replace`, so the directory entry is durable and not only the file's data | directory fsync is tolerated rather than required, so a platform without a directory descriptor keeps its artifact and loses only crash durability |
 | Invalid programmatic receipt creates an official-looking artifact | full semantic verification and encoded 2 MiB bound run before directory or temporary-file creation | an internally valid receipt remains unauthenticated |
 | Different baseline is presented as a trend | comparison requires exact baseline digest plus matching drill, source, coverage, expected counts, contracts, and limitations | equal hashes and aggregates do not prove truthful inputs |
 | Untrusted envelope time establishes chronology | comparison ignores both envelope times and labels operand order caller-supplied/unverified | caller can reverse or mislabel operand order |
