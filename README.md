@@ -4,7 +4,7 @@
 
 Run structural recovery drills for leaving SaaS systems.
 
-**Status:** technical alpha · synthetic data only · offline verifier
+**Status:** technical alpha (0.1.0, untagged) · synthetic data only · offline verifier
 
 A vendor export can contain every row and still lose the structure an
 organization needs: relationships, attachment bytes, permissions, or audit
