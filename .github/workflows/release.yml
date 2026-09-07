@@ -37,7 +37,7 @@ jobs:
   authorize:
     permissions:
       contents: read
-    uses: ChelseaKR/portfolio-standards/.github/workflows/release-authorize.yml@3a9e2bca7a8e7e6a79a78cd743bef0a8b9253097
+    uses: ChelseaKR/.github/.github/workflows/release-authorize.yml@7be4c3e44e2acf20e8a98eeea4351c1e5d2789bc
     with:
       tag: ${{ inputs.tag }}
 
