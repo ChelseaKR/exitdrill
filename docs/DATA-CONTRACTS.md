@@ -61,6 +61,43 @@ validators, fails the suite.
 | `required_fields` names are unique within one entity | `loader._parse_expected_entity` |
 | a baseline and an export belong to the same drill | `cli._validate` |
 
+### What that table costs an outside implementer
+
+The table above is 12 rows long, and it is worth saying plainly what those 12
+rows mean rather than leaving a reader to notice it.
+
+ADR 0001, quoted at the top of this document, bets that if other people write
+the source-specific normalizer then the contract has to be "a machine-checkable
+artifact rather than a Python module they can read but not execute". For
+structure, `exitdrill schema show` is that artifact and the bet is met. For
+these 12 relations it is not: they are enforced by Python modules an
+implementer working in TypeScript, Go or PHP can read and cannot run.
+
+The practical consequence, stated without softening: **a normalizer author can
+satisfy every schema this project publishes and still emit documents this tool
+rejects, with no way to find that out except by installing Python and running
+the tool.** Nothing here is hidden from them; the invariants are listed, each
+names the function that enforces it, and `tests/test_schemas.py` keeps that list
+honest in both directions. What is missing is a way to *check* against it
+without executing this codebase.
+
+The artifact that would close the gap is a language-neutral conformance corpus:
+an accepted case and at least one rejected case per invariant, each carrying the
+identifier of the rejection it must produce, plus a verb that runs the tool over
+the corpus so the cases cannot drift from the validators. That is tracked as
+issue #147, and it is not built. It is not a small piece of work either, because
+a corpus that says "this document must be rejected" is weak and one that says
+"rejected *for this reason*" needs rejection identifiers to become a public,
+stable contract, which is a maintenance commitment this project has not made.
+
+Until it exists, the honest reading of this document is: the structural half of
+the contract is portable, the relational half is not, and the relational half is
+where most of what a receipt claims actually lives.
+
+`test_the_document_states_what_the_invariant_table_costs` holds this section to
+the table, so the number cannot go stale and the disclosure cannot quietly
+disappear while the invariants remain.
+
 ## Ordering
 
 The schema check runs **after** the semantic validators, not before. The

@@ -6,6 +6,30 @@ All notable changes will be documented here.
 
 ### Fixed
 
+- **`docs/DATA-CONTRACTS.md` stated both halves of a contradiction and drew no
+  conclusion from it.** Its opening paragraphs quote ADR 0001's bet: if other
+  people write the source-specific normalizer, the contract has to be "a
+  machine-checkable artifact rather than a Python module they can read but not
+  execute". Twelve rows of table later it says each of those cross-object
+  invariants is enforced by the semantic validators alone. Both sentences were
+  true. Neither said what they mean together, which is that for those twelve
+  relations the contract *is* the Python module ADR 0001 said it must not be,
+  and a normalizer author working in TypeScript, Go or PHP can satisfy every
+  schema this project publishes and still emit documents this tool rejects, with
+  no way to find that out except by installing Python and running the tool.
+
+  The gap is not new and nothing here closes it; what changes is that the
+  document now says it, names the artifact that would close it (a
+  language-neutral conformance corpus, tracked at #147, unbuilt and not small
+  because it needs rejection identifiers to become a public stable contract
+  first), and says plainly that the relational half of the contract is where
+  most of what a receipt claims actually lives.
+
+  `test_the_document_states_what_the_invariant_table_costs` reads the row count
+  out of the table rather than trusting the prose, so adding an invariant
+  without updating the disclosure fails, and so does deleting the disclosure
+  while the table still has rows.
+
 - The first release would have burned its whole build job and then failed on a
   missing heading. `release.yml` refused to publish without a `## [<version>]`
   section in `CHANGELOG.md`, and ran that check *after* `uv sync --locked`,

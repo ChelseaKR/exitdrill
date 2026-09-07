@@ -556,6 +556,57 @@ def test_the_invariant_binding_can_fail() -> None:
     assert len(CROSS_OBJECT_INVARIANTS) >= 11
 
 
+def _invariant_table_rows() -> list[str]:
+    """The rows of the cross-object invariant table, read out of the document."""
+    contracts = CONTRACTS.read_text(encoding="utf-8")
+    block = contracts.split("| Invariant | Enforced by |")[1].split("\n## ")[0]
+    return [line for line in block.splitlines() if line.startswith("|") and set(line) - set("|- ")]
+
+
+def test_the_document_states_what_the_invariant_table_costs() -> None:
+    """The table is a list of gaps in ADR 0001's bet, and it did not say so.
+
+    `docs/DATA-CONTRACTS.md` quotes ADR 0001 in its opening paragraphs: if other
+    people write the normalizer, the contract has to be "a machine-checkable
+    artifact rather than a Python module they can read but not execute". Twelve
+    rows later it says each of these invariants is enforced by the semantic
+    validators alone. Both sentences were true and neither drew the conclusion,
+    which is that for those relations the contract *is* the Python module ADR
+    0001 said it must not be, and an implementer in another language can satisfy
+    every published schema and still emit documents this tool refuses.
+
+    The gap is real either way; what this holds is that it stays stated. The
+    count is read from the table rather than trusted from the prose, so adding
+    an invariant without updating the disclosure fails here, and so does
+    deleting the disclosure while the table still has rows.
+    """
+    contracts = CONTRACTS.read_text(encoding="utf-8")
+    rows = _invariant_table_rows()
+    assert rows, "the invariant table is empty, and this section describes it"
+
+    heading = "### What that table costs an outside implementer"
+    assert heading in contracts, (
+        "docs/DATA-CONTRACTS.md no longer states what its invariant table costs "
+        "somebody implementing a normalizer in another language"
+    )
+    # Collapsed, because the document hard-wraps and every claim below straddles a
+    # line break in it. The first form of this check matched raw text and failed on
+    # the ADR 0001 quote for that reason alone.
+    section = " ".join(contracts.split(heading)[1].split("\n## ")[0].split())
+
+    assert f"{len(rows)} rows" in section, (
+        f"the invariant table has {len(rows)} rows and the disclosure does not say so"
+    )
+    assert f"these {len(rows)} relations" in section, (
+        f"the invariant table has {len(rows)} rows and the disclosure does not say so"
+    )
+    assert "machine-checkable artifact rather than a Python module" in section, (
+        "the disclosure no longer quotes the ADR 0001 bet it is about"
+    )
+    assert "satisfy every schema this project publishes and still emit documents" in section
+    assert "#147" in section, "the disclosure does not say where the gap is tracked"
+
+
 def test_every_subcommand_appears_in_the_contract_table() -> None:
     """A command whose inputs have a schema nobody documented is undiscoverable."""
     from exitdrill.cli import _parser
