@@ -4,6 +4,8 @@ All notable changes will be documented here.
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-09-07
+
 ### Fixed
 
 - **`docs/DATA-CONTRACTS.md` stated both halves of a contradiction and drew no
