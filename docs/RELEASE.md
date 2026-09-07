@@ -1,6 +1,6 @@
 # Release posture
 
-ExitDrill is an unreleased technical alpha. Local wheels and source archives are
+ExitDrill is a technical alpha, first tagged `v0.1.0`. Local wheels and source archives are
 test artifacts, not package-registry publication. The practical naming screen
 permits creating a source repository named `exitdrill`.
 

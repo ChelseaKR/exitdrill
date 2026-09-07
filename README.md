@@ -4,7 +4,7 @@
 
 Run structural recovery drills for leaving SaaS systems.
 
-**Status:** technical alpha (0.1.0, untagged) · synthetic data only · offline verifier
+**Status:** technical alpha (0.1.0, tagged `v0.1.0`) · synthetic data only · offline verifier
 
 A vendor export can contain every row and still lose the structure an
 organization needs: relationships, attachment bytes, permissions, or audit
@@ -286,7 +286,7 @@ make package
 The merge gate runs Ruff, strict mypy, pytest, and at least 90% branch coverage.
 The release workflow is dispatch-only: it verifies a signed annotated tag
 against trusted main, rebuilds and re-verifies at that exact commit, and can
-publish a GitHub Release. No tag or release exists yet, and no package-registry
+publish a GitHub Release. `v0.1.0` is the first tag cut, and no package-registry
 publication is configured.
 
 ExitDrill is built AI-assisted, within a portfolio that shares a common quality
@@ -318,8 +318,8 @@ recorded as N/A with a reason; there are no silent skips.
 |---|---|
 | Code Quality | Applies: Single root `pyproject.toml`, `uv.lock`, Ruff lint and format, strict mypy over `src`, `tests`, and `scripts`, pytest with at least 90% branch coverage, pre-commit hooks, and `make verify` as the merge gate. |
 | Security & Supply-Chain | Applies: SHA-pinned actions, scoped workflow permissions, Semgrep, gitleaks, strict pip-audit plus npm audit, zizmor, Dependabot, and private vulnerability reporting per [SECURITY.md](SECURITY.md). |
-| CI/CD | Applies: `ci.yml` runs the same `make` targets a contributor runs locally; the release workflow is dispatch-only, verifies a signed annotated tag against trusted main, and separates verification from publication authority. No tag or release exists yet. See [docs/RELEASE.md](docs/RELEASE.md) for the full release posture. |
-| Release & Versioning | Applies: `.github/workflows/release.yml` runs only on maintainer dispatch, verifies an SSH-signed annotated tag against trusted main, and hands publication to a separate job that never checks out code. No tag or release exists yet and no package registry is configured. |
+| CI/CD | Applies: `ci.yml` runs the same `make` targets a contributor runs locally; the release workflow is dispatch-only, verifies a signed annotated tag against trusted main, and separates verification from publication authority. `v0.1.0` is the first tag cut. See [docs/RELEASE.md](docs/RELEASE.md) for the full release posture. |
+| Release & Versioning | Applies: `.github/workflows/release.yml` runs only on maintainer dispatch, verifies an SSH-signed annotated tag against trusted main, and hands publication to a separate job that never checks out code. `v0.1.0` is the first tag cut; no package registry is configured. |
 | Observability | Applies (Tier C scope). Offline single-run CLI; evidence is deterministic exit codes, replayable receipts, and rendered reports. The out-of-scope decision for tracing and SLO surfaces is recorded in [docs/ROADMAP.md](docs/ROADMAP.md). |
 | Performance | N/A (offline single-run CLI with no hosted route and no served page; the HTML report is written to a local path on demand and pulls no subresources, so there is no delivery surface to budget). |
 | Accessibility | Applies (scoped). The offline HTML report is static, script-free, and escaped. The CiviCRM canary records one sanitized automated accessibility scan and one keyboard observation without claiming WCAG conformance; human assistive-technology review remains open. |
