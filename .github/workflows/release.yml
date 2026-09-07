@@ -113,5 +113,4 @@ jobs:
           gh release create "${RELEASE_TAG}" \
             --title "${RELEASE_TAG}" \
             --notes-file release-assets/release-notes.md \
-            --verify-tag \
             release-assets/dist/*
