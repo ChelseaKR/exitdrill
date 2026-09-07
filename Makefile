@@ -1,4 +1,4 @@
-.PHONY: install format lint lint-lab type test verify package demo demo-lossy demo-compare demo-compare-policy demo-directus-canary demo-civicrm-target-canary hooks
+.PHONY: install format lint lint-lab type test verify package demo demo-lossy demo-compare demo-compare-policy demo-directus-canary demo-civicrm-target-canary hooks release-preflight
 
 install:
 	uv sync --locked
@@ -54,6 +54,14 @@ verify: lint type test
 package:
 	uv build --clear
 	uv run python scripts/check_wheel.py
+
+# Everything release.yml refuses to build without, answered before a tag
+# exists. Run it before tagging: it costs two file reads, where finding out
+# from the release job costs `make verify`, both demos and the wheel build
+# first. Pass the tag you are about to cut to check it against the package
+# version too: `make release-preflight TAG=v0.1.0`.
+release-preflight:
+	uv run --no-project python scripts/check_release_preflight.py $(if $(TAG),--tag $(TAG),)
 
 demo:
 	mkdir -p examples/synthetic-crm/out
