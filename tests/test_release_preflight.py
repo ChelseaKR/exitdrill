@@ -502,11 +502,7 @@ def _job_body(workflow: str, name: str) -> str:
     opening = f"  {name}:"
     start = next(index for index, line in enumerate(lines) if line == opening)
     end = next(
-        (
-            index
-            for index in range(start + 1, len(lines))
-            if line_is_job(lines[index])
-        ),
+        (index for index in range(start + 1, len(lines)) if line_is_job(lines[index])),
         len(lines),
     )
     return "\n".join(lines[start + 1 : end])
