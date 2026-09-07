@@ -6,6 +6,47 @@ All notable changes will be documented here.
 
 ### Fixed
 
+- The first release would have burned its whole build job and then failed on a
+  missing heading. `release.yml` refused to publish without a `## [<version>]`
+  section in `CHANGELOG.md`, and ran that check *after* `uv sync --locked`,
+  `make verify`, both declared demos and the wheel build. This changelog has
+  held only `## [Unreleased]` for the life of the repository, so the very first
+  dispatch of the release workflow would have spent the better part of half an
+  hour to say so.
+
+  The ordering is the smaller half. Both cheap gates — the tag/version match
+  and the release notes — were inline shell inside the workflow, executable in
+  exactly one place: a dispatched release run. Nobody about to cut a tag could
+  run them, no test could exercise them, and their first execution was the
+  occasion where being wrong costs the most. They are
+  `scripts/check_release_preflight.py` now, called before `uv sync` by
+  `release.yml` and by `make release-preflight` from a working copy, and
+  `tests/test_release_preflight.py` holds the workflow's step order and pins
+  both call sites to the one script.
+
+  That script also closes a hole the inline version could not see. The shell
+  test was `[ -s release-notes.md ]` and the extraction prints the heading, so a
+  `## [0.1.0]` heading with nothing under it produced a one-line file, passed,
+  and would have published a GitHub Release whose entire body was its own
+  version number — an absent set of release notes rendered as a value. A
+  section now has to carry at least one non-blank line that is not its heading.
+
+  `tests/test_release_versions.py` asserts the changelog section only inside
+  the branch it takes when a tag already exists, so today it asserts nothing
+  about the changelog at all, and could not have caught this before the tag.
+  `test_release_notes_for_the_next_tag_are_staged_now` asks the question that
+  can be answered without one, in three states: released, staged under
+  `## [Unreleased]` with the README saying untagged, or nothing to publish.
+
+- `docs/RELEASE.md` described a release path that does not exist. It said "a
+  `v*` tag builds and uploads a release candidate", and no workflow here has a
+  tag trigger — the release is `workflow_dispatch` only. It also said "the
+  candidate workflow intentionally has no publish permission", and the publish
+  job holds `contents: write` and calls `gh release create`. The second is the
+  one that mattered: a reader was told the release path could not publish, and
+  it can. Both claims are now read back out of `release.yml` by
+  `test_the_release_document_describes_the_workflow_that_exists`.
+
 - The improvement plan published two limits the tree had already closed.
   `docs/plans/improvement-plan.md` still listed "Coverage does not measure
   `scripts/`" after #125 put `scripts` in `[tool.coverage.run] source` with

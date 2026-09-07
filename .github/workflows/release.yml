@@ -58,19 +58,20 @@ jobs:
           version: "0.11.29"
           python-version: "3.12"
           enable-cache: false
-      - name: Require tag and package versions to match
+      # Before anything expensive. The tag/version match and the release notes
+      # are file reads; `make verify` plus both demos plus the wheel build is
+      # most of half an hour. These two used to run around that build — the
+      # version match before it and the CHANGELOG section after it — so a
+      # release with no notes burned the whole job before saying so, and the
+      # notes gate could not be run anywhere but here. It is a script now, so
+      # `make release-preflight` answers the same question from a laptop and
+      # `tests/test_release_preflight.py` can exercise it.
+      - name: Refuse the release before anything expensive runs
         env:
           RELEASE_TAG: ${{ needs.authorize.outputs.release-tag }}
         run: |
-          python - <<'PY'
-          import os
-          import pathlib
-          import tomllib
-
-          version = tomllib.loads(pathlib.Path("pyproject.toml").read_text())["project"]["version"]
-          if os.environ["RELEASE_TAG"] != f"v{version}":
-              raise SystemExit("tag and package versions do not match")
-          PY
+          uv run --no-project python scripts/check_release_preflight.py \
+            --tag "${RELEASE_TAG}" --out release-notes.md
       - name: Verify and build the candidate at the verified commit
         run: |
           uv sync --locked
@@ -79,20 +80,6 @@ jobs:
           make demo-lossy
           make package
           sha256sum dist/* > dist/SHA256SUMS
-      - name: Require a CHANGELOG section for this version
-        env:
-          RELEASE_TAG: ${{ needs.authorize.outputs.release-tag }}
-        run: |
-          version="${RELEASE_TAG#v}"
-          awk -v ver="$version" '
-            index($0, "## [" ver "]") == 1 { found=1; print; next }
-            found && /^## \[/ { exit }
-            found { print }
-          ' CHANGELOG.md > release-notes.md
-          if [ ! -s release-notes.md ]; then
-            echo "::error::CHANGELOG.md has no '## [$version]' section; add one before tagging" >&2
-            exit 1
-          fi
       - name: Upload immutable candidate inputs
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
