@@ -543,6 +543,12 @@ def test_the_publish_job_does_not_ask_git_a_question_it_cannot_answer() -> None:
         "build has already succeeded. The API recheck above it verifies tag identity, which "
         "is strictly stronger."
     )
+    assert _runs(publish, "GH_REPO:"), (
+        "the publish job runs `gh` without setting GH_REPO. With no checkout there is no git "
+        "remote for `gh` to infer the repository from, so it shells out to git and dies with "
+        "`fatal: not a git repository` -- which is what run 34164224595 did even after "
+        "--verify-tag was removed. Removing the flag was necessary and not sufficient."
+    )
     assert not _runs(publish, "actions/checkout"), (
         "the publish job now checks out code. It holds the only `contents: write` authority, "
         "and keeping a working tree out of it is why --verify-tag was removed rather than "

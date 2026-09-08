@@ -104,6 +104,10 @@ jobs:
       - name: Recheck the immutable tag object and create the release
         env:
           GH_TOKEN: ${{ github.token }}
+          # This job never checks out code, so `gh` has no git remote to infer
+          # the repository from and shells out to git looking for one. Naming it
+          # explicitly is what lets a publish step work without a working tree.
+          GH_REPO: ${{ github.repository }}
           RELEASE_TAG: ${{ needs.authorize.outputs.release-tag }}
           TAG_OBJECT_SHA: ${{ needs.authorize.outputs.tag-object-sha }}
         run: |
