@@ -16,7 +16,7 @@ evidence family, or data category.
 | CiviCRM 6.16.2 target-roundtrip canary with indexed, verified evidence | Done |
 | Outside-person demo walkthrough (usability gate) | Open; blocks all new feature scope |
 | Data-governance gate for any non-synthetic input | Open; prohibitive until satisfied (see `docs/DATA-GOVERNANCE.md`) |
-| First tagged release (v0.1.0) | Not scheduled; no tag exists and nothing has been published |
+| First tagged release (v0.1.0) | Done (2026-09-07) — `v0.1.0` is a signed annotated tag with a published GitHub Release. It was cut ahead of the two conditions B5 names below; see that row. Package-registry publication remains out of scope (`docs/RELEASE.md`) |
 
 ## Metrics
 
@@ -98,7 +98,8 @@ that fails if the reason stops holding.
 
 ### Track B: after the gate, planned and not built
 
-Nothing below has been started, and none of it may be started before the gate
+Nothing below has been started except B5, which was completed on 2026-09-07 ahead
+of the conditions its row names; the rest may not be started before the gate
 above opens. The ordering is a current intention, not a commitment; what the
 walkthrough finds may reorder or remove any of it.
 
@@ -108,7 +109,7 @@ walkthrough finds may reorder or remove any of it.
 | B2 | A second source canary against a different real product, which is the first thing the freeze forbids and needs its own ADR and threat-model update | #51 |
 | B3 | Whatever design the second canary shows is genuinely shared, rather than a connector SDK invented before two real pairs exist (`AGENTS.md`) | #51, B2 |
 | B4 | Non-synthetic input handling | Data-governance gate |
-| B5 | First tagged release, v0.1.0 | #51, and a maintainer decision that the claims are stable |
+| B5 | First tagged release, v0.1.0 — **done 2026-09-07**, ahead of both conditions in this row. #51 is still open and no written stability decision was recorded, so the tag rests on the claims as they stood. A tag and a Release can both be deleted; nothing was published to a package registry | #51, and a maintainer decision that the claims are stable |
 
 ## Observability scope (Tier C)
 
