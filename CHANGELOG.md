@@ -6,6 +6,59 @@ All notable changes will be documented here.
 
 ### Fixed
 
+- **The scan added last night read four false sentences and reported clean.**
+  `test_no_document_says_this_repository_is_untagged_once_it_is` applies the
+  README rule to every tracked file, which is the right generalisation and was
+  the whole point of the previous entry. It is a **denylist**, and the way a
+  denylist fails is by being narrower than the prose it reads. Nothing was
+  measuring that gap, so here is the measurement: four sentences inside the
+  scan's reach, in two tracked files, matched by no entry in the vocabulary and
+  every one of them false since `v0.1.0` was cut on 2026-09-07.
+
+  | file | said |
+  |---|---|
+  | `scripts/check_release_preflight.py` module docstring | the changelog "has held only `## [Unreleased]`" for the life of this repository |
+  | `tests/test_release_preflight.py` module docstring | the same, "for its whole life" |
+  | `tests/test_release_preflight.py::test_release_notes_for_the_next_tag_are_staged_now` | the tag-conditional check "asserts nothing about the changelog" today |
+  | `tests/test_release_preflight.py::test_the_preflight_agrees_with_the_repository_it_ships_in` | the preflight may fail for the one reason that this project "has not cut its first release" yet |
+
+  All four are docstrings, which is not a coincidence: a docstring is the one
+  piece of prose in a Python project that nothing ever reads. All four now
+  describe the rule, or the day with the date on it, rather than a present
+  state. **The new check fired on the unmodified tree and named exactly these
+  four, before any deliberate control.**
+
+  **The scan could not have found them without normalising, and that is not a
+  detail.** Every one of these sentences is wrapped, and three sit behind a
+  leading `#`. A plain `text.lower()` substring search over the raw file finds
+  none of them; stripping line markers and collapsing whitespace finds all
+  four. The same normalisation also reaches two phrasings that were already in
+  `CHANGELOG.md` and that a literal `git grep` for them does not return.
+
+  **The vocabulary is now self-limiting.**
+  `test_every_claim_in_the_vocabulary_is_a_sentence_this_repository_wrote`
+  requires every entry to be observed somewhere in the tracked tree, so an
+  entry that matches nothing fails until it is deleted or its wording fixed. It
+  earned its place immediately: correcting the four sentences left "has not cut
+  its first release" matching nothing, and the check said so by name. That is
+  why `CHANGELOG.md` is in the observation universe while staying exempt from
+  the staleness scan -- a sentence corrected out of the tree is still a sentence
+  this project once wrote, and this entry is where its wording goes on being
+  covered.
+
+  **`no tag exists` is gone from the vocabulary.** This repository writes it
+  four times and every one is a subordinate clause stating the rule ("required
+  while no tag exists, refused once one does"). A denylist cannot tell an
+  assertion from a conditional, so an entry that short reddens the gate on
+  prose that is correct, on the day a tag is cut.
+
+  **And the module's own exemption reached one paragraph of fifteen.** It is
+  exempt as a file for a good reason -- the tuple puts every claim in it
+  verbatim -- and its `__doc__` was read instead. The other fourteen docstrings
+  were prose no reader and no check ever opened, which is the finding one level
+  inside itself. Every docstring in it is read now, with a floor on the count so
+  a parse that stopped finding the file cannot pass as a clean one.
+
 - **Two documents went on saying nothing had been tagged, after v0.1.0.**
   `README_SAYS_NO_TAG` is pinned in both directions -- required while no tag
   exists, refused once one does -- and it was pinned in one file.

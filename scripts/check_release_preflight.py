@@ -12,9 +12,9 @@ The first is that a release with no `## [<version>]` section burns the entire
 verify-and-build job before saying so. The second is worse: a gate that exists
 only inside a workflow's YAML cannot be run by the maintainer who is about to
 cut the tag, cannot be unit-tested, and is therefore first executed on the one
-occasion when it is most expensive to be wrong. `CHANGELOG.md` has held only
-`## [Unreleased]` for the life of this repository, so the first dispatch of
-`release.yml` would have failed exactly this way.
+occasion when it is most expensive to be wrong. Until `v0.1.0` was cut on
+2026-09-07 the changelog carried no dated section at all, so the first dispatch
+of `release.yml` would have failed exactly this way.
 
 This script is that gate, moved somewhere it can be executed. `release.yml`
 calls it before it syncs anything, and `make release-preflight` calls it from a
