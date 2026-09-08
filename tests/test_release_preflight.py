@@ -6,10 +6,9 @@ version, and refuses to publish one with no `## [<version>]` section in
 verify`, both declared demos and the wheel build, and the notes gate came
 *after* all of it.
 
-That ordering is a real cost — this repository's `CHANGELOG.md` has held only
-`## [Unreleased]` for its whole life, so the very first dispatch of
-`release.yml` would have spent the entire build job and then failed on a
-missing heading — but the ordering is the smaller half. The larger half is that
+That ordering is a real cost — until `v0.1.0` was cut the changelog carried no
+dated section at all, so the very first dispatch of `release.yml` would have
+spent the entire build job and then failed on a missing heading — but the ordering is the smaller half. The larger half is that
 a gate written as inline shell inside a workflow can be executed in exactly one
 place: a dispatched release run. The maintainer about to cut the tag cannot run
 it, no test can exercise it, and its first execution is the occasion where
@@ -437,9 +436,9 @@ def test_release_notes_for_the_next_tag_are_staged_now() -> None:
     """Three states, and the third is what the tag-conditional check cannot reach.
 
     `tests/test_release_versions.py` asserts the `## [<version>]` section only
-    inside the branch it takes when a tag already exists, so today it asserts
-    nothing about the changelog at all. This is the question that can be asked
-    before the tag: is there anything to publish?
+    inside the branch it takes when a tag already exists, so until the first tag
+    it made no claim about the changelog at all. This is the question that can
+    be asked before the tag: is there anything to publish?
 
     * released — the declared version has its own section with content;
     * staged — `## [Unreleased]` has content and the README says untagged, so
@@ -475,8 +474,8 @@ def test_the_preflight_agrees_with_the_repository_it_ships_in() -> None:
     """Run the real gate against the real tree and require an honest verdict.
 
     Exactly one of two things has to be true: the preflight passes, or it fails
-    for the single documented reason that this project has not cut its first
-    release yet. Any third answer — an unreadable manifest, a non-SemVer
+    for the one documented reason a tree before its first release fails: no
+    section for the declared version. Any third answer — an unreadable manifest, a non-SemVer
     version, a heading with no body — is a defect this catches at merge time.
     """
     done = _run("--root", str(PROJECT))
