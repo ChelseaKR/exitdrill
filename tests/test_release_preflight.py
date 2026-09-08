@@ -513,44 +513,43 @@ def line_is_job(line: str) -> bool:
     return bool(re.match(r"^  [A-Za-z0-9_-]+:\s*$", line))
 
 
-def test_the_publish_job_does_not_ask_git_a_question_it_cannot_answer() -> None:
-    """`gh release create --verify-tag` shells out to git, and publish has no checkout.
+def test_the_publish_job_names_the_repository_it_cannot_infer() -> None:
+    """`gh` reads the repository from the git remote, and publish has no checkout.
 
-    The publish job holds the only write authority and deliberately never
-    checks out code -- that separation is the reason it is split from the
-    build. `--verify-tag` makes `gh` run git to confirm the tag exists locally,
-    so in a job with no working tree it dies with `fatal: not a git repository`
-    *after* the artifacts have already been built.
+    The publish job holds the only write authority and deliberately never checks
+    out code. `gh` resolves which repository to act on from the git remote, so
+    with no working tree it shells out to git and dies:
 
-    Not hypothetical: run 34163784808, the first release this workflow ever
-    performed, failed exactly there. `authorize` and `build` both succeeded and
-    publication died on the flag.
+        failed to run git: fatal: not a git repository
 
-    Nothing is lost by dropping it. The two lines above the call fetch the live
-    tag ref through the API and assert it equals the object SHA `authorize`
-    produced *after* verifying the tag's SSH signature against the committed
-    allowed-signers file. That is an identity check. `--verify-tag` is only an
-    existence check, and it was being made against a repository that is not
-    there.
+    `GITHUB_REPOSITORY` is set in the environment and `gh` does not read it. The
+    variable it reads is `GH_REPO`.
+
+    Two runs failed on this, `34163784808` and `34164224595` -- the second one
+    after `--verify-tag` had already been removed, which is how it became clear
+    the flag was never the cause. `--verify-tag` checks the *remote* repository
+    ("Abort in case the git tag doesn't already exist in the remote repository"),
+    so it needs `GH_REPO` like every other `gh` call and nothing more. It is
+    asserted present here so it is not dropped again on the same mistaken theory.
+
+    self-osint-monitor #25 had already fixed exactly this, and it was
+    rediscovered here from scratch.
     """
     workflow = RELEASE_WORKFLOW.read_text(encoding="utf-8")
     publish = _job_body(workflow, "publish")
 
     assert _runs(publish, "gh release create"), "the publish job no longer creates the release"
-    assert not _runs(publish, "--verify-tag"), (
-        "publish runs `gh release create --verify-tag`, which shells out to git, in a job "
-        "that never checks out code. It fails with `fatal: not a git repository` after the "
-        "build has already succeeded. The API recheck above it verifies tag identity, which "
-        "is strictly stronger."
-    )
     assert _runs(publish, "GH_REPO:"), (
         "the publish job runs `gh` without setting GH_REPO. With no checkout there is no git "
-        "remote for `gh` to infer the repository from, so it shells out to git and dies with "
-        "`fatal: not a git repository` -- which is what run 34164224595 did even after "
-        "--verify-tag was removed. Removing the flag was necessary and not sufficient."
+        "remote for `gh` to infer the repository from, so it shells out to git and fails with "
+        "`fatal: not a git repository`."
+    )
+    assert _runs(publish, "--verify-tag"), (
+        "publish no longer passes --verify-tag. It was removed once on the mistaken theory that "
+        "it shelled out to git; the run failed identically without it. It checks the remote "
+        "repository and costs nothing, so dropping it only loses a check."
     )
     assert not _runs(publish, "actions/checkout"), (
         "the publish job now checks out code. It holds the only `contents: write` authority, "
-        "and keeping a working tree out of it is why --verify-tag was removed rather than "
-        "satisfied."
+        "and the fix for the git error is GH_REPO, not a working tree."
     )
