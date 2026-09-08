@@ -4,6 +4,35 @@ All notable changes will be documented here.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Two documents went on saying nothing had been tagged, after v0.1.0.**
+  `README_SAYS_NO_TAG` is pinned in both directions -- required while no tag
+  exists, refused once one does -- and it was pinned in one file.
+  `docs/ROADMAP.md`'s milestone table still read "Not scheduled; no tag exists
+  and nothing has been published", and `tests/test_release_versions.py`'s own
+  docstring still said the same in the present tense, inside the module that
+  gates the question. Both had been checked against the code and never against
+  the repository, so cutting the tag made both false at once with nothing to
+  say so.
+
+  The docstring now describes the rule rather than the day. The roadmap records
+  the milestone as done, with the date, **and records that it was cut ahead of
+  the two conditions its own B5 row names** -- #51 is still open and no written
+  stability decision exists -- rather than quietly deleting the conditions. The
+  0.1.0 changelog section is left as written; it is the record of what that
+  release said.
+
+  `test_no_document_says_this_repository_is_untagged_once_it_is` applies the
+  README rule to every tracked file: once a release tag exists, no tracked
+  prose may still assert that none does. `CHANGELOG.md` is exempt because its
+  dated sections are the record of what was true then, and this module is
+  exempt as a file because the claim vocabulary puts every phrase in it
+  verbatim -- its prose is read from `__doc__`, which is where its own stale
+  paragraph lived. It is a denylist and says so: it finds a phrasing already
+  written here, not one nobody has thought of. Added to unmodified `main` it
+  fails, naming exactly those two files and nothing else.
+
 ## [0.1.0] - 2026-09-07
 
 ### Fixed
