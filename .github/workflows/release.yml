@@ -79,7 +79,17 @@ jobs:
           make demo
           make demo-lossy
           make package
-          sha256sum dist/* > dist/SHA256SUMS
+          # Names relative to dist/, because a reader downloads the release
+          # assets into one flat directory and runs `sha256sum -c SHA256SUMS`
+          # there. `sha256sum dist/*` writes `dist/<name>` on every line, so
+          # that command reports each asset as a file it cannot open and exits
+          # 1: the published checksums could not check the published files.
+          # Measured against v0.1.0's own SHA256SUMS, whose digests are correct.
+          # Written outside dist/ first so the glob cannot reach the file being
+          # written, and named by extension so a stray artifact in dist/ is a
+          # failure rather than an extra line.
+          (cd dist && sha256sum exitdrill-*.whl exitdrill-*.tar.gz) > "${RUNNER_TEMP}/SHA256SUMS"
+          mv "${RUNNER_TEMP}/SHA256SUMS" dist/SHA256SUMS
       - name: Upload immutable candidate inputs
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:

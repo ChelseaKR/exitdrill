@@ -6,6 +6,29 @@ All notable changes will be documented here.
 
 ### Fixed
 
+- **The published checksums could not check the published files.** The release
+  writes `sha256sum dist/* > dist/SHA256SUMS`, which puts `dist/<asset>` on
+  every line, and the release page publishes the assets flat. Measured against
+  the real `v0.1.0` asset: download all three into one directory, run
+  `sha256sum -c SHA256SUMS`, and every line comes back `No such file or
+  directory` at exit 1. Strip the `dist/` prefix from the same file and both
+  lines verify, so the digests were right the whole time and only the paths
+  were wrong. That is the worse half of it, because a correct-looking checksum
+  file that refuses every asset reads as tampering rather than as a build-path
+  mistake.
+
+  The names are now relative to `dist/`, written outside it first so the glob
+  cannot reach the file being written, and matched by extension so a stray
+  artifact is a failure rather than an extra line.
+  `tests/test_gates.py::test_the_published_checksums_verify_the_assets_a_reader_downloaded`
+  extracts the workflow's own recipe, runs it over a stand-in `dist/`, copies
+  the result into a flat directory the way a download does, and checks it
+  there. It appends one byte to a downloaded asset and requires the check to
+  fail, because `sha256sum -c` over a file listing nothing also exits 0.
+
+  `docs/RELEASE.md` now says the asset exists, how to use it, that it is
+  transport tamper-evidence rather than a signature, and that `v0.1.0`'s copy
+  carries the build-directory prefix. Nothing rewrites the published asset.
 - **The scan added last night read four false sentences and reported clean.**
   `test_no_document_says_this_repository_is_untagged_once_it_is` applies the
   README rule to every tracked file, which is the right generalisation and was

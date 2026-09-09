@@ -521,6 +521,129 @@ def test_every_lockfile_consuming_command_observes_lockfile_drift() -> None:
 
 
 # ---------------------------------------------------------------------------
+# The published checksums have to check the published files.
+# ---------------------------------------------------------------------------
+
+RELEASE_WORKFLOW = PROJECT / ".github" / "workflows" / "release.yml"
+
+#: The build step whose `run:` block ends by writing `dist/SHA256SUMS`.
+_BUILD_STEP = "Verify and build the candidate at the verified commit"
+
+#: What a reader actually has after clicking every asset on the release page:
+#: one flat directory, no `dist/`. Every checked filename has to resolve there.
+_DOWNLOAD_DIR = "download"
+
+
+def _checksum_recipe() -> str:
+    """The shell this repository really runs to write `dist/SHA256SUMS`.
+
+    Extracted from the workflow rather than restated, so the test exercises the
+    shipped recipe. Everything up to and including `make package` is dropped:
+    those lines build the wheel and are not what is under test here.
+    """
+    source = RELEASE_WORKFLOW.read_text(encoding="utf-8")
+    start = source.index(f"- name: {_BUILD_STEP}")
+    block = source[start:]
+    run_at = block.index("run: |")
+    lines = block[run_at:].splitlines()[1:]
+    indent = len(lines[0]) - len(lines[0].lstrip())
+    body: list[str] = []
+    for line in lines:
+        if line.strip() and (len(line) - len(line.lstrip())) < indent:
+            break
+        body.append(line[indent:])
+    text = "\n".join(body)
+    assert "sha256sum" in text, f"the {_BUILD_STEP!r} step no longer writes any checksums"
+    return text[text.index("make package") + len("make package") :]
+
+
+def test_the_published_checksums_verify_the_assets_a_reader_downloaded() -> None:
+    """v0.1.0 shipped a SHA256SUMS that could not check a single file it lists.
+
+    The recipe was `sha256sum dist/* > dist/SHA256SUMS`, so every line names
+    `dist/<asset>`. The release page publishes the assets flat, so a reader who
+    downloads all three into one directory and runs `sha256sum -c SHA256SUMS`
+    there gets `No such file or directory` on every line and exit 1. Measured
+    against the published v0.1.0 asset: the digests are correct and the paths
+    are not, which is the worst version of it, because the file looks like
+    evidence and behaves like a broken one.
+
+    So this runs the workflow's own recipe over a stand-in `dist/`, moves the
+    result to a flat directory the way a download does, and checks it there.
+    The tampered case is in the same test on purpose: `sha256sum -c` over a
+    file listing nothing also exits 0, so an accepted case alone would pass
+    over a recipe that had stopped writing any lines at all.
+    """
+    sha256sum = _required_tool("sha256sum", "check that the published checksums verify")
+    bash = _required_tool("bash", "run the release workflow's own checksum recipe")
+    recipe = _checksum_recipe()
+
+    with tempfile.TemporaryDirectory() as raw:
+        root = Path(raw)
+        dist = root / "dist"
+        dist.mkdir()
+        runner_temp = root / "runner-temp"
+        runner_temp.mkdir()
+        wheel = dist / "exitdrill-9.9.9-py3-none-any.whl"
+        sdist = dist / "exitdrill-9.9.9.tar.gz"
+        wheel.write_bytes(b"not a wheel, but bytes with a digest")
+        sdist.write_bytes(b"not an sdist, but bytes with a digest")
+
+        built = subprocess.run(  # noqa: S603 - resolved path, fixed argv, no shell
+            [bash, "-euo", "pipefail", "-c", recipe],
+            cwd=root,
+            env={**os.environ, "RUNNER_TEMP": str(runner_temp)},
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert built.returncode == 0, built.stderr
+
+        sums = dist / "SHA256SUMS"
+        assert sums.is_file(), "the recipe wrote no SHA256SUMS"
+        listed = [line for line in sums.read_text(encoding="utf-8").splitlines() if line.strip()]
+        assert len(listed) == 2, f"expected one line per distribution, got {listed}"
+        named = [line.split(None, 1)[1].lstrip("*") for line in listed]
+        assert not any("/" in name for name in named), (
+            f"SHA256SUMS names a directory a reader never downloaded: {named}. Every line "
+            "has to resolve beside the file, because the release page publishes the assets "
+            "flat and `sha256sum -c` resolves each name against the working directory."
+        )
+        assert "SHA256SUMS" not in named, "SHA256SUMS lists itself, which can never verify"
+
+        download = root / _DOWNLOAD_DIR
+        download.mkdir()
+        for asset in (wheel, sdist, sums):
+            copy2(asset, download / asset.name)
+
+        checked = subprocess.run(  # noqa: S603 - resolved path, fixed argv, no shell
+            [sha256sum, "-c", "SHA256SUMS"],
+            cwd=download,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert checked.returncode == 0, (
+            "the published checksums do not verify the published files from the directory "
+            f"a reader downloads them into:\n{checked.stdout}{checked.stderr}"
+        )
+
+        tampered = download / wheel.name
+        tampered.write_bytes(tampered.read_bytes() + b"!")
+        refused = subprocess.run(  # noqa: S603 - resolved path, fixed argv, no shell
+            [sha256sum, "-c", "SHA256SUMS"],
+            cwd=download,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert refused.returncode != 0, (
+            "one byte was appended to a downloaded asset and the checksum file still "
+            "verified, so it is checking nothing"
+        )
+
+
+# ---------------------------------------------------------------------------
 # What the offline binding gate cannot verify, and whether the README says so.
 # ---------------------------------------------------------------------------
 

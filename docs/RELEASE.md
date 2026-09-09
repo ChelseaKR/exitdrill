@@ -37,3 +37,21 @@ The release workflow's publish job holds `contents: write` and creates a GitHub
 Release from the verified tag; it never checks out code. It holds no registry
 credential and no trusted publisher is configured, so package-registry
 publication is out of scope for it entirely.
+
+## Checking what you downloaded
+
+Every release carries a `SHA256SUMS` asset beside the wheel and the source
+archive. Download all three into one directory and run `sha256sum -c
+SHA256SUMS` there. It is tamper evidence over the transport, not a signature:
+whoever can replace the assets can replace the checksum file with them, and
+this project publishes no artifact signature (that is one of the preconditions
+listed above).
+
+`v0.1.0`'s `SHA256SUMS` does not work that way. Its two digests are correct and
+both filenames read `dist/<asset>`, the build directory they were computed in,
+so the command above reports each asset as a file it cannot open and exits 1.
+Strip the `dist/` prefix and both lines verify. The workflow now writes the
+names relative to that directory, and
+`tests/test_gates.py::test_the_published_checksums_verify_the_assets_a_reader_downloaded`
+runs the workflow's own recipe and checks the result from a flat directory, so
+the next release is checkable as published.
