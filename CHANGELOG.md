@@ -6,6 +6,40 @@ All notable changes will be documented here.
 
 ### Fixed
 
+- **The published checksums could not check the published files.** The release
+  writes `sha256sum dist/* > dist/SHA256SUMS`, which puts `dist/<asset>` on
+  every line, and the release page publishes the assets flat. Measured against
+  the real `v0.1.0` asset: download all three into one directory, run
+  `sha256sum -c SHA256SUMS`, and every line comes back `No such file or
+  directory` at exit 1. Strip the `dist/` prefix from the same file and both
+  lines verify, so the digests were right the whole time and only the paths
+  were wrong. That is the worse half of it, because a correct-looking checksum
+  file that refuses every asset reads as tampering rather than as a build-path
+  mistake.
+
+  The names are now relative to `dist/`, written outside it first so the glob
+  cannot reach the file being written, and matched by extension so a stray
+  artifact is a failure rather than an extra line.
+  `tests/test_gates.py::test_the_published_checksums_verify_the_assets_a_reader_downloaded`
+  extracts the workflow's own recipe, runs it over a stand-in `dist/`, copies
+  the result into a flat directory the way a download does, and checks it
+  there. It appends one byte to a downloaded asset and requires the check to
+  fail, because `sha256sum -c` over a file listing nothing also exits 0.
+
+  `docs/RELEASE.md` now says the asset exists, how to use it, that it is
+  transport tamper-evidence rather than a signature, and that `v0.1.0`'s copy
+  carries the build-directory prefix. Nothing rewrites the published asset.
+- **A fifth false sentence, in the header of the workflow that released
+  v0.1.0.** `release.yml` opened with "NOT YET USED: no version of ExitDrill
+  has been tagged or released. This workflow is prepared ahead of the first tag
+  so cutting v0.1.0 does not also require writing a release pipeline under time
+  pressure." It ran three times on 2026-09-07 and published `v0.1.0` on the
+  third. The scan reads `.yml` and had that file in hand; no vocabulary entry
+  matched, which is the denylist limit named in the entry below, found again
+  one file over. The wording is now an entry, and the header records what the
+  first real run found: both earlier dispatches failed in the publish job with
+  `failed to run git: fatal: not a git repository`, because that job never
+  checks out code and `gh` had no remote to infer a repository from.
 - **The scan added last night read four false sentences and reported clean.**
   `test_no_document_says_this_repository_is_untagged_once_it_is` applies the
   README rule to every tracked file, which is the right generalisation and was
