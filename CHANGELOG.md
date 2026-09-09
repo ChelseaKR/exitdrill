@@ -29,6 +29,17 @@ All notable changes will be documented here.
   `docs/RELEASE.md` now says the asset exists, how to use it, that it is
   transport tamper-evidence rather than a signature, and that `v0.1.0`'s copy
   carries the build-directory prefix. Nothing rewrites the published asset.
+- **A fifth false sentence, in the header of the workflow that released
+  v0.1.0.** `release.yml` opened with "NOT YET USED: no version of ExitDrill
+  has been tagged or released. This workflow is prepared ahead of the first tag
+  so cutting v0.1.0 does not also require writing a release pipeline under time
+  pressure." It ran three times on 2026-09-07 and published `v0.1.0` on the
+  third. The scan reads `.yml` and had that file in hand; no vocabulary entry
+  matched, which is the denylist limit named in the entry below, found again
+  one file over. The wording is now an entry, and the header records what the
+  first real run found: both earlier dispatches failed in the publish job with
+  `failed to run git: fatal: not a git repository`, because that job never
+  checks out code and `gh` had no remote to infer a repository from.
 - **The scan added last night read four false sentences and reported clean.**
   `test_no_document_says_this_repository_is_untagged_once_it_is` applies the
   README rule to every tracked file, which is the right generalisation and was

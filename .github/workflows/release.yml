@@ -2,10 +2,12 @@ name: release
 
 # Trusted-main, signed-tag, split-authority release, dispatch only.
 #
-# NOT YET USED: no version of ExitDrill has been tagged or released. This
-# workflow is prepared ahead of the first tag so cutting v0.1.0 does not also
-# require writing a release pipeline under time pressure. It runs only when a
-# maintainer dispatches it with an existing signed annotated tag. The shared
+# First used on 2026-09-07, when it published v0.1.0 on its third dispatch: the
+# first two failed in the publish job, which never checks out code and so had no
+# git remote for `gh` to infer a repository from. Machinery that has never run
+# is not machinery that works, and this is the record of what running it found.
+# It runs only when a maintainer dispatches it with an existing signed annotated
+# tag. The shared
 # authorization workflow checks out trusted main, requires stable SemVer,
 # verifies the annotated tag object and its SSH signature against
 # .github/allowed_signers, and requires the tagged commit to be an ancestor of

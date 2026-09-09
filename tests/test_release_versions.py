@@ -264,6 +264,7 @@ CLAIMS_OF_NO_RELEASE: tuple[str, ...] = (
     "has held only `## [Unreleased]`",
     "asserts nothing about the changelog",
     "has not cut its first release",
+    "no version of ExitDrill has been tagged or released",
 )
 
 #: Suffixes worth reading. A binary, a lockfile or a captured fixture does not
