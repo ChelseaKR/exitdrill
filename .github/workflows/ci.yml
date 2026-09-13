@@ -138,11 +138,35 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          # Puts every commit on disk. Necessary, and on its own not sufficient:
+          # how much of that history is READ is decided by how the scanner is
+          # invoked below, not by how much of it was fetched. This repository
+          # had a deep checkout and a one-commit scan for its whole life.
           fetch-depth: 0
           persist-credentials: false
-      - uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # This step was `gitleaks/gitleaks-action`, which picks its scan range from
+      # the triggering event: a push of N commits becomes
+      # `gitleaks detect --log-opts=--no-merges --first-parent BASE^..HEAD`, and a
+      # push carrying a single commit becomes `--log-opts=-1` -- exactly one
+      # commit. Every squash merge into `main` here is a single-commit push, and
+      # `on:` above has no `schedule` and no `workflow_dispatch`, so no lane ever
+      # read more than 1 of `main`'s 98 commits. A credential added in one commit
+      # and deleted in the next passed a required check named `secret-scan`.
+      #
+      # A pinned, checksum-verified binary run as `gitleaks git .` with no
+      # `--log-opts` walks every commit reachable from HEAD, on every event, so
+      # the range no longer depends on what triggered the run.
+      - name: Secret scan (gitleaks, full history)
+        run: |
+          set -euo pipefail
+          GL=8.30.1
+          BASE="https://github.com/gitleaks/gitleaks/releases/download/v${GL}"
+          ARCHIVE="gitleaks_${GL}_linux_x64.tar.gz"
+          curl -sSfL -o "/tmp/${ARCHIVE}" "${BASE}/${ARCHIVE}"
+          curl -sSfL -o /tmp/gitleaks_checksums.txt "${BASE}/gitleaks_${GL}_checksums.txt"
+          (cd /tmp && grep "  ${ARCHIVE}$" gitleaks_checksums.txt | sha256sum --check --strict)
+          tar -xzf "/tmp/${ARCHIVE}" -C /tmp gitleaks
+          /tmp/gitleaks git . --no-banner --redact --exit-code 1
 
   sast:
     runs-on: ubuntu-latest

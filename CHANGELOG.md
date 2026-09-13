@@ -6,6 +6,34 @@ All notable changes will be documented here.
 
 ### Fixed
 
+- **The required `secret-scan` check read 1 of `main`'s 98 commits.** The job
+  ran `gitleaks/gitleaks-action`, which picks its scan range from the event that
+  triggered the run: a push of N commits becomes
+  `gitleaks detect --log-opts=--no-merges --first-parent BASE^..HEAD`, and a push
+  carrying a single commit becomes `--log-opts=-1` -- exactly one commit. Every
+  commit on `main` arrived as a squash merge, which is a single-commit push, and
+  `ci.yml` declares neither `schedule` nor `workflow_dispatch`, the two events
+  for which that action omits `--log-opts` and walks the whole history. So no
+  lane in this repository had ever read more than one commit, and a credential
+  added in one commit and deleted in the next passed a required check named
+  `secret-scan`.
+
+  `fetch-depth: 0` did not prevent that and could not: it governs how much
+  history `actions/checkout` puts on disk, not how much of it the scanner is
+  asked to read. This repository had the deep checkout and the one-commit scan
+  at the same time.
+
+  The step is now a pinned gitleaks binary, verified against the release's
+  published `SHA256` checksums file and invoked as `gitleaks git .` with no
+  `--log-opts`, which walks every commit reachable from HEAD on every event.
+  `fetch-depth: 0` stays, now labelled as the precondition it is.
+  `tests/test_secret_scan_reads_history.py` asserts the invocation rather than
+  the checkout depth, and reads `ci.yml` with its comments stripped, because the
+  comment explaining the fix names both the action that was removed and the flag
+  that must not return. Measured on a throwaway clone at `main` with a random,
+  real-shaped AWS key planted in one commit and removed in the next:
+  `gitleaks git . --log-opts=-1` exited 0, `gitleaks git .` exited non-zero, and
+  the restored tree hashed identical to the baseline.
 - **The published checksums could not check the published files.** The release
   writes `sha256sum dist/* > dist/SHA256SUMS`, which puts `dist/<asset>` on
   every line, and the release page publishes the assets flat. Measured against

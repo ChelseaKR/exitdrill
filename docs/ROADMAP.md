@@ -33,7 +33,7 @@ artifact). Nothing in this table is aspirational.
 | Strict mypy (src, tests, scripts) | 0 errors | `make type` inside `make verify` | AUTO | maintainer |
 | SHA-pinned `uses:` [SEC-25] | 100% | zizmor job in `ci.yml` | AUTO | maintainer |
 | Dependency vulnerabilities | 0 known (strict pip-audit; npm audit at high) | `dependency-scan` job in `ci.yml` | AUTO | maintainer |
-| Secret scan | 0 findings | gitleaks job in `ci.yml` | AUTO | maintainer |
+| Secret scan | 0 findings across every commit reachable from HEAD | `secret-scan` job in `ci.yml`, which runs a checksum-verified gitleaks binary as `gitleaks git .`; passing no `--log-opts` is what makes the range the history rather than the triggering event | AUTO | maintainer |
 | SAST | 0 Semgrep findings (p/python, p/nodejs) | `sast` job in `ci.yml` | AUTO | maintainer |
 | Declared demo outcomes | clean, lossy, and comparison-policy exit codes reproduced | `make demo-compare-policy` in CI | AUTO | maintainer |
 | Record-value disclosure (`AGENTS.md` invariant 7) | 0 record values in any aggregate artifact on the synthetic demo path | `tests/test_disclosure.py` inside `make verify` | AUTO | maintainer |
