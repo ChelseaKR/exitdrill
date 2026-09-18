@@ -56,4 +56,4 @@ one-hunk CHANGELOG resolution at merge time.
 
 | Issue | Class | Notes |
 |---|---|---|
-| #51 | Aspiration / process gate, not a defect | Asks an outside person to run the synthetic demo and answer seven questions. Verified 2026-08-28: `make demo-compare` reproduces the exact four-line summary the issue publishes, including "5 loss signals" and the changed-dimension list, so a tester following it will not be misled by wrong expected output. Correctly labelled `help wanted`. Nothing to fix; it closes when someone outside the project answers it. |
+| #51 | Aspiration / process gate, not a defect | Asks an outside person to run the synthetic demo and answer seven questions. Verified 2026-08-28: `make demo-compare` reproduces the exact four-line summary the issue publishes, including "5 loss signals" and the changed-dimension list, so a tester following it will not be misled by wrong expected output. Correctly labeled `help wanted`. Nothing to fix; it closes when someone outside the project answers it. |

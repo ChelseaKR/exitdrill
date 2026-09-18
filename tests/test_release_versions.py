@@ -376,7 +376,7 @@ def test_the_claim_vocabulary_is_real_and_not_self_matching() -> None:
     """The floor under the scan below, and the reason it may read `__doc__`.
 
     Three ways the next check could pass while examining nothing: an empty
-    claim list, a claim list nothing here has ever said, and a normalisation
+    claim list, a claim list nothing here has ever said, and a normalization
     that has stopped finding a wrapped sentence. The README's own sentence is
     in the list by construction, so at least one entry is a sentence this
     project really wrote; and none of them is in any docstring in this module,
@@ -386,7 +386,7 @@ def test_the_claim_vocabulary_is_real_and_not_self_matching() -> None:
     assert CLAIMS_OF_NO_RELEASE, "an empty claim list scans every file and finds nothing"
     assert README_SAYS_NO_TAG in CLAIMS_OF_NO_RELEASE, (
         "the vocabulary does not cover the one sentence this repository already pins "
-        "in both directions, so it is not a generalisation of anything"
+        "in both directions, so it is not a generalization of anything"
     )
     own = _own_docstrings()
     assert len(own) >= MIN_DOCSTRINGS_IN_THIS_MODULE, (
@@ -402,7 +402,7 @@ def test_the_claim_vocabulary_is_real_and_not_self_matching() -> None:
             f"{' '.join(text.split())[:400]}"
         )
     assert _claims_in("# nothing\n# has been tagged"), (
-        "a claim wrapped across two commented lines is not found, so the normalisation "
+        "a claim wrapped across two commented lines is not found, so the normalization "
         "this scan depends on has stopped working. Every sentence it was missing was a "
         "wrapped one, and none of them is reachable without this"
     )

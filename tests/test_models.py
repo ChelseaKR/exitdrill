@@ -6,7 +6,7 @@ unsupported types exist and are answered `False` rather than raised on. Both
 call sites (`loader.py` and, through it, `evaluator.py`) reject a `value_type`
 outside `loader._SCALAR_TYPES` before ever reaching here, so the unsupported
 branch is not reachable through the CLI today. That makes it worth testing
-directly against its documented behaviour rather than only through callers,
+directly against its documented behavior rather than only through callers,
 which is what issue #54 asked for.
 """
 

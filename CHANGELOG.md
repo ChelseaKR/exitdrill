@@ -26,7 +26,7 @@ All notable changes will be documented here.
   The step is now a pinned gitleaks binary, verified against the release's
   published `SHA256` checksums file and invoked as `gitleaks git .` with no
   `--log-opts`, which walks every commit reachable from HEAD on every event.
-  `fetch-depth: 0` stays, now labelled as the precondition it is.
+  `fetch-depth: 0` stays, now labeled as the precondition it is.
   `tests/test_secret_scan_reads_history.py` asserts the invocation rather than
   the checkout depth, and reads `ci.yml` with its comments stripped, because the
   comment explaining the fix names both the action that was removed and the flag
@@ -70,7 +70,7 @@ All notable changes will be documented here.
   checks out code and `gh` had no remote to infer a repository from.
 - **The scan added last night read four false sentences and reported clean.**
   `test_no_document_says_this_repository_is_untagged_once_it_is` applies the
-  README rule to every tracked file, which is the right generalisation and was
+  README rule to every tracked file, which is the right generalization and was
   the whole point of the previous entry. It is a **denylist**, and the way a
   denylist fails is by being narrower than the prose it reads. Nothing was
   measuring that gap, so here is the measurement: four sentences inside the
@@ -90,11 +90,11 @@ All notable changes will be documented here.
   state. **The new check fired on the unmodified tree and named exactly these
   four, before any deliberate control.**
 
-  **The scan could not have found them without normalising, and that is not a
+  **The scan could not have found them without normalizing, and that is not a
   detail.** Every one of these sentences is wrapped, and three sit behind a
   leading `#`. A plain `text.lower()` substring search over the raw file finds
   none of them; stripping line markers and collapsing whitespace finds all
-  four. The same normalisation also reaches two phrasings that were already in
+  four. The same normalization also reaches two phrasings that were already in
   `CHANGELOG.md` and that a literal `git grep` for them does not return.
 
   **The vocabulary is now self-limiting.**
@@ -288,7 +288,7 @@ All notable changes will be documented here.
   count deltas per dimension, both receipts' statuses with their transitions,
   the observed loss-signal changes, and the six comparison limitations. It adds
   no aggregate score and no ranking: transitions and assessments come from the
-  document's own closed vocabularies, and their pill carries no colour, because
+  document's own closed vocabularies, and their pill carries no color, because
   a difference here is a fact and not a verdict. An `incomparable` document
   renders its reason codes and says in terms that no dimension table follows,
   instead of a table of zeros -- absence rendered as absence rather than as a
@@ -338,7 +338,7 @@ All notable changes will be documented here.
 - `exitdrill history` lines up a series of same-scope receipts as a timeline,
   and `verify-history` recomputes one from its source receipts. `compare`
   answers "did this export lose more than that one?" for exactly two receipts;
-  an organisation rehearsing an exit repeats the drill after each vendor fix,
+  an organization rehearsing an exit repeats the drill after each vendor fix,
   each schema change, each quarter, and reading that as N-1 hand-chained
   comparisons is work nobody does. The verb is a pure reduction: nothing is
   averaged, trended, forecast, scored, or attributed to a cause, and no envelope
@@ -450,10 +450,10 @@ All notable changes will be documented here.
   `_RAW_SENTINELS` or `_SENSITIVE_KEYS`, so a value added to either is proved
   to fire without anyone remembering to add a case, and the secret-key cases
   cover three casings so the `.lower()` in the walk is pinned too. Proved by
-  neutering each of six behaviours in turn: the Directus raw-value scan, the
+  neutering each of six behaviors in turn: the Directus raw-value scan, the
   CiviCRM secret-key check, its key lowercasing, its sentinel scan, its
   filesystem-path scan, and its recursion into nested dictionaries. Each
-  neutering failed only the cases for that behaviour.
+  neutering failed only the cases for that behavior.
 - `tests/test_documented_counts.py`: the counts the README, the Directus
   example README, and `docs/ARCHITECTURE.md` publish are now bound to the
   evidence they describe. Nine hand-written numbers had nothing tying them to
@@ -636,7 +636,7 @@ All notable changes will be documented here.
   document-scoped message at the raise site, the shape the two canaries'
   `where` parameter already uses; `load_exercise_plan` passes its own noun
   too, and `_load_object` keeps the default, which is the noun it already
-  used. Each of the six labelled raise sites is pinned by a test that fails
+  used. Each of the six labeled raise sites is pinned by a test that fails
   if the noun reverts.
 - `scripts/check_browser_capture_bindings.mjs` reported success having compared
   nothing. `checked` was counted but never floored, so an emptied `BINDINGS`
@@ -736,7 +736,7 @@ All notable changes will be documented here.
   install and export whatever the lockfile already says and exit 0 on a drifted
   lockfile, which meant a newly declared runtime dependency was neither
   installed for the merge gate nor present in the requirement set handed to
-  `pip-audit`. Two gates cover the change: one asserts the real flag behaviour
+  `pip-audit`. Two gates cover the change: one asserts the real flag behavior
   against `uv`, and one keeps `--frozen` out of the Makefile and both
   workflows.
 - The offline CiviCRM acceptance gate now requires the empty-target

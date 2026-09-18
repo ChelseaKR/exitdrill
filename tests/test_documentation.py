@@ -21,7 +21,7 @@ def _describes(text: str, name: str) -> bool:
 
     This is a presence check and nothing more. A subcommand named once in
     passing satisfies it; whether the surrounding prose is any good is the
-    maintainer's judgement. It exists to stop a command being published with no
+    maintainer's judgment. It exists to stop a command being published with no
     prose at all.
     """
     return re.search(rf"(?<![\w-]){re.escape(name)}(?![\w-])", text) is not None

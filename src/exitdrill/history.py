@@ -1,7 +1,7 @@
 """A timeline over a series of same-scope receipts, reduced and never smoothed.
 
 `compare` answers "did this export lose more than that one?" for exactly two
-receipts. An organisation rehearsing an exit repeats the drill: after each
+receipts. An organization rehearsing an exit repeats the drill: after each
 vendor fix, each schema change, each quarter. Reading that as N-1 hand-chained
 comparisons is work, and work nobody does is evidence nobody has.
 

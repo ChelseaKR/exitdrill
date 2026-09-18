@@ -468,7 +468,7 @@ def test_frozen_lockfile_flag_cannot_observe_declared_dependency_drift(tmp_path:
     """`--frozen` exits 0 on a drifted lockfile; only `--locked` can observe the drift.
 
     This is the property the repository's own lockfile gate depends on, so it is
-    asserted against real `uv` behaviour rather than assumed. The probe project
+    asserted against real `uv` behavior rather than assumed. The probe project
     declares no dependencies, so both commands resolve offline.
     """
     uv = _required_tool("uv", "exercise the lockfile-drift gate")

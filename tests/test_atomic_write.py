@@ -1,7 +1,7 @@
 """The shared writer behind write_receipt, write_report, and write_comparison.
 
 Each caller's own tests cover its bound, its error type, and its symlink and
-replace-failure behaviour; those stay where they are. What lives here is the
+replace-failure behavior; those stay where they are. What lives here is the
 part no caller can see from outside: that the rename is made durable, and that
 a platform which refuses to do so still gets its artifact.
 """

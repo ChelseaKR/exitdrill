@@ -6,7 +6,7 @@ separate from `strict_json.py` and from the Directus canary's, as
 bounded JSON limits, its own regular-file and directory checks, the evidence
 index's byte and schema bindings, and the atomic-output paths.
 
-Every one is real rejection behaviour, and deleting any of them left the whole
+Every one is real rejection behavior, and deleting any of them left the whole
 suite green.
 
 The approach is the one ADR 0023 sets and `tests/test_directus_canary_bounds.py`

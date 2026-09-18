@@ -150,10 +150,10 @@ def _status_pill(status: object) -> str:
 
 
 def _plain_pill(text: str) -> str:
-    """A pill with no colour modifier.
+    """A pill with no color modifier.
 
     Transitions and assessments are facts about a difference, not verdicts on
-    it, so they carry no colour: the report states what changed and refuses to
+    it, so they carry no color: the report states what changed and refuses to
     say whether that is good news.
     """
     return f'<span class="status">{_escape(text)}</span>'
