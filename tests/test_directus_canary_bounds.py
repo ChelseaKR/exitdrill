@@ -5,7 +5,7 @@ in this project reads it: bounded JSON decoding with its own node, depth, and
 byte limits, its own regular-file and directory-entry checks, and a long list
 of profile assertions. It carried 69 uncovered statements, almost all of them a
 single `raise _fail(...)` with a distinct message. Every one is real rejection
-behaviour on the outermost trust boundary, and deleting any of them left the
+behavior on the outermost trust boundary, and deleting any of them left the
 whole suite green.
 
 This is the same work issue #57 asked for on `strict_json.py`, applied to the
@@ -333,7 +333,7 @@ def test_closed_bundle_rejects_an_asset_set_its_helper_reported_wrong(
 ) -> None:
     """The asset-set recheck, which `_directory_entries` already guarantees.
 
-    Kept as defence in depth for the same reason ADR 0023 keeps
+    Kept as defense in depth for the same reason ADR 0023 keeps
     `_dimension_rows`'s guard, and exercised by making the helper return a set
     it never returns in practice, so the recheck is a check that has been shown
     to fire rather than an unexecuted line.

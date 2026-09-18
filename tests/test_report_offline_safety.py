@@ -402,7 +402,7 @@ def test_the_claim_binding_can_report_a_missing_sentence() -> None:
 
 
 # ---------------------------------------------------------------------------
-# The hostile input is genuinely hostile, and is genuinely neutralised.
+# The hostile input is genuinely hostile, and is genuinely neutralized.
 # ---------------------------------------------------------------------------
 
 

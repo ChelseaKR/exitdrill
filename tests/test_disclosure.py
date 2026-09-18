@@ -581,7 +581,7 @@ def test_gate_reports_an_html_escaped_record_value() -> None:
     `report.py` escapes payload text, so a record value containing `&` or `<`
     reaches the HTML only in encoded form and a literal-only search would miss
     it. No committed fixture value contains such a character yet, so this pins
-    the behaviour before one does.
+    the behavior before one does.
     """
     receipts = _receipts()
     value = "Synthetic & Partners <person-001>"

@@ -19,7 +19,7 @@ project, adding one for this would be out of proportion, and the question here
 is not whether the file is structurally valid -- ``pre-commit`` itself answers
 that on every run -- but whether a stage token appearing anywhere in it is
 installed. The extraction is therefore deliberately over-broad: it takes every
-stage name it can find, and an unrecognised one fails rather than being
+stage name it can find, and an unrecognized one fails rather than being
 ignored.
 """
 

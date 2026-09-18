@@ -547,7 +547,7 @@ dimension, the reference and candidate statuses with their transitions, the
 observed loss-signal changes, and the six comparison limitations. It renders no
 aggregate score and no ranking: transitions and assessments are drawn from the
 document's own closed vocabularies, and the neutral pill they render in carries
-no colour, because a difference is a fact here and not a verdict. An
+no color, because a difference is a fact here and not a verdict. An
 `incomparable` document renders its reason codes and says in terms that no
 dimension table follows, rather than showing a table of zeros -- absence
 rendered as absence.

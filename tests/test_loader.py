@@ -242,7 +242,7 @@ def test_rejects_excessive_dict_nesting(copied_example: Path) -> None:
 def test_rejects_a_document_that_is_not_valid_utf8(tmp_path: Path) -> None:
     """Bytes that never become text at all, before any JSON shape is considered.
 
-    The neighbouring malformed-JSON cases are both valid UTF-8, so they take the
+    The neighboring malformed-JSON cases are both valid UTF-8, so they take the
     JSONDecodeError path. A lone 0xff byte is the one input that reaches the
     UnicodeDecodeError branch, which is the first thing standing between a raw
     file and every command that loads one.

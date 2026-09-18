@@ -19,7 +19,7 @@ concurrency:
   #
   # The discriminator below gives each pushed commit its own slot while leaving
   # pull-request runs grouped per PR, so a superseded PR commit is still
-  # cancelled. `cancel-in-progress` is deliberately unchanged.
+  # canceled. `cancel-in-progress` is deliberately unchanged.
   group: ci-${{ github.ref }}-${{ github.event_name == 'pull_request' && 'pr' || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 

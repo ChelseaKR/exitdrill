@@ -6,7 +6,7 @@ boundary), `loader.py` (the strict input contract), `exercise.py` (the
 synthetic-only plan preflight), `comparison.py` (the packaged-schema and
 serialization guards), and `evaluator.py` (the reference-model restore).
 
-Every one is behaviour a caller depends on. Deleting any of them left the whole
+Every one is behavior a caller depends on. Deleting any of them left the whole
 suite green, which is the property this file removes.
 
 Where a branch is unreachable through the public entry point, it is exercised
@@ -477,7 +477,7 @@ def test_read_failure_escapes_load_strict_json_as_itself(tmp_path: Path) -> None
     `OSError` separately to give it a message that does not echo the path, and
     `cli.main` catches `OSError` at the top level. If `StrictJsonError` ever
     became an `OSError`, or a read failure were wrapped on its way out, all
-    three would change behaviour without any of them being edited -- and with
+    three would change behavior without any of them being edited -- and with
     the no-op handler gone, nothing else records that they depend on it.
     """
     assert not issubclass(StrictJsonError, OSError)

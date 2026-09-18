@@ -9,7 +9,7 @@ second push cancels the run the first commit was still executing, and with
 Either way the commit lands with no verdict at all, and it is reported as
 ``cancelled`` or is simply absent -- never as red -- so nothing surfaces it.
 Measured elsewhere in this portfolio on 2026-09-06: three consecutive pushes to
-one repository's ``main`` each cancelled the previous commit's gate run.
+one repository's ``main`` each canceled the previous commit's gate run.
 
 The rule enforced here: if a workflow runs on a push to a BRANCH and declares a
 workflow-level concurrency group, that group must vary per commit -- it must
@@ -19,7 +19,7 @@ merged branch commit never is.
 
 Two things are deliberately NOT this defect:
 
-* a JOB-level ``concurrency:`` block. Serialising a single job -- a Pages deploy,
+* a JOB-level ``concurrency:`` block. Serializing a single job -- a Pages deploy,
   say -- is correct. Only the column-zero, workflow-level block is examined.
 * a ``push:`` trigger restricted to tags. Every tag is a unique ref, so a ref-only
   key already gives each release its own slot.
@@ -36,7 +36,7 @@ WORKFLOWS = ROOT / ".github" / "workflows"
 
 #: Converging workflows describe a property of the REPOSITORY rather than of one
 #: commit, so successive runs are meant to collapse onto a single slot and only
-#: the newest answer is worth having. Exempting them is a judgement, not an
+#: the newest answer is worth having. Exempting them is a judgment, not an
 #: oversight, and each entry has to earn its place -- which is what
 #: ``test_converging_exemptions_stay_narrow`` below is for.
 CONVERGING_WORKFLOWS: dict[str, str] = {

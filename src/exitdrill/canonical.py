@@ -38,7 +38,7 @@ def sha256_file(path: Path) -> str:
 def is_sha256_hex(value: str) -> bool:
     """Return whether `value` is a lowercase hex SHA-256 digest.
 
-    This recognises exactly what `sha256_bytes` and `sha256_file` emit, which
+    This recognizes exactly what `sha256_bytes` and `sha256_file` emit, which
     is why it lives beside them. Three modules previously each answered this
     question their own way -- two byte-identical anchored regexes and one
     hand-rolled length-plus-character-membership check -- so a change to what

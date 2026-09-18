@@ -8,7 +8,7 @@ side, or it could let a policy that had nothing to read return the code that
 means "nothing was wrong".
 
 Each of those is checked here against the document rather than against prose.
-The gap tests are the centre: this project's dominant defect is a value nobody
+The gap tests are the center: this project's dominant defect is a value nobody
 measured published where a measurement goes, and a timeline is the shape that
 invites it, because a table with a hole in it looks unfinished and a table of
 zeros looks complete.
