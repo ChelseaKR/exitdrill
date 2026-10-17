@@ -1,0 +1,23 @@
+# FUNDING configuration: this project takes no money, on purpose.
+#
+# Without this file the repository inherits the account-wide default in
+# ChelseaKR/.github, which shows a Ko-fi button. Owner decision, 2026-10-17:
+# Ko-fi stays only on the consumer-facing projects (womens-sports-calendar,
+# queer-tv-guide, olive-bark-logger, swelter). This project's work is meant to
+# stand on its own evidence, without a tip jar beside it.
+#
+# Every key is empty on purpose. DISCOVERY-AND-ADOPTION-STANDARD DISC-08 reports
+# a FUNDING.yml like this as n/a: there is no link in it to check.
+github:           # no GitHub Sponsors
+patreon:          # not used
+open_collective:  # not used
+ko_fi:            # not used; overrides the account default
+tidelift:         # not used
+community_bridge: # not used
+liberapay:        # not used
+issuehunt:        # not used
+lfx_crowdfunding: # not used
+polar:            # not used
+buy_me_a_coffee:  # not used
+thanks_dev:       # not used
+custom:           # no external donation links

@@ -4,6 +4,12 @@ All notable changes will be documented here.
 
 ## [Unreleased]
 
+### Changed
+
+- **The repository takes no money, on purpose.** A committed `.github/FUNDING.yml` with every
+  key empty overrides the account-wide Ko-fi default, which this repository had inherited
+  without any document saying so (owner decision 2026-10-17).
+
 ### Fixed
 
 - **The required `secret-scan` check read 1 of `main`'s 98 commits.** The job
